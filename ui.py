@@ -1,14 +1,26 @@
 import pygame
+import cv2
 import numpy as np
 import sys
 
 # Hard-coded telemetry data
-battery = "92%"
-gps = "-33.8688, 151.2093"
-altitude = "102m"
-robot_state = "Offline"
+robots = [
+    { # robot 1 - quadcopter
+        "battery": "92%",
+        "gps": "-33.8688, 151.2093",
+        "altitude": "102m",
+        "state": "Offline"
+    },
+    { # robot 2 - rover
+        "battery": "64%",
+        "gps": "-37.8136, 144.9631",
+        "altitude": "87m",
+        "state": "Online"
+    }
+]
 
-pretty = False  # Set to True for feathered edges, False for solid edges
+
+pretty = True  # Set to True for feathered edges, False for solid edges
 
 # --- Function to create the feathered image ---
 def feather_image(surface, feather_size_x, feather_size_y,
@@ -71,7 +83,9 @@ def feather_image(surface, feather_size_x, feather_size_y,
 
     return feathered_surface
 
-
+scrolling = False
+scoll_speed = 5
+scroll_direction = 1
 
 pygame.init()
 screen = pygame.display.set_mode((1280, 720))
@@ -90,27 +104,72 @@ DARK_GRAY = (30, 30, 30)
 BLACK = (0, 0, 0)
 BLUE = (100, 100, 255)
 RED = (255, 100, 100)
+YELLOW = (255, 255, 100)
 GREEN = (100, 255, 100)
+
+severity_colors = (GREEN, YELLOW, RED)
 
 forest_splash = pygame.image.load("media/images/forest_splash.jpg").convert()
 splash_rect = forest_splash.get_rect(center=(640, 360))
 
 feathered_splash = feather_image(forest_splash, 150, 150, feather_top=False, feather_right=True, feather_bottom=True)
 
+#video
+# 360p video
+video_path = "media/images/snake.mp4"
+cap = cv2.VideoCapture(video_path)
+
+# Get video properties
+fps = cap.get(cv2.CAP_PROP_FPS)
+frame_delay = int(1000 / fps) if fps > 0 else 33
+width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
 # Dummy incidents
 incidents = [
-    {"id": 1, "title": "Fire Detected", "time": "2025-08-01 13:20"},
-    {"id": 2, "title": "Fungal Detected", "time": "2025-08-01 13:45"},
-    {"id": 3, "title": "Bear Detected", "time": "2025-08-01 14:05"},
-    {"id": 4, "title": "Flood Warning", "time": "2025-08-01 14:30"},
-    {"id": 5, "title": "Unauthorized Entry", "time": "2025-08-01 15:00"},
-    {"id": 6, "title": "Smoke Alert", "time": "2025-08-01 15:20"},
-    {"id": 7, "title": "Gas Leak Detected", "time": "2025-08-01 15:45"},
-    {"id": 8, "title": "Tree Fallen", "time": "2025-08-01 16:10"},
-    {"id": 9, "title": "Animal Intrusion", "time": "2025-08-01 16:35"},
-    {"id": 10, "title": "Power Outage", "time": "2025-08-01 17:00"},
+    {
+        "id": 1, "title": "Fire Detected", "time": "2025-08-01 13:20", "severity": 3,
+        "Platform": 1, "robot_coords": (-0.005, 0.002), "global_coords": (-33.8701, 151.2101)
+    },
+    {
+        "id": 2, "title": "Fungal Detected", "time": "2025-08-01 13:45", "severity": 1,
+        "Platform": 2, "robot_coords": (0.003, -0.001), "global_coords": (-33.8670, 151.2070)
+    },
+    {
+        "id": 3, "title": "Bear Detected", "time": "2025-08-01 14:05", "severity": 3,
+        "Platform": 1, "robot_coords": (-0.002, 0.004), "global_coords": (-33.8690, 151.2088)
+    },
+    {
+        "id": 4, "title": "Flood Warning", "time": "2025-08-01 14:30", "severity": 2,
+        "Platform": 2, "robot_coords": (0.001, 0.003), "global_coords": (-33.8665, 151.2065)
+    },
+    {
+        "id": 5, "title": "Unauthorized Entry", "time": "2025-08-01 15:00", "severity": 3,
+        "Platform": 1, "robot_coords": (-0.004, -0.002), "global_coords": (-33.8685, 151.2095)
+    },
+    {
+        "id": 6, "title": "Smoke Alert", "time": "2025-08-01 15:20", "severity": 2,
+        "Platform": 2, "robot_coords": (0.002, 0.001), "global_coords": (-33.8678, 151.2079)
+    },
+    {
+        "id": 7, "title": "Gas Leak Detected", "time": "2025-08-01 15:45", "severity": 3,
+        "Platform": 1, "robot_coords": (-0.001, -0.003), "global_coords": (-33.8693, 151.2083)
+    },
+    {
+        "id": 8, "title": "Tree Fallen", "time": "2025-08-01 16:10", "severity": 1,
+        "Platform": 2, "robot_coords": (0.004, -0.004), "global_coords": (-33.8659, 151.2062)
+    },
+    {
+        "id": 9, "title": "Animal Intrusion", "time": "2025-08-01 16:35", "severity": 2,
+        "Platform": 1, "robot_coords": (-0.003, 0.001), "global_coords": (-33.8682, 151.2090)
+    },
+    {
+        "id": 10, "title": "Power Outage", "time": "2025-08-01 17:00", "severity": 2,
+        "Platform": 2, "robot_coords": (0.002, -0.002), "global_coords": (-33.8667, 151.2072)
+    },
 ]
 
+incident_y = 80 # starting y position for incident list
 
 # Popup state
 popup_visible = False
@@ -121,26 +180,52 @@ animating_out = False
 anim_start_time = 0
 ANIM_DURATION = 200  # milliseconds
 
+last_good_frame_surface = None
+def video_loop():
+    global last_good_frame_surface
+
+    ret, frame = cap.read()
+
+    if not ret:
+        cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        # Don't read again immediately — we'll just reuse last frame
+    else:
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame_surface = pygame.surfarray.make_surface(np.flipud(np.rot90(frame_rgb)))
+        last_good_frame_surface = frame_surface
+
+    # Always blit the last good frame if we have one
+    if last_good_frame_surface is not None:
+        screen.blit(last_good_frame_surface, (20, 20))
+
 def draw_base_ui():
     screen.fill(DARK_GRAY)
 
-    # Camera feed placeholder (top-left)
-    if robot_state != "Offline":
-        pygame.draw.rect(screen, BLACK, (20, 20, 640, 360))
-        cam_text = small_font.render("Camera Feed", True, WHITE)
-        screen.blit(cam_text, (30, 30))
-    else:
-        screen.blit(feathered_splash, (20, 20))
+    # # Camera feed placeholder (top-left)
+    # if robot_state != "Offline":
+    #     pygame.draw.rect(screen, BLACK, (20, 20, 640, 360))
+    #     cam_text = small_font.render("Camera Feed", True, WHITE)
+    #     screen.blit(cam_text, (30, 30))
+    # else:
+    #     screen.blit(feathered_splash, (20, 20))
+
+    # screen.blit(feathered_splash, (20, 20))
+
+    video_loop()
 
     # Incident list (right)
-
     panelwidth = 580
     pygame.draw.rect(screen, GRAY, (680, 20, panelwidth, 490))
 
+    if scrolling:
+        global incident_y
+        incident_y += scroll_direction * scoll_speed
+
     for i, inc in enumerate(incidents):
-        y = 80 + i * 90
+        y = incident_y + i * 90
         pygame.draw.rect(screen, LIGHT_GRAY, (700, y, 500, 80))
         pygame.draw.rect(screen, DARK_GRAY, (710, y + 10, 60, 60))  # Image placeholder
+        pygame.draw.rect(screen, severity_colors[inc["severity"] - 1], (700, y + 75, 500, 5))
         t1 = small_font.render(f'#{i+1} {inc["title"]}', True, BLACK)
         t2 = small_font.render(inc["time"], True, BLACK)
         screen.blit(t1, (780, y + 10))
@@ -164,35 +249,52 @@ def draw_base_ui():
     screen.blit(incident_text, (700, 30))
 
     # incident scroll buttons
-    pygame.draw.rect(screen, LIGHT_GRAY, (680 + panelwidth - 50, 80, 40, 100))
-    pygame.draw.rect(screen, LIGHT_GRAY, (680 + panelwidth - 50, 390, 40, 100))
+    pygame.draw.rect(screen, LIGHT_GRAY, (1210, 80, 40, 100))
+    pygame.draw.rect(screen, LIGHT_GRAY, (1210, 390, 40, 100))
 
-    # Telemetry info (bottom)
-    # pygame.draw.rect(screen, GRAY, (20, 400, 640, 300))
-    # lines = [
-    #     f"Battery: {battery}",
-    #     f"GPS: {gps}",
-    #     f"Altitude: {altitude}"
-    # ]
-    # for i, line in enumerate(lines):
-    #     text = small_font.render(line, True, WHITE)
-    #     screen.blit(text, (20, 620 + i * 20))
+    #telemery surface
+    telemetry_surface = pygame.Surface((900, 80))
+    telemetry_surface.fill(GRAY)
+    screen.blit(telemetry_surface, (screen.get_width()//2 - telemetry_surface.get_width()//2, 640))
+    pygame.draw.rect(screen, RED, (610, 650, 60, 60))
 
-    text = small_font.render(f"Batt: {battery}, GPS:{gps}, {altitude}", True, WHITE)
-    screen.blit(text, (45, 690))
+# --- Robot 1 Telemetry ---
+    robot = robots[0]
+    string = f"Batt: {robot['battery']}, GPS:{robot['gps']}, {robot['altitude']}"
+    text = small_font.render(string, True, WHITE)
+    screen.blit(text, (640 - small_font.size(string)[0] - 55, 690))
 
-    if robot_state == "Offline":
-        pygame.draw.circle(screen, RED, (28, 668), 10)
-        text = small_font.render("last seen:", True, WHITE)
-        screen.blit(text, (190, 670))
+    string = f"{robot['state']}"
+    text = state_font.render(string, True, WHITE)
+    screen.blit(text, (640 - state_font.size(string)[0] - 55, 650))
+
+    if robot['state'] == "Offline":
+        pygame.draw.rect(screen, RED, (592, 650, 10, 60))
+        string = "last seen"
+        text = small_font.render(string, True, WHITE)
+        screen.blit(text, (640 - small_font.size(string)[0] - 60 - state_font.size("Offline")[0], 670))
     else:
-        pygame.draw.circle(screen, GREEN, (28, 668), 10)
-        
-    telemetry_title = state_font.render(f"{robot_state}", True, WHITE)
-    screen.blit(telemetry_title, (45, 650))
+        pygame.draw.rect(screen, GREEN, (592, 650, 10, 60))
+
+
+    # --- Robot 2 Telemetry ---
+    robot = robots[1]
+    string = f"Batt: {robot['battery']}, GPS:{robot['gps']}, {robot['altitude']}"
+    text = small_font.render(string, True, WHITE)
+    screen.blit(text, (695, 690))
+
+    if robot['state'] == "Offline":
+        pygame.draw.rect(screen, RED, (678, 650, 10, 60))
+        text = small_font.render("last seen", True, WHITE)
+        screen.blit(text, (840, 670))
+    else:
+        pygame.draw.rect(screen, GREEN, (678, 650, 10, 60))
+
+    telemetry_title = state_font.render(f"{robot['state']}", True, WHITE)
+    screen.blit(telemetry_title, (695, 650))
 
     debug_text = small_font.render(f"RS1 debug {pygame.mouse.get_pos()[0]} {pygame.mouse.get_pos()[1]}", True, WHITE)
-    screen.blit(debug_text, (1000, 690))
+    screen.blit(debug_text, (1000, 790))
 
 def draw_popup():
     global popup_scale
@@ -274,14 +376,28 @@ while running:
             else:
                 # Detect incident click
                 for i, inc in enumerate(incidents):
-                    y = 80 + i * 90
-                    if 700 < mx < 1200 and y < my < y + 80 and my > 80 and my < 470:
+                    y = incident_y + i * 90
+                    if 700 < mx < 1200 and y < my < y + 80 and 80 < my and my < 470:
                         selected_incident = inc
                         animating_in = True
                         anim_start_time = pygame.time.get_ticks()
                         break
+                
+                # Detect scroll buttons
+                if 1210 < mx < 1250 and 80 < my < 180:
+                    scrolling = True
+                    scroll_direction = 1
+                    
+                elif 1210 < mx < 1250 and 390 < my < 490:
+                    scrolling = True
+                    scroll_direction = -1
+                    
+                    
+
+        if event.type == pygame.MOUSEBUTTONUP:
+            scrolling = False
 
     clock.tick(75)
-
+cap.release()
 pygame.quit()
 sys.exit()
