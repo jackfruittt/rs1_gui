@@ -3,24 +3,31 @@ import cv2
 import numpy as np
 import sys
 
+pretty = True  # Set to True for feathered edges, False for solid edges
+
 # Hard-coded telemetry data
 robots = [
     { # robot 1 - quadcopter
+        "name": "Quad",
         "battery": "92%",
         "gps": "-33.8688, 151.2093",
         "altitude": "102m",
-        "state": "Offline"
+        "state": "Offline",
+        "setPose": "-",
+        "nearPose": "-"
     },
     { # robot 2 - rover
+        "name": "Husky",
         "battery": "64%",
         "gps": "-37.8136, 144.9631",
         "altitude": "87m",
-        "state": "Online"
+        "state": "Online",
+        "setPose": "-",
+        "nearPose": "Lake"
     }
 ]
 
-
-pretty = True  # Set to True for feathered edges, False for solid edges
+selected_robot = 1
 
 # --- Function to create the feathered image ---
 def feather_image(surface, feather_size_x, feather_size_y,
@@ -108,6 +115,7 @@ YELLOW = (255, 255, 100)
 GREEN = (100, 255, 100)
 
 severity_colors = (GREEN, YELLOW, RED)
+severity_msg = ("Safe", "Warning", "Critical")
 
 forest_splash = pygame.image.load("media/images/forest_splash.jpg").convert()
 splash_rect = forest_splash.get_rect(center=(640, 360))
@@ -198,6 +206,118 @@ def video_loop():
     if last_good_frame_surface is not None:
         screen.blit(last_good_frame_surface, (20, 20))
 
+def draw_incidents_panel():
+    global incident_y
+    PANEL_WIDTH = 580
+    PANEL_HEIGHT = 395  # full height of window for simplicity
+    PANEL_X = 680
+    PANEL_Y = 0
+
+    # Surface
+    incidents_panel = pygame.Surface((PANEL_WIDTH, PANEL_HEIGHT), pygame.SRCALPHA)
+    incidents_panel.fill((0, 0, 0, 0))  # Transparent background
+
+    # Scroll state
+    if scrolling:
+        incident_y += scroll_direction * scoll_speed
+
+    # Incident list background
+    pygame.draw.rect(incidents_panel, GRAY, (0, 20, PANEL_WIDTH, 375))
+
+    # Incident entries
+    for i, inc in enumerate(incidents):
+        y = incident_y + i * 90
+        pygame.draw.rect(incidents_panel, LIGHT_GRAY, (20, y, 500, 80))
+        pygame.draw.rect(incidents_panel, DARK_GRAY, (30, y + 10, 60, 60))  # Image placeholder
+        pygame.draw.rect(incidents_panel, severity_colors[inc["severity"] - 1], (20, y + 75, 500, 5))
+
+        t1 = small_font.render(f'#{i+1} {inc["title"]}', True, BLACK)
+        t2 = small_font.render(inc["time"], True, BLACK)
+        incidents_panel.blit(t1, (100, y + 10))
+        incidents_panel.blit(t2, (100, y + 40))
+
+    # Top bar
+    pygame.draw.rect(incidents_panel, GRAY, (0, 0, PANEL_WIDTH, 75))
+    pygame.draw.rect(incidents_panel, DARK_GRAY, (0, 0, PANEL_WIDTH, 20))
+
+    incident_text = font.render(f"Incidents ({len(incidents)})", True, WHITE)
+    incidents_panel.blit(incident_text, (20, 30))
+
+    # Bottom feathered fade
+    bottom_rect = pygame.Surface((PANEL_WIDTH, 30), pygame.SRCALPHA)
+    bottom_rect.fill(DARK_GRAY)
+    bottom_feathered = feather_image(bottom_rect, 25, 25, feather_top=True, feather_right=False, feather_bottom=False, feather_left=False)
+    incidents_panel.blit(bottom_feathered, (0, 370))
+
+    # Bottom solid section
+    # pygame.draw.rect(incidents_panel, DARK_GRAY, (0, 400, PANEL_WIDTH, 350))
+
+    # Scroll buttons (still inside panel)
+    pygame.draw.rect(incidents_panel, LIGHT_GRAY, (PANEL_WIDTH - 50, 80, 40, 100))   # Up button
+    pygame.draw.rect(incidents_panel, LIGHT_GRAY, (PANEL_WIDTH - 50, 280, 40, 100))  # Down button
+
+    # Final blit to screen
+    screen.blit(incidents_panel, (PANEL_X, PANEL_Y))
+
+def draw_telemetry_panel():
+    # --- Create telemetry panel surface ---
+    telemetry_panel = pygame.Surface((1280, 80))
+    telemetry_panel.fill(GRAY)
+
+    # --- Determine robot state color ---
+    color = RED
+    if robots[selected_robot]['state'] != "Offline":
+        color = GREEN
+    pygame.draw.rect(telemetry_panel, color, (610, 10, 60, 60))  # adjusted y to fit in panel (from 650 → 10)
+
+    # --- Robot 1 Telemetry ---
+    robot = robots[0]
+    string = f"Batt: {robot['battery']}, GPS:{robot['gps']}, {robot['altitude']}"
+    text = small_font.render(string, True, WHITE)
+    telemetry_panel.blit(text, (640 - small_font.size(string)[0] - 55, 50))
+
+    string = f"{robot['state']}"
+    text = state_font.render(string, True, WHITE)
+    telemetry_panel.blit(text, (640 - state_font.size(string)[0] - 55, 10))
+
+    e_stop_col = DARK_GRAY
+
+    if robot['state'] == "Offline":
+        pygame.draw.rect(telemetry_panel, RED, (592, 10, 10, 60))
+        string = "last seen"
+        text = small_font.render(string, True, WHITE)
+        telemetry_panel.blit(text, (640 - small_font.size(string)[0] - 60 - state_font.size("Offline")[0], 30))
+    else:
+        pygame.draw.rect(telemetry_panel, GREEN, (592, 10, 10, 60))
+        e_stop_col = RED
+
+    pygame.draw.rect(telemetry_panel, e_stop_col, (20, 10, 160, 60))
+
+
+    # --- Robot 2 Telemetry ---
+    robot = robots[1]
+    string = f"Batt: {robot['battery']}, GPS:{robot['gps']}, {robot['altitude']}"
+    text = small_font.render(string, True, WHITE)
+    telemetry_panel.blit(text, (695, 50))
+
+    if robot['state'] == "Offline":
+        pygame.draw.rect(telemetry_panel, RED, (678, 10, 10, 60))
+        text = small_font.render("last seen", True, WHITE)
+        telemetry_panel.blit(text, (840, 30))
+        e_stop_col = DARK_GRAY
+    else:
+        pygame.draw.rect(telemetry_panel, GREEN, (678, 10, 10, 60))
+        e_stop_col = RED
+
+    telemetry_title = state_font.render(f"{robot['state']}", True, WHITE)
+    telemetry_panel.blit(telemetry_title, (695, 10))
+
+    pygame.draw.rect(telemetry_panel, e_stop_col, (1100, 10, 160, 60))
+
+    # --- Blit telemetry panel to screen ---
+    screen.blit(telemetry_panel, (screen.get_width() // 2 - telemetry_panel.get_width() // 2, 640))
+
+
 def draw_base_ui():
     screen.fill(DARK_GRAY)
 
@@ -209,92 +329,15 @@ def draw_base_ui():
     # else:
     #     screen.blit(feathered_splash, (20, 20))
 
-    # screen.blit(feathered_splash, (20, 20))
+    screen.blit(feathered_splash, (20, 20))
 
-    video_loop()
+    # video_loop()
 
-    # Incident list (right)
-    panelwidth = 580
-    pygame.draw.rect(screen, GRAY, (680, 20, panelwidth, 490))
+    draw_incidents_panel()
+    draw_telemetry_panel()
 
-    if scrolling:
-        global incident_y
-        incident_y += scroll_direction * scoll_speed
-
-    for i, inc in enumerate(incidents):
-        y = incident_y + i * 90
-        pygame.draw.rect(screen, LIGHT_GRAY, (700, y, 500, 80))
-        pygame.draw.rect(screen, DARK_GRAY, (710, y + 10, 60, 60))  # Image placeholder
-        pygame.draw.rect(screen, severity_colors[inc["severity"] - 1], (700, y + 75, 500, 5))
-        t1 = small_font.render(f'#{i+1} {inc["title"]}', True, BLACK)
-        t2 = small_font.render(inc["time"], True, BLACK)
-        screen.blit(t1, (780, y + 10))
-        screen.blit(t2, (780, y + 40))
-    
-    pygame.draw.rect(screen, RED, (680, 500, panelwidth, 250))
-    bottom_rect = pygame.Surface((panelwidth, 30), pygame.SRCALPHA)
-    bottom_rect.fill(DARK_GRAY)
-    bottom_feathered = feather_image(bottom_rect, 25, 25, feather_top=True, feather_right=False, feather_bottom=False, feather_left=False)
-    screen.blit(bottom_feathered, (680, 470))
-    pygame.draw.rect(screen, DARK_GRAY, (680, 500, panelwidth, 250))
-
-
-    pygame.draw.rect(screen, GRAY, (680, 0, panelwidth, 75))
-    pygame.draw.rect(screen, DARK_GRAY, (680, 0, panelwidth, 20))
-    # top_rect = pygame.Surface((panelwidth, 80), pygame.SRCALPHA)
-    # top_rect.fill(GRAY)
-    # top_feathered = feather_image(top_rect, 25, 25, feather_top=False, feather_right=False, feather_bottom=True, feather_left=False)
-    # screen.blit(top_feathered, (680, 0))
-    incident_text = font.render(f"Incidents ({len(incidents)})", True, WHITE)
-    screen.blit(incident_text, (700, 30))
-
-    # incident scroll buttons
-    pygame.draw.rect(screen, LIGHT_GRAY, (1210, 80, 40, 100))
-    pygame.draw.rect(screen, LIGHT_GRAY, (1210, 390, 40, 100))
-
-    #telemery surface
-    telemetry_surface = pygame.Surface((900, 80))
-    telemetry_surface.fill(GRAY)
-    screen.blit(telemetry_surface, (screen.get_width()//2 - telemetry_surface.get_width()//2, 640))
-    pygame.draw.rect(screen, RED, (610, 650, 60, 60))
-
-# --- Robot 1 Telemetry ---
-    robot = robots[0]
-    string = f"Batt: {robot['battery']}, GPS:{robot['gps']}, {robot['altitude']}"
-    text = small_font.render(string, True, WHITE)
-    screen.blit(text, (640 - small_font.size(string)[0] - 55, 690))
-
-    string = f"{robot['state']}"
-    text = state_font.render(string, True, WHITE)
-    screen.blit(text, (640 - state_font.size(string)[0] - 55, 650))
-
-    if robot['state'] == "Offline":
-        pygame.draw.rect(screen, RED, (592, 650, 10, 60))
-        string = "last seen"
-        text = small_font.render(string, True, WHITE)
-        screen.blit(text, (640 - small_font.size(string)[0] - 60 - state_font.size("Offline")[0], 670))
-    else:
-        pygame.draw.rect(screen, GREEN, (592, 650, 10, 60))
-
-
-    # --- Robot 2 Telemetry ---
-    robot = robots[1]
-    string = f"Batt: {robot['battery']}, GPS:{robot['gps']}, {robot['altitude']}"
-    text = small_font.render(string, True, WHITE)
-    screen.blit(text, (695, 690))
-
-    if robot['state'] == "Offline":
-        pygame.draw.rect(screen, RED, (678, 650, 10, 60))
-        text = small_font.render("last seen", True, WHITE)
-        screen.blit(text, (840, 670))
-    else:
-        pygame.draw.rect(screen, GREEN, (678, 650, 10, 60))
-
-    telemetry_title = state_font.render(f"{robot['state']}", True, WHITE)
-    screen.blit(telemetry_title, (695, 650))
-
-    debug_text = small_font.render(f"RS1 debug {pygame.mouse.get_pos()[0]} {pygame.mouse.get_pos()[1]}", True, WHITE)
-    screen.blit(debug_text, (1000, 790))
+    debug_text = small_font.render(f"RS1 {int(clock.get_fps())} {pygame.mouse.get_pos()[0]} {pygame.mouse.get_pos()[1]}", True, WHITE)
+    screen.blit(debug_text, (0, 0))
 
 def draw_popup():
     global popup_scale
@@ -377,7 +420,7 @@ while running:
                 # Detect incident click
                 for i, inc in enumerate(incidents):
                     y = incident_y + i * 90
-                    if 700 < mx < 1200 and y < my < y + 80 and 80 < my and my < 470:
+                    if 700 < mx < 1200 and y < my < y + 80 and 80 < my and my < 395:
                         selected_incident = inc
                         animating_in = True
                         anim_start_time = pygame.time.get_ticks()
@@ -388,7 +431,7 @@ while running:
                     scrolling = True
                     scroll_direction = 1
                     
-                elif 1210 < mx < 1250 and 390 < my < 490:
+                elif 1210 < mx < 1250 and 280 < my < 380:
                     scrolling = True
                     scroll_direction = -1
                     
