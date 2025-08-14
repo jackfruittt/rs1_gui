@@ -6,28 +6,132 @@ import sys
 pretty = True  # Set to True for feathered edges, False for solid edges
 
 # Hard-coded telemetry data
+import random
+
 robots = [
-    { # robot 1 - quadcopter
-        "name": "Quad",
+    { # robot 1
         "battery": "92%",
-        "gps": "-33.8688, 151.2093",
+        "gps": f"{round(random.uniform(-400, 400), 3)}, {round(random.uniform(-400, 400), 3)}",
         "altitude": "102m",
         "state": "Offline",
         "setPose": "-",
-        "nearPose": "-"
+        "nearPose": "-",
+        "yaw": round(random.uniform(0, 360), 1)
     },
-    { # robot 2 - rover
-        "name": "Husky",
+    { # robot 2
         "battery": "64%",
-        "gps": "-37.8136, 144.9631",
+        "gps": f"{round(random.uniform(-400, 400), 3)}, {round(random.uniform(-400, 400), 3)}",
         "altitude": "87m",
-        "state": "Online",
+        "state": "Scouting",
         "setPose": "-",
-        "nearPose": "Lake"
+        "nearPose": "Lake",
+        "yaw": round(random.uniform(0, 360), 1)
+    },
+    { # robot 3
+        "battery": "78%",
+        "gps": f"{round(random.uniform(-400, 400), 3)}, {round(random.uniform(-400, 400), 3)}",
+        "altitude": "56m",
+        "state": "Idle",
+        "setPose": "-",
+        "nearPose": "-",
+        "yaw": round(random.uniform(0, 360), 1)
+    },
+    { # robot 4
+        "battery": "51%",
+        "gps": f"{round(random.uniform(-400, 400), 3)}, {round(random.uniform(-400, 400), 3)}",
+        "altitude": "73m",
+        "state": "Piloting",
+        "setPose": "-",
+        "nearPose": "Parking",
+        "yaw": round(random.uniform(0, 360), 1)
+    },
+    { # robot 5
+        "battery": "88%",
+        "gps": f"{round(random.uniform(-400, 400), 3)}, {round(random.uniform(-400, 400), 3)}",
+        "altitude": "64m",
+        "state": "Responding",
+        "setPose": "-",
+        "nearPose": "-",
+        "yaw": round(random.uniform(0, 360), 1)
+    },
+    { # robot 6
+        "battery": "33%",
+        "gps": f"{round(random.uniform(-400, 400), 3)}, {round(random.uniform(-400, 400), 3)}",
+        "altitude": "45m",
+        "state": "Offline",
+        "setPose": "-",
+        "nearPose": "Base",
+        "yaw": round(random.uniform(0, 360), 1)
     }
 ]
 
-selected_robot = 1
+
+
+# Store clickable card rects globally or pass them around
+robot_card_rects = []  
+
+selected_robot = -1
+
+def render_robots_list(robots):
+    global robot_card_rects
+    robot_card_rects = []  # reset each frame
+
+    panel_width, panel_height = 350, 700
+    card_height = 90
+    margin = 15
+
+    panel_surface = pygame.Surface((panel_width, panel_height)).convert_alpha()
+    panel_surface.fill((0, 0, 0, 0))  # transparent
+
+    state_colors = {
+        "Offline":   (255, 100, 100),
+        "Scouting":  (100, 170, 255),
+        "Idle":      (200, 200, 200),
+        "Piloting":  (100, 255, 100),
+        "Responding":(255, 200, 100)
+    }
+
+    for i, robot in enumerate(robots):
+        y = i * (card_height + margin)
+        if y + card_height > panel_height:
+            break
+
+        # Card rect (for detecting clicks)
+        card_rect = pygame.Rect(10, 10 + y, panel_width, card_height)  # position matches blit later
+        robot_card_rects.append((card_rect, i))  # store index with rect
+
+        # Draw card background and border
+        pygame.draw.rect(panel_surface, (0, 0, 0), (0, y, panel_width, card_height))
+        pygame.draw.rect(panel_surface, (255, 255, 255), (0, y, panel_width, card_height), 2)
+
+        # Robot ID
+        id_text = inter_bold_large.render(f"#{i+1}", True, (255, 255, 255))
+        panel_surface.blit(id_text, (10, y + 10))
+
+        # Robot State (color-coded)
+        state = robot["state"]
+        state_color = state_colors.get(state, (255, 255, 255))
+        state_text = inter_bold_medium.render(state, True, state_color)
+        panel_surface.blit(state_text, (90, y + 10))
+
+        if state == "Offline":
+            last_seen_text = inter_smaller.render("last seen:", True, (255, 255, 255))
+            panel_surface.blit(last_seen_text, (90 + state_text.get_width() + 5, y + 22))
+
+        # Location or Pose
+        if robot.get("nearPose") and robot["nearPose"] != "-":
+            loc_str = f"Near: {robot['nearPose']}"
+        else:
+            loc_str = f"{robot['gps']}, {robot['altitude']}"
+        loc_text = inter_small.render(loc_str, True, (255, 255, 255))
+        panel_surface.blit(loc_text, (90, y + 45))
+
+        # Battery
+        batt_text = inter_smaller.render(f"{robot['battery']} battery", True, (255, 255, 255))
+        panel_surface.blit(batt_text, (90, y + 70))
+
+    screen.blit(panel_surface, (10, 10))
+
 
 # --- Function to create the feathered image ---
 def feather_image(surface, feather_size_x, feather_size_y,
@@ -90,12 +194,20 @@ def feather_image(surface, feather_size_x, feather_size_y,
 
     return feathered_surface
 
+def mapRange(value, inMin, inMax, outMin, outMax): # https://stackoverflow.com/a/68722109/9797303
+    return outMin + (((value - inMin) / (inMax - inMin)) * (outMax - outMin))
+
 scrolling = False
 scoll_speed = 5
 scroll_direction = 1
 
+fade_transition_duration = 300
+show_left_fade = False
+left_fade_start = 0
+left_fadeIn = True
+
 pygame.init()
-screen = pygame.display.set_mode((1280, 720))
+screen = pygame.display.set_mode((1900, 860))
 pygame.display.set_caption("RS1 GUI")
 clock = pygame.time.Clock()
 
@@ -104,6 +216,14 @@ font = pygame.font.Font("media/fonts/TurretRoad-Bold.otf", 32)
 small_font = pygame.font.Font("media/fonts/TurretRoad-Bold.otf", 20)
 large_font = pygame.font.Font("media/fonts/TurretRoad-ExtraBold.otf", 48)
 state_font = pygame.font.Font("media/fonts/boston.ttf", 38)
+
+inter_large   = pygame.font.Font("media/fonts/Inter-Regular.ttf", 48)
+inter_medium  = pygame.font.Font("media/fonts/Inter-Regular.ttf", 32)
+inter_small   = pygame.font.Font("media/fonts/Inter-Regular.ttf", 18)
+inter_smaller = pygame.font.Font("media/fonts/Inter-Regular.ttf", 16)
+inter_bold_large  = pygame.font.Font("media/fonts/Inter-Bold.ttf", 48)
+inter_bold_medium = pygame.font.Font("media/fonts/Inter-Bold.ttf", 32)
+
 WHITE = (255, 255, 255)
 LIGHT_GRAY = (200, 200, 200)
 GRAY = (50, 50, 50)
@@ -120,6 +240,9 @@ severity_msg = ("Safe", "Warning", "Critical")
 forest_splash = pygame.image.load("media/images/forest_splash.jpg").convert()
 splash_rect = forest_splash.get_rect(center=(640, 360))
 
+map_top_view = pygame.image.load("media/images/bird_view.png").convert()
+mapImgSize = map_top_view.get_size()
+
 feathered_splash = feather_image(forest_splash, 150, 150, feather_top=False, feather_right=True, feather_bottom=True)
 
 #video
@@ -132,6 +255,11 @@ fps = cap.get(cv2.CAP_PROP_FPS)
 frame_delay = int(1000 / fps) if fps > 0 else 33
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+world_size = (800, 800)
+drone_icon = pygame.image.load("media/images/drone.png").convert_alpha()
+drone_icon = pygame.transform.scale(drone_icon, (35,35))
+
 
 # Dummy incidents
 incidents = [
@@ -204,14 +332,73 @@ def video_loop():
 
     # Always blit the last good frame if we have one
     if last_good_frame_surface is not None:
+        # screen.blit(feather_image(last_good_frame_surface, 150, 150, feather_top=False, feather_right=True, feather_bottom=True), (20, 20))
         screen.blit(last_good_frame_surface, (20, 20))
 
-def draw_incidents_panel():
-    global incident_y
-    PANEL_WIDTH = 580
-    PANEL_HEIGHT = 395  # full height of window for simplicity
-    PANEL_X = 680
+def draw_left_fade():
+    l_fade_surface = pygame.Surface((670, 395), pygame.SRCALPHA)
+    l_fade_surface.fill((225, 255, 255, 108))  # Transparent background
+    screen.blit(l_fade_surface, (0, 0))
+
+
+def drone_ui():
+    """Draw Drone panel and handle click detection."""
+
+    # Panel dimensions & position
+    PANEL_WIDTH = 440
+    PANEL_HEIGHT = 430
+    PANEL_X = 1460
     PANEL_Y = 0
+
+    # Button dimensions
+    BTN_WIDTH = 180
+    BTN_HEIGHT = 80
+    BTN_SPACING_X = 20
+    BTN_SPACING_Y = 20
+
+    # Button definitions
+    buttons = [
+        {"label": "HOVER", "x": 20, "y": 80},
+        {"label": "LAND",  "x": 20 + BTN_WIDTH + BTN_SPACING_X, "y": 80},
+        {"label": "SCOUT", "x": 20, "y": 80 + BTN_HEIGHT + BTN_SPACING_Y},
+        {"label": "PILOT", "x": 20 + BTN_WIDTH + BTN_SPACING_X, "y": 80 + BTN_HEIGHT + BTN_SPACING_Y},
+        {"label": "Close", "x": (PANEL_WIDTH - BTN_WIDTH) // 2, "y": 80 + (BTN_HEIGHT + BTN_SPACING_Y) * 2}
+    ]
+
+    # Precompute button rects relative to panel
+    for btn in buttons:
+        btn["rect"] = pygame.Rect(btn["x"], btn["y"], BTN_WIDTH, BTN_HEIGHT)
+
+    # Draw panel surface
+    drone_panel = pygame.Surface((PANEL_WIDTH, PANEL_HEIGHT))
+    drone_panel.fill(BLACK)
+
+    # Title
+    title_surface = large_font.render("Drone", True, WHITE)
+    title_rect = title_surface.get_rect(topright=(PANEL_WIDTH - 10, 10))
+    drone_panel.blit(title_surface, title_rect)
+
+    # Draw buttons
+    for btn in buttons:
+        pygame.draw.rect(drone_panel, WHITE, btn["rect"], 2)
+        font_to_use = inter_medium if btn["label"] != "Close" else inter_medium
+        label_surface = font_to_use.render(btn["label"], True, WHITE)
+        label_rect = label_surface.get_rect(center=btn["rect"].center)
+        drone_panel.blit(label_surface, label_rect)
+
+    # Blit panel to screen
+    screen.blit(drone_panel, (PANEL_X, PANEL_Y))
+
+
+def draw_incidents_panel():
+    global incident_y, incident_card_rects, incident_scroll_up_rect, incident_scroll_down_rect
+    PANEL_WIDTH = 440
+    PANEL_HEIGHT = 430
+    PANEL_X = 1460
+    PANEL_Y = 0
+
+    # Prepare list for click detection
+    incident_card_rects = []
 
     # Surface
     incidents_panel = pygame.Surface((PANEL_WIDTH, PANEL_HEIGHT), pygame.SRCALPHA)
@@ -221,23 +408,26 @@ def draw_incidents_panel():
     if scrolling:
         incident_y += scroll_direction * scoll_speed
 
-    # Incident list background
-    pygame.draw.rect(incidents_panel, GRAY, (0, 20, PANEL_WIDTH, 375))
-
     # Incident entries
     for i, inc in enumerate(incidents):
         y = incident_y + i * 90
-        pygame.draw.rect(incidents_panel, LIGHT_GRAY, (20, y, 500, 80))
+        # Only process and add clicks if within visible area
+        card_rect_abs = pygame.Rect(PANEL_X + 20, PANEL_Y + y, PANEL_WIDTH - 80, 80)
+
+        pygame.draw.rect(incidents_panel, LIGHT_GRAY, (20, y, PANEL_WIDTH - 80, 80))
         pygame.draw.rect(incidents_panel, DARK_GRAY, (30, y + 10, 60, 60))  # Image placeholder
-        pygame.draw.rect(incidents_panel, severity_colors[inc["severity"] - 1], (20, y + 75, 500, 5))
+        pygame.draw.rect(incidents_panel, severity_colors[inc["severity"] - 1], (20, y + 75, PANEL_WIDTH - 80, 5))
 
         t1 = small_font.render(f'#{i+1} {inc["title"]}', True, BLACK)
         t2 = small_font.render(inc["time"], True, BLACK)
         incidents_panel.blit(t1, (100, y + 10))
         incidents_panel.blit(t2, (100, y + 40))
+        if 0 <= y < PANEL_HEIGHT:
+            incident_card_rects.append((card_rect_abs, i))
+
 
     # Top bar
-    pygame.draw.rect(incidents_panel, GRAY, (0, 0, PANEL_WIDTH, 75))
+    pygame.draw.rect(incidents_panel, GRAY, (0, 0, PANEL_WIDTH, 77))
     pygame.draw.rect(incidents_panel, DARK_GRAY, (0, 0, PANEL_WIDTH, 20))
 
     incident_text = font.render(f"Incidents ({len(incidents)})", True, WHITE)
@@ -247,17 +437,21 @@ def draw_incidents_panel():
     bottom_rect = pygame.Surface((PANEL_WIDTH, 30), pygame.SRCALPHA)
     bottom_rect.fill(DARK_GRAY)
     bottom_feathered = feather_image(bottom_rect, 25, 25, feather_top=True, feather_right=False, feather_bottom=False, feather_left=False)
-    incidents_panel.blit(bottom_feathered, (0, 370))
+    incidents_panel.blit(bottom_feathered, (0, PANEL_HEIGHT-30))
 
-    # Bottom solid section
-    # pygame.draw.rect(incidents_panel, DARK_GRAY, (0, 400, PANEL_WIDTH, 350))
+    # Scroll buttons
+    scroll_up_rel = pygame.Rect(PANEL_WIDTH - 50, 80, 40, 100)
+    scroll_down_rel = pygame.Rect(PANEL_WIDTH - 50, 280, 40, 100)
+    pygame.draw.rect(incidents_panel, LIGHT_GRAY, scroll_up_rel)   # Up button
+    pygame.draw.rect(incidents_panel, LIGHT_GRAY, scroll_down_rel) # Down button
 
-    # Scroll buttons (still inside panel)
-    pygame.draw.rect(incidents_panel, LIGHT_GRAY, (PANEL_WIDTH - 50, 80, 40, 100))   # Up button
-    pygame.draw.rect(incidents_panel, LIGHT_GRAY, (PANEL_WIDTH - 50, 280, 40, 100))  # Down button
+    # Store absolute positions for detection
+    incident_scroll_up_rect = pygame.Rect(PANEL_X + scroll_up_rel.x, PANEL_Y + scroll_up_rel.y, scroll_up_rel.width, scroll_up_rel.height)
+    incident_scroll_down_rect = pygame.Rect(PANEL_X + scroll_down_rel.x, PANEL_Y + scroll_down_rel.y, scroll_down_rel.width, scroll_down_rel.height)
 
     # Final blit to screen
     screen.blit(incidents_panel, (PANEL_X, PANEL_Y))
+
 
 def draw_telemetry_panel():
     # --- Create telemetry panel surface ---
@@ -317,6 +511,22 @@ def draw_telemetry_panel():
     # --- Blit telemetry panel to screen ---
     screen.blit(telemetry_panel, (screen.get_width() // 2 - telemetry_panel.get_width() // 2, 640))
 
+def draw_map():
+    PANEL_WIDTH = 800
+    PANEL_HEIGHT = 800
+
+    map_panel = pygame.Surface((PANEL_WIDTH, PANEL_HEIGHT))
+    map_panel.fill((0,0,0))
+    map_panel.blit(map_top_view,(0,0))
+    # map_panel.blit(drone_icon, (100,100))
+
+    for i in range(len(robots)):
+        imgX = mapRange(float(robots[i]["gps"].split(', ')[0]), -(world_size[0]/2), (world_size[0]/2), 0, mapImgSize[0])
+        imgY = mapRange(float(robots[i]["gps"].split(', ')[1]), -(world_size[1]/2), (world_size[1]/2), 0, mapImgSize[1])
+        map_panel.blit(drone_icon,(imgX, imgY));
+
+    screen.blit(map_panel, (500,20))
+    
 
 def draw_base_ui():
     screen.fill(DARK_GRAY)
@@ -329,15 +539,24 @@ def draw_base_ui():
     # else:
     #     screen.blit(feathered_splash, (20, 20))
 
-    screen.blit(feathered_splash, (20, 20))
+    # screen.blit(feathered_splash, (20, 20))
 
     # video_loop()
 
-    draw_incidents_panel()
-    draw_telemetry_panel()
+    # draw_telemetry_panel()
+
+    draw_map()
+    render_robots_list(robots)
+    if selected_robot < 0:
+        draw_incidents_panel()
+    else:
+        drone_ui()
+
+    # pygame.draw.rect(screen, LIGHT_GRAY, (1455, 0, 440, 430))  # Incidents panel top bar
+    # draw_left_fade()
 
     debug_text = small_font.render(f"RS1 {int(clock.get_fps())} {pygame.mouse.get_pos()[0]} {pygame.mouse.get_pos()[1]}", True, WHITE)
-    screen.blit(debug_text, (0, 0))
+    screen.blit(debug_text, (800, 500))
 
 def draw_popup():
     global popup_scale
@@ -417,25 +636,30 @@ while running:
                     animating_out = True
                     anim_start_time = pygame.time.get_ticks()
             else:
-                # Detect incident click
-                for i, inc in enumerate(incidents):
-                    y = incident_y + i * 90
-                    if 700 < mx < 1200 and y < my < y + 80 and 80 < my and my < 395:
-                        selected_incident = inc
-                        animating_in = True
-                        anim_start_time = pygame.time.get_ticks()
+                if selected_robot < 0:
+                    # Detect incident click
+                    for rect, idx in incident_card_rects:
+                        if rect.collidepoint((mx, my)):
+                            print(f"Incident clicked: #{idx+1} - {incidents[idx]['title']}")
+                            # selected_incident = incidents[idx]
+                            break
+                    
+                    # Detect scroll buttons
+                    if incident_scroll_up_rect.collidepoint((mx, my)):
+                        scrolling = True
+                        scroll_direction = 1
+
+                    elif incident_scroll_down_rect.collidepoint((mx, my)):
+                        scrolling = True
+                        scroll_direction = -1
+
+                # Detect robot card click
+                for rect, idx in robot_card_rects:
+                    if rect.collidepoint((mx, my)):
+                        print(f"Robot card clicked: #{idx+1}")
+                        # If you want to store the selected robot:
+                        # selected_robot = robots[idx]
                         break
-                
-                # Detect scroll buttons
-                if 1210 < mx < 1250 and 80 < my < 180:
-                    scrolling = True
-                    scroll_direction = 1
-                    
-                elif 1210 < mx < 1250 and 280 < my < 380:
-                    scrolling = True
-                    scroll_direction = -1
-                    
-                    
 
         if event.type == pygame.MOUSEBUTTONUP:
             scrolling = False
