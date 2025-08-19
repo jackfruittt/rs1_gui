@@ -83,14 +83,6 @@ def render_robots_list(robots):
     panel_surface = pygame.Surface((panel_width, panel_height)).convert_alpha()
     panel_surface.fill((0, 0, 0, 0))  # transparent
 
-    state_colors = {
-        "Offline":   (255, 100, 100),
-        "Scouting":  (100, 170, 255),
-        "Idle":      (200, 200, 200),
-        "Piloting":  (100, 255, 100),
-        "Responding":(255, 200, 100)
-    }
-
     for i, robot in enumerate(robots):
         y = i * (card_height + margin)
         if y + card_height > panel_height:
@@ -229,10 +221,18 @@ LIGHT_GRAY = (200, 200, 200)
 GRAY = (50, 50, 50)
 DARK_GRAY = (30, 30, 30)
 BLACK = (0, 0, 0)
-BLUE = (100, 100, 255)
+BLUE = (100, 170, 255)
 RED = (255, 100, 100)
-YELLOW = (255, 255, 100)
+YELLOW = (255, 200, 100)
 GREEN = (100, 255, 100)
+
+state_colors = {
+    "Offline":   LIGHT_GRAY,
+    "Scouting":  BLUE,
+    "Idle":      RED,
+    "Piloting":  GREEN,
+    "Responding":YELLOW
+}
 
 severity_colors = (GREEN, YELLOW, RED)
 severity_msg = ("Safe", "Warning", "Critical")
@@ -521,9 +521,19 @@ def draw_map():
     # map_panel.blit(drone_icon, (100,100))
 
     for i in range(len(robots)):
+        state = robots[i]["state"]
+        
+        state_color = state_colors.get(state, (255, 255, 255))
+        print(f'Robot {i+1} + {state} {state_color} {robots[i]["yaw"]}')
+
         imgX = mapRange(float(robots[i]["gps"].split(', ')[0]), -(world_size[0]/2), (world_size[0]/2), 0, mapImgSize[0])
         imgY = mapRange(float(robots[i]["gps"].split(', ')[1]), -(world_size[1]/2), (world_size[1]/2), 0, mapImgSize[1])
-        map_panel.blit(drone_icon,(imgX, imgY));
+        icon_copy = drone_icon.copy()
+        icon_copy = pygame.transform.rotate(icon_copy, robots[i]["yaw"])
+        pixel_array = pygame.PixelArray(icon_copy)
+        pixel_array.replace((255, 255, 255), state_color)  # Change white pixels to state color)
+        del pixel_array
+        map_panel.blit(icon_copy,(imgX, imgY));
 
     screen.blit(map_panel, (500,20))
     
