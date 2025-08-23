@@ -14,9 +14,9 @@ The system aims to control and monitor a **drone swarm** that can help maintain 
   This repository contains the **mission control interface** with:
   - Swarm monitoring (states, positions, telemetry)
   - Live video streams from drones via ROS2 camera topics
-  - A live map visualization with drone overlays
+  - A live map visualisation with drone overlays
   - Incident reporting and control panels
-  - Centralized ROS2 integration for real-time data
+  - Centralised ROS2 integration for real-time data
 
 - **Technology:**  
   - **ROS 2** integration via centralized `RosHandler` class
@@ -113,7 +113,7 @@ The camera system supports multiple switching modes for different performance re
 
 1. **Install dependencies:**
    ```bash
-   pip install pygame opencv-python numpy
+   pip install pygame opencv-python==4.10.0.84 "numpy<2.0"
    
    # For ROS2 integration:
    pip install rclpy cv-bridge
@@ -129,33 +129,6 @@ The camera system supports multiple switching modes for different performance re
 1. **Run the main GUI:**
    ```bash
    python3 ui.py
-   ```
-
-2. **Configure camera switching mode** (optional):
-   Edit `ui.py` to customize camera behavior:
-   ```python
-   # For instant switching (recommended for most use cases)
-   self.camera_component = CameraComponent(
-       self.ros_handler, 
-       instant_switching=True, 
-       preload_all=True
-   )
-   
-   # For resource-constrained environments
-   self.camera_component = CameraComponent(
-       self.ros_handler, 
-       instant_switching=False
-   )
-   ```
-
-3. **Test ROS2 integration:**
-   ```bash
-   python3 test_ros_handler.py
-   ```
-
-4. **See extended functionality example:**
-   ```bash
-   python3 example_extended_ros.py
    ```
 
 ### Controls
@@ -184,13 +157,6 @@ The architecture makes it easy to add new ROS2 functionality:
        def __init__(self, ros_handler):
            self.ros_handler = ros_handler
            # Subscribe to your topics
-   ```
-
-3. **Configure expected topics** (optional):
-   ```python
-   # Manually set expected topics to skip auto-discovery
-   ros_handler.set_expected_drone_topics(num_drones=4, 
-                                        camera_types=['front', 'bottom', 'side'])
    ```
 
 4. **Access data thread-safely** through the RosHandler methods:
@@ -264,12 +230,12 @@ ros_handler.set_expected_drone_topics(
 ```
 .
 ├── ui.py                    # Main GUI application
-├── ros_handler.py          # Centralized ROS2 handler
+├── ros_handler.py          # Centralised ROS2 handler
 ├── camera_ros.py           # Camera component using RosHandler
 ├── robots_panel.py         # Robot status and control panel
 ├── incidents_panel.py      # Incident management panel
 ├── drone_control_panel.py  # Drone control interface
-├── map_panel.py           # Map visualization component
+├── map_panel.py           # Map visualisation component
 ├── telemetry_panel.py     # Telemetry display panel
 ├── popup.py               # Popup dialog system
 ├── constants.py           # GUI constants and colors
