@@ -214,6 +214,7 @@ class RosHandler:
     
     1. Add imports:
        from nav_msgs.msg import Odometry
+       from geometry_msgs.msg import Pose
     
     2. Add data storage in __init__:
        self.odometry_data = {}
@@ -222,13 +223,22 @@ class RosHandler:
        - subscribe_to_odometry(topic_name)
        - unsubscribe_from_odometry(topic_name) - THIS IS OPTIONAL, odom we will probably need persistent so we might not want to unsubscribe
        - get_latest_odometry(topic_name)
+       - get_drone_pose(drone_id) -> returns {'x': float, 'y': float, 'z': float, 'theta_x': float, 'theta_y': float, 'theta_z': float}
     
     4. Add message handler:
        - _handle_odometry_message(topic_name, msg)
+       - Extract: msg.pose.pose (geometry_msgs/Pose) for full 6DOF position + orientation
     
     5. Update RosNode class with odometry subscription methods
     
     Expected topics: /rs1_drone_1/odom, /rs1_drone_2/odom, etc.
+    
+    Map Integration Hint:
+    - Use odometry pose data to update drone markers on map_panel.py
+    - Pose: msg.pose.pose (geometry_msgs/Pose) contains position + orientation
+    - Position: msg.pose.pose.position.x/y/z
+    - Orientation: msg.pose.pose.orientation (quaternion -> convert to euler for theta_x, theta_y, theta_z)
+    - Convert world coordinates to map pixel coordinates for rendering
     """
     # ============================================================================
 
