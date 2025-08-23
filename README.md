@@ -59,7 +59,7 @@ The system aims to control and monitor a **drone swarm** that can help maintain 
 
 1. Install dependencies:
    ```bash
-   pip install pygame opencv-python numpy
+   pip install pygame opencv-python==4.10.0.84 "numpy<2.0" 
    ```
 2. Run the GUI prototype:
 
