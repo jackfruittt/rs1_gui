@@ -231,7 +231,7 @@ class RS1GUI:
         
         # Controls info
         controls_text = self.fonts['small_font'].render(
-            "Camera: C=Switch | 1,2,3=Drone Front | Q,W,E=Drone Bottom", 
+            "Camera: C=Switch", 
             True, (150, 150, 150)
         )
         self.screen.blit(controls_text, (20, 760))
