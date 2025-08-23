@@ -13,6 +13,7 @@ import random
 # Import our components
 from constants import *
 from utils import feather_image
+from ros_handler import RosHandler
 from camera_ros import CameraComponent  # Replaced VideoPlayer
 from robots_panel import RobotsPanel
 from incidents_panel import IncidentsPanel
@@ -46,8 +47,16 @@ class RS1GUI:
             feather_top=False, feather_right=True, feather_bottom=True
         )
         
-        # Initialise camera component (replaces video player)
-        self.camera_component = CameraComponent(display_rect=(1240, 460, 640, 360))
+        # Initialize centralized ROS handler
+        self.ros_handler = RosHandler('rs1_gui_main')
+        
+        # Initialise camera component with instant switching (no delay when changing cameras)
+        self.camera_component = CameraComponent(
+            self.ros_handler, 
+            display_rect=(1240, 460, 640, 360),
+            instant_switching=True,  # Use preload method for comparison
+            preload_all=True        # Preload ALL cameras for zero-delay switching
+        )
         
         # Initialise panels
         self.robots_panel = RobotsPanel(self.fonts)
@@ -321,7 +330,9 @@ class RS1GUI:
         self.cleanup()
     
     def cleanup(self):
-        """Clean up resources"""
+        """Clean up all components"""
+        print("Starting GUI cleanup...")
+        self.ros_handler.cleanup()
         self.camera_component.cleanup()
         pygame.quit()
         print("GUI cleanup complete.")

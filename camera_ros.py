@@ -1,98 +1,57 @@
 import pygame
 import cv2
 import numpy as np
-import threading
-import queue
 import time
 from typing import Optional
+from ros_handler import RosHandler
 
-try:
-    import rclpy
-    from rclpy.node import Node
-    from sensor_msgs.msg import Image
-    from cv_bridge import CvBridge
-    ROS2_AVAILABLE = True
-except ImportError:
-    ROS2_AVAILABLE = False
-    print("ROS2 not available. Camera component will show placeholder.")
-
-# ROS2 node for receiving camera images
-class CameraNode(Node):
-    
-    def __init__(self):
-        super().__init__('rs1_camera_viewer') # ROS2 node name
-        self.bridge = CvBridge() # Converts ROS images to OpenCV format
-        self.latest_image = None
-        self.image_lock = threading.Lock()
-        self.subscription = None # Holds the image subscription 
-        self.current_topic = None
-        
-    def subscribe_to_topic(self, topic_name: str):
-        # Subscribe to a camera topic
-        if self.subscription:
-            self.destroy_subscription(self.subscription)
-        
-        self.current_topic = topic_name
-        self.subscription = self.create_subscription(
-            Image,
-            topic_name,
-            self.image_callback,
-            10
-        )
-        self.get_logger().info(f'Subscribed to {topic_name}')
-    
-    def image_callback(self, msg):
-        # Callback for received images
-        try:
-            # Convert ROS image to OpenCV format
-            cv_image = self.bridge.imgmsg_to_cv2(msg, 'bgr8')
-            
-            with self.image_lock:
-                self.latest_image = cv_image.copy()
-                
-        except Exception as e:
-            self.get_logger().error(f'Error converting image: {str(e)}')
-    
-    def get_latest_image(self):
-        # Get the latest image (thread-safe) 
-        with self.image_lock:
-            if self.latest_image is not None:
-                return self.latest_image.copy()
-        return None
-
-
-# Camera component that can display ROS2 camera feeds
-# Replaces the VideoPlayer component
+# Camera component that displays ROS2 camera feeds using the centralised RosHandler
 class CameraComponent:
     
-    def __init__(self, display_rect=(20, 20, 640, 360)):
+    def __init__(self, ros_handler: RosHandler, display_rect=(20, 20, 640, 360), instant_switching=True, preload_all=False):
         self.display_rect = display_rect
-        self.camera_node = None
-        self.ros_thread = None
-        self.running = False
-        self.ros2_available = ROS2_AVAILABLE
+        self.ros_handler = ros_handler
+        self.instant_switching = instant_switching  # If True, use preload method; if False, use subscribe-unsubscribe
+        self.preload_all = preload_all  # If True, preload ALL cameras for zero-delay switching
         
-        # Available camera topics (will be auto-discovered)
+        # Available camera topics (fixed at startup)
         self.available_topics = []
         self.current_topic_index = 0
-        self.topic_switch_time = 0
+        self.current_topic = None
+        self.subscribed_topics = set()  # Topics that are currently subscribed
+        
+        # Preload settings (only used in instant_switching mode)
+        self.preload_count = 5  # Keep 5 cameras preloaded for fast switching (It is beyond what we need but the code is useful for even more advanced systems so i've set it to 5)
         
         # Placeholder image
         self.placeholder_surface = self._create_placeholder()
         self.last_frame = None
         
-        if self.ros2_available:
-            self._start_ros2_node()
-            self._discover_topics()
+        # Initialise camera topics
+        self._initialise_topics()
+        
+        # Setup subscriptions based on mode
+        if self.instant_switching:
+            if self.preload_all:
+                self._setup_all_cameras_preload()
+            else:
+                self._setup_preload_switching()
+        else:
+            self._setup_single_subscription()
+        
+        # Set initial display topic
+        if self.available_topics:
+            self.current_topic = self.available_topics[0]
+            self.current_topic_index = 0
     
-    # Create a placeholder image when no camera feed is available
+    # Place holder when there is no camera feed
     def _create_placeholder(self):
         surface = pygame.Surface(self.display_rect[2:4])
         surface.fill((40, 40, 40))
         
         # Add text
         font = pygame.font.Font(None, 36)
-        if not self.ros2_available:
+        if not self.ros_handler.ros2_available:
             text = "ROS2 Not Available"
             subtext = "Install: pip install rclpy cv_bridge"
         else:
@@ -111,96 +70,162 @@ class CameraComponent:
         
         return surface
     
-    # Start ROS2 node in separate thread so the rest of the pygame GUI doesn't freeze
-    def _start_ros2_node(self):
-        if not self.ros2_available:
-            return
-        
-        self.running = True
-        self.ros_thread = threading.Thread(target=self._ros_thread_worker, daemon=True)
-        self.ros_thread.start()
-        
-        # Give ROS2 time to initialise
+    # Initialise a list of camera topics 
+    def _initialise_topics(self):
+        # Wait for ROS handler to discover topics
         time.sleep(0.5)
-    
-    # Worker thread for ROS2
-    def _ros_thread_worker(self):
-        try:
-            if not rclpy.ok():
-                rclpy.init()
-            
-            self.camera_node = CameraNode()
-            
-            while self.running and rclpy.ok():
-                rclpy.spin_once(self.camera_node, timeout_sec=0.1)
-                
-        except Exception as e:
-            print(f"ROS2 camera thread error: {e}")
-        finally:
-            if self.camera_node:
-                self.camera_node.destroy_node()
-    
-    # Discover available camera topics
-    def _discover_topics(self):
         
-        if not self.ros2_available or not self.camera_node:
-            return
+        self.available_topics = self.ros_handler.get_available_camera_topics()
         
-        # Wait a bit for node to initialise
-        time.sleep(1.0)
+        # Filter for drone-specific camera topics
+        drone_topics = [topic for topic in self.available_topics if 'rs1_drone' in topic]
+        if drone_topics:
+            self.available_topics = drone_topics
         
-        try:
-            topic_list = self.camera_node.get_topic_names_and_types()
-            camera_topics = []
-            
-            for topic_name, topic_types in topic_list:
-                if 'sensor_msgs/msg/Image' in topic_types:
-                    # Prioritise RS1 drone topics
-                    if 'rs1_drone' in topic_name:
-                        camera_topics.append(topic_name)
-            
-            # Common camera topics
-            common_topics = ['/camera/image_raw', '/image_raw', '/usb_cam/image_raw']
-            for topic in common_topics:
-                for topic_name, topic_types in topic_list:
-                    if topic_name == topic and 'sensor_msgs/msg/Image' in topic_types:
-                        if topic not in camera_topics:
-                            camera_topics.append(topic)
-            
-            self.available_topics = camera_topics
-            print(f"Discovered camera topics: {camera_topics}")
-            
-            # Subscribe to first available topic
-            if camera_topics:
-                self.switch_to_topic(0)
-                
-        except Exception as e:
-            print(f"Error discovering topics: {e}")
+        print(f"Camera component initialised with {len(self.available_topics)} topics: {self.available_topics}")
     
-    # Switch to a different camera topic by index
-    def switch_to_topic(self, topic_index: int):
-        if not self.available_topics or not self.camera_node:
+    # Subscribe to all for instant switching
+    def _setup_all_cameras_preload(self):
+        for topic in self.available_topics:
+            self.ros_handler.subscribe_to_camera_topic(topic)
+            self.subscribed_topics.add(topic)
+        
+        print(f"All-cameras mode: subscribed to all {len(self.available_topics)} camera topics for instant switching")
+    
+    # Preload 5 (always be subscribed to 5 and unsubscribe the rest)
+    def _setup_preload_switching(self):
+        # Subscribe to first few cameras for instant switching
+        topics_to_preload = self.available_topics[:self.preload_count]
+        
+        for topic in topics_to_preload:
+            self.ros_handler.subscribe_to_camera_topic(topic)
+            self.subscribed_topics.add(topic)
+        
+        print(f"Preload mode: subscribed to {len(topics_to_preload)} camera topics for fast switching")
+    
+    def _setup_single_subscription(self):
+        # Only subscribe to the first camera initially
+        if self.available_topics:
+            first_topic = self.available_topics[0]
+            self.ros_handler.subscribe_to_camera_topic(first_topic)
+            self.subscribed_topics.add(first_topic)
+            print(f"Single subscription mode: subscribed to {first_topic}")
+    
+    def switch_to_topic(self, topic_index: int) -> bool:
+        # Switch to a different camera topic by index.  
+        if not self.available_topics:
             return False
         
         if 0 <= topic_index < len(self.available_topics):
-            topic_name = self.available_topics[topic_index]
-            self.camera_node.subscribe_to_topic(topic_name)
-            self.current_topic_index = topic_index
-            print(f"Switched to camera topic: {topic_name}")
+            new_topic = self.available_topics[topic_index]
+            
+            if self.instant_switching:
+                if self.preload_all:
+                    # All cameras mode - true instant switching
+                    self.current_topic = new_topic
+                    self.current_topic_index = topic_index
+                    print(f"Instantly switched to: {new_topic}")
+                else:
+                    # Preload mode - ensure topic is loaded, but avoid unnecessary operations
+                    if new_topic not in self.subscribed_topics:
+                        self._ensure_topic_preloaded(new_topic)
+                    
+                    # Switch immediately for no delay
+                    self.current_topic = new_topic
+                    self.current_topic_index = topic_index
+                    print(f"Fast switched to: {new_topic}")
+                    
+                    # Preload adjacent topics for next switch
+                    self._preload_adjacent_topics()
+            else:
+                # Subscribe-unsubscribe mode - best for hardware limitations 
+                self._switch_subscription(new_topic)
+                self.current_topic = new_topic
+                self.current_topic_index = topic_index
+                print(f"Switched to: {new_topic}")
+            
             return True
         
         return False
-    # Switch to the next available camera topic
-    def switch_to_next_topic(self):
+    
+    def _ensure_topic_preloaded(self, topic_name: str):
+        if topic_name not in self.subscribed_topics:
+            # Only unsubscribe if at the limit and need space
+            if len(self.subscribed_topics) >= self.preload_count:
+                # Find the topic that's furthest from current position to unsubscribe
+                current_idx = self.current_topic_index
+                furthest_topic = None
+                max_distance = 0
+                
+                for loaded_topic in list(self.subscribed_topics):
+                    if loaded_topic != self.current_topic and loaded_topic != topic_name:
+                        try:
+                            loaded_idx = self.available_topics.index(loaded_topic)
+                            distance = min(abs(loaded_idx - current_idx), 
+                                         len(self.available_topics) - abs(loaded_idx - current_idx))
+                            if distance > max_distance:
+                                max_distance = distance
+                                furthest_topic = loaded_topic
+                        except ValueError:
+                            # Topic not in list, safe to remove
+                            furthest_topic = loaded_topic
+                            break
+                
+                if furthest_topic:
+                    self.ros_handler.unsubscribe_from_camera_topic(furthest_topic)
+                    self.subscribed_topics.remove(furthest_topic)
+                    print(f"Unloaded furthest topic: {furthest_topic}")
+            
+            # Subscribe to the new topic
+            self.ros_handler.subscribe_to_camera_topic(topic_name)
+            self.subscribed_topics.add(topic_name)
+            print(f"Preloaded: {topic_name}")
+        
+        # Pre-preload adjacent topics for smoother switching
+        self._preload_adjacent_topics()
+    
+    def _preload_adjacent_topics(self):
+        if len(self.subscribed_topics) < self.preload_count:
+            # Try to preload next and previous topics
+            current_idx = self.current_topic_index
+            
+            # Preload next topic
+            next_idx = (current_idx + 1) % len(self.available_topics)
+            next_topic = self.available_topics[next_idx]
+            if next_topic not in self.subscribed_topics and len(self.subscribed_topics) < self.preload_count:
+                self.ros_handler.subscribe_to_camera_topic(next_topic)
+                self.subscribed_topics.add(next_topic)
+                print(f"Pre-preloaded next: {next_topic}")
+            
+            # Preload previous topic if we still have room
+            if len(self.subscribed_topics) < self.preload_count:
+                prev_idx = (current_idx - 1) % len(self.available_topics)
+                prev_topic = self.available_topics[prev_idx]
+                if prev_topic not in self.subscribed_topics:
+                    self.ros_handler.subscribe_to_camera_topic(prev_topic)
+                    self.subscribed_topics.add(prev_topic)
+                    print(f"Pre-preloaded prev: {prev_topic}")
+    
+    def _switch_subscription(self, new_topic: str):
+        # Unsubscribe from current topic
+        if self.current_topic and self.current_topic in self.subscribed_topics:
+            self.ros_handler.unsubscribe_from_camera_topic(self.current_topic)
+            self.subscribed_topics.remove(self.current_topic)
+        
+        # Subscribe to new topic
+        self.ros_handler.subscribe_to_camera_topic(new_topic)
+        self.subscribed_topics.add(new_topic)
+    
+    def switch_to_next_topic(self) -> bool:
         if not self.available_topics:
             return False
         
         next_index = (self.current_topic_index + 1) % len(self.available_topics)
         return self.switch_to_topic(next_index)
     
-    def switch_to_drone_camera(self, drone_id: int, camera_type: str = "front"):
+    def switch_to_drone_camera(self, drone_id: int, camera_type: str = "front") -> bool:
         """
-        Switch to a specific drone's camera
+        Switch to a specific drone's camera.
         Args:
             drone_id: Drone number (1, 2, 3, etc.)
             camera_type: "front" or "bottom"
@@ -211,19 +236,14 @@ class CameraComponent:
             topic_index = self.available_topics.index(topic_name)
             return self.switch_to_topic(topic_index)
         else:
-            print(f"Topic {topic_name} not available")
+            print(f"Topic {topic_name} not available in {self.available_topics}")
             return False
     
-    # Get the currently subscribed topic name
-    def get_current_topic(self):
-        if self.available_topics and 0 <= self.current_topic_index < len(self.available_topics):
-            return self.available_topics[self.current_topic_index]
-        return None
+    def get_current_topic(self) -> Optional[str]:
+        return self.current_topic
     
-    # Convert openCV image to Pygame surface for display
     def _cv2_to_pygame_surface(self, cv_image):
-        
-        # Convert BGR to RGB (OpenCV uses BGR8)
+        # Convert BGR to RGB (OpenCV uses BGR)
         rgb_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
         
         # Resize to fit display area
@@ -236,61 +256,63 @@ class CameraComponent:
         
         return surface
     
-    # Update camera feed 
     def update(self):
-        if not self.ros2_available or not self.camera_node:
+        # Update camera feed from RosHandler
+        if not self.current_topic:
             return
         
-        # Get latest image
-        cv_image = self.camera_node.get_latest_image()
+        # Get latest image from RosHandler
+        cv_image = self.ros_handler.get_latest_camera_image(self.current_topic)
         
         if cv_image is not None:
             self.last_frame = self._cv2_to_pygame_surface(cv_image)
     
-    # Draw the camera feed on screen
     def draw(self, screen):
+        # Draw the camera feed on screen
         x, y, w, h = self.display_rect
         
-        if self.last_frame:
+        if self.last_frame and self.ros_handler.is_topic_active(self.current_topic):
             screen.blit(self.last_frame, (x, y))
             
             # Draw topic info
-            if self.get_current_topic():
+            if self.current_topic:
                 font = pygame.font.Font(None, 24)
-                topic_text = font.render(self.get_current_topic(), True, (0, 0, 0))
-                screen.blit(topic_text, (x + 70, y + 10))
+                topic_text = font.render(self.current_topic, True, (255, 255, 255))
+                # Add background for better readability
+                text_rect = topic_text.get_rect()
+                text_rect.x = x + 10
+                text_rect.y = y + 10
+                pygame.draw.rect(screen, (0, 0, 0), text_rect.inflate(10, 5))
+                screen.blit(topic_text, (x + 15, y + 12))
         else:
             screen.blit(self.placeholder_surface, (x, y))
         
         # Draw border
         pygame.draw.rect(screen, (100, 100, 100), (x, y, w, h), 2)
-
-    # Handle keyboard input for camera switching    
+    # Handle keyboard input for camera switching
     def handle_keypress(self, key):
-
         if key == pygame.K_c:  # Press 'C' to switch camera
             self.switch_to_next_topic()
     
-    def get_status_info(self):
-        if not self.ros2_available:
+    # Get status information for display
+    def get_status_info(self) -> str:
+        if not self.ros_handler.ros2_available:
             return "ROS2 Not Available"
         
         if not self.available_topics:
             return "No camera topics found"
         
-        current_topic = self.get_current_topic()
-        if current_topic:
-            return f"Camera: {current_topic} ({self.current_topic_index + 1}/{len(self.available_topics)})"
+        if self.current_topic:
+            is_active = self.ros_handler.is_topic_active(self.current_topic)
+            status = "LIVE" if is_active else "STALE"
+            return f"Camera: {self.current_topic} ({self.current_topic_index + 1}/{len(self.available_topics)}) [{status}]"
         
         return "Searching for cameras..."
     
+    # Clean up camera component
     def cleanup(self):
-        self.running = False
-        
-        if self.ros_thread:
-            self.ros_thread.join(timeout=2)
-        
-        if self.camera_node:
-            self.camera_node.destroy_node()
-            
+        # Unsubscribe from all subscribed topics
+        for topic in list(self.subscribed_topics):
+            self.ros_handler.unsubscribe_from_camera_topic(topic)
+        self.subscribed_topics.clear()
         print("Camera component cleanup complete.")
