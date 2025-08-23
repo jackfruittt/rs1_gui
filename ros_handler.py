@@ -220,7 +220,7 @@ class RosHandler:
     
     3. Add subscription methods (similar to camera methods):
        - subscribe_to_odometry(topic_name)
-       - unsubscribe_from_odometry(topic_name)
+       - unsubscribe_from_odometry(topic_name) - THIS IS OPTIONAL, odom we will probably need persistent so we might not want to unsubscribe
        - get_latest_odometry(topic_name)
     
     4. Add message handler:
