@@ -52,6 +52,16 @@ The system aims to control and monitor a **drone swarm** that can help maintain 
   - Responsive pygame-based interface
   - Proper cleanup and thread management
 
+## Architecture Benefits
+- **Responsive GUI**: ROS2 runs in separate thread, GUI never freezes
+- **Centraliaed management**: Single point for all ROS2 communications
+- **Configurable performance**: Multiple camera switching modes for different requirements
+- **Easy extension**: Add new topics without modifying existing code
+- **Thread safety**: All data access is properly synchronized
+- **Optimised subscriptions**: Intelligent topic management reduces resource usage
+- **Graceful degradation**: Works with or without ROS2 environment
+- **Manual configuration**: Can bypass auto-discovery for faster startup
+
 ### ROS2 Integration
 
 The system uses a **centralised threading model**:
@@ -138,51 +148,187 @@ The camera system supports multiple switching modes for different performance re
 - **Map interaction**: Click on the map to select drones
 - **Popup dialogs**: Click buttons to interact with system features
 
-### Adding New ROS2 Topics
+# Adding New ROS2 Topic Types - Implementation Guide
 
-The architecture makes it easy to add new ROS2 functionality:
+To add support for new ROS2 topic types (like odometry, GPS, IMU, etc.), follow this systematic pattern used throughout this ROS handler.
 
-1. **Extend the RosHandler** for new message types:
-   ```python
-   # Add custom callback for new topic type
-   ros_handler.register_topic_callback(topic_name, your_callback_function)
-   
-   # Access data through thread-safe methods
-   data = ros_handler.get_latest_data(topic_name)
-   ```
+## Step 1: Add ROS2 Message Type Imports
 
-2. **Create a GUI component** that uses the shared RosHandler:
-   ```python
-   class NewComponent:
-       def __init__(self, ros_handler):
-           self.ros_handler = ros_handler
-           # Subscribe to your topics
-   ```
+Add the necessary imports at the top of the file:
 
-4. **Access data thread-safely** through the RosHandler methods:
-   ```python
-   # Get latest camera image
-   image_data = ros_handler.get_latest_camera_image(topic_name)
-   
-   # Check if topic is active
-   is_active = ros_handler.is_topic_active(topic_name)
-   
-   # Get handler status
-   status = ros_handler.get_status_info()
-   ```
+**Example for odometry:**
+```python
+from nav_msgs.msg import Odometry
+from geometry_msgs.msg import Pose
+```
 
----
+**Example for GPS:**
+```python
+from sensor_msgs.msg import NavSatFix
+```
 
-## Architecture Benefits
+**Example for IMU:**
+```python
+from sensor_msgs.msg import Imu
+```
 
-- **Responsive GUI**: ROS2 runs in separate thread, GUI never freezes
-- **Centralized management**: Single point for all ROS2 communications
-- **Configurable performance**: Multiple camera switching modes for different requirements
-- **Easy extension**: Add new topics without modifying existing code
-- **Thread safety**: All data access is properly synchronized
-- **Optimized subscriptions**: Intelligent topic management reduces resource usage
-- **Graceful degradation**: Works with or without ROS2 environment
-- **Manual configuration**: Can bypass auto-discovery for faster startup
+## Step 2: Add Data Storage in `__init__`
+
+Add a dictionary to store the new data type in the `RosHandler.__init__` method:
+
+```python
+self.odometry_data = {}     # For nav_msgs/Odometry
+self.gps_data = {}          # For sensor_msgs/NavSatFix  
+self.imu_data = {}          # For sensor_msgs/Imu
+```
+
+## Step 3: Update Topic Discovery (Optional)
+
+If using automatic topic discovery, update `_discover_topics()` method:
+
+```python
+elif 'nav_msgs/msg/Odometry' in topic_types:
+    odometry_topics.append(topic_name)
+elif 'sensor_msgs/msg/NavSatFix' in topic_types:
+    gps_topics.append(topic_name)
+```
+
+## Step 4: Create Data-Specific Subscription Methods
+
+Follow the same pattern as camera methods. Create these methods in `RosHandler`:
+
+### A) Subscribe method:
+```python
+def subscribe_to_odometry_topic(self, topic_name: str) -> bool:
+    if not self.node or not self.ros2_available:
+        return False
+    try:
+        self.node.subscribe_to_odometry(topic_name)
+        print(f"Subscribed to odometry topic: {topic_name}")
+        return True
+    except Exception as e:
+        print(f"Failed to subscribe to {topic_name}: {e}")
+        return False
+```
+
+### B) Unsubscribe method (optional for persistent data like odometry):
+```python
+def unsubscribe_from_odometry_topic(self, topic_name: str) -> bool:
+    # Similar pattern to unsubscribe_from_camera_topic()
+    pass
+```
+
+### C) Data retrieval method:
+```python
+def get_latest_odometry(self, topic_name: str) -> Optional[Dict[str, Any]]:
+    with self.data_lock:
+        return self.odometry_data.get(topic_name, {}).copy() if topic_name in self.odometry_data else None
+```
+
+### D) Convenience methods (optional but recommended):
+```python
+def get_drone_pose(self, drone_id: int) -> Optional[Dict[str, float]]:
+    topic_name = f"/rs1_drone_{drone_id}/odom"
+    odom_data = self.get_latest_odometry(topic_name)
+    if not odom_data:
+        return None
+    return odom_data.get('pose', None)
+```
+
+### E) Available topics method:
+```python
+def get_available_odometry_topics(self) -> list:
+    with self.data_lock:
+        return self.available_odometry_topics.copy()
+```
+
+## Step 5: Create Message Handler Method
+
+Create a message handler method that processes incoming ROS2 messages:
+
+```python
+def _handle_odometry_message(self, topic_name: str, msg):
+    # Add message handler logic
+```
+
+## Step 6: Add RosNode Subscription Methods
+
+In the `RosNode` class, add subscription management methods:
+
+### A) Add subscription storage in `RosNode.__init__`:
+```python
+self.odometry_subscriptions = {}  # topic_name -> subscription object
+```
+
+### B) Add subscribe method:
+```python
+def subscribe_to_odometry(self, topic_name: str):
+    # Add subscribe method logic
+    )
+    
+    self.odometry_subscriptions[topic_name] = subscription
+    self.get_logger().info(f'Subscribed to odometry topic: {topic_name}')
+```
+
+### C) Add unsubscribe method:
+```python
+def unsubscribe_from_odometry(self, topic_name: str):
+    # Add unsubscribe logic
+```
+
+## Step 7: Update Status and Utility Methods
+
+Update existing methods to include your new data type:
+
+### A) Update `get_status_info()`:
+```python
+'odometry_topics_count': len(self.available_odometry_topics),
+'active_odometry_subscriptions': len(self.odometry_data) if self.odometry_data else 0
+```
+
+### B) Update `is_topic_active()` to check your new data type:
+```python
+odom_info = self.get_latest_odometry(topic_name)
+if odom_info:
+    return time.time() - odom_info.get('timestamp', 0) < 2.0
+```
+
+## Step 8: Integration Example
+
+**Expected topic naming convention:** `/rs1_drone_{drone_id}/odom`, `/rs1_drone_{drone_id}/gps`, etc.
+
+**Usage in your application:**
+```python
+# Subscribe to odometry for all drones
+for drone_id in range(1, drone_num):  # 3 drones
+    ros_handler.subscribe_to_odometry_topic(f"/rs1_drone_{drone_id}/odom")
+
+# Get pose data for map integration
+pose = ros_handler.get_drone_pose(drone_id=1)
+if pose:
+    map_x, map_y = world_to_map_coords(pose['x'], pose['y'])
+    # Update drone marker on map at (map_x, map_y)
+```
+
+## Key Principles
+
+- **Follow established naming patterns** (`get_latest_X`, `subscribe_to_X_topic`, etc.)
+- **Always use thread-safe data access** with `self.data_lock`
+- **Include timestamp and header info** for data freshness checks
+- **Provide both raw data access and convenience methods**
+- **Handle exceptions gracefully** in message handlers
+- **Use consistent error handling and logging**
+
+## Why This Pattern?
+
+The ROS handler follows a **data-type-specific pattern** rather than having generic methods. Each data type (camera, odometry, GPS, etc.) needs:
+
+- Its own data dictionary (`camera_data`, `odometry_data`, etc.)
+- Specific subscription methods (`subscribe_to_camera_topic`, `subscribe_to_odometry_topic`, etc.)
+- A message handler (`_handle_camera_message`, `_handle_odometry_message`, etc.)
+- Data retrieval methods (`get_latest_camera_image`, `get_latest_odometry`, etc.)
+
+This pattern provides **type safety**, **clear interfaces**, and allows for **data-type-specific processing** (like converting quaternions to euler angles for odometry data).
 
 ---
 
