@@ -1,6 +1,7 @@
 import threading
 import time
 import queue
+import math
 from typing import Optional, Dict, Callable, Any
 
 try:
@@ -8,6 +9,8 @@ try:
     from rclpy.node import Node
     from sensor_msgs.msg import Image
     from cv_bridge import CvBridge
+    from nav_msgs.msg import Odometry
+    from geometry_msgs.msg import Pose
     ROS2_AVAILABLE = True
 except ImportError:
     ROS2_AVAILABLE = False
@@ -31,6 +34,7 @@ class RosHandler:
         self.data_lock = threading.Lock()
         self.camera_data = {}  # Store latest camera images by topic
         self.telemetry_data = {}  # Store telemetry data
+        self.odometry_data = {} # Store odometry data
         self.topic_callbacks = {}  # Custom callbacks for topics
         
         # Camera-specific components
@@ -212,24 +216,24 @@ class RosHandler:
     """
     To add drone odometry support, follow this pattern:
     
-    1. Add imports:
+    1). Add imports:
        from nav_msgs.msg import Odometry
        from geometry_msgs.msg import Pose
     
-    2. Add data storage in __init__:
+    2). Add data storage in __init__:
        self.odometry_data = {}
     
-    3. Add subscription methods (similar to camera methods):
-       - subscribe_to_odometry(topic_name)
-       - unsubscribe_from_odometry(topic_name) - THIS IS OPTIONAL, odom we will probably need persistent so we might not want to unsubscribe
-       - get_latest_odometry(topic_name)
-       - get_drone_pose(drone_id) -> returns {'x': float, 'y': float, 'z': float, 'theta_x': float, 'theta_y': float, 'theta_z': float}
+    3). Add subscription methods (similar to camera methods):
+       -) subscribe_to_odometry(topic_name)
+       -) unsubscribe_from_odometry(topic_name) - THIS IS OPTIONAL, odom we will probably need persistent so we might not want to unsubscribe
+       -) get_latest_odometry(topic_name)
+       -) get_drone_pose(drone_id) -> returns {'x': float, 'y': float, 'z': float, 'roll': float, 'pitch': float, 'yaw': float}
     
-    4. Add message handler:
-       - _handle_odometry_message(topic_name, msg)
-       - Extract: msg.pose.pose (geometry_msgs/Pose) for full 6DOF position + orientation
+    4). Add message handler:
+       -) _handle_odometry_message(topic_name, msg)
+       -) Extract: msg.pose.pose (geometry_msgs/Pose) for full 6DOF position + orientation
     
-    5. Update RosNode class with odometry subscription methods
+    5). Update RosNode class with odometry subscription methods
     
     Expected topics: /rs1_drone_1/odom, /rs1_drone_2/odom, etc.
     
@@ -237,9 +241,100 @@ class RosHandler:
     - Use odometry pose data to update drone markers on map_panel.py
     - Pose: msg.pose.pose (geometry_msgs/Pose) contains position + orientation
     - Position: msg.pose.pose.position.x/y/z
-    - Orientation: msg.pose.pose.orientation (quaternion -> convert to euler for theta_x, theta_y, theta_z)
+    - Orientation: msg.pose.pose.orientation (quaternion -> convert to euler for roll, pitch, yaw)
     - Convert world coordinates to map pixel coordinates for rendering
     """
+    def subscribe_to_odometry_topic(self, topic_name: str) -> bool:
+        if not self.node or not self.ros2_available:
+            return False
+        
+        try:
+            self.node.subscribe_to_odometry(topic_name)
+            print(f"Subscribed to odometry topic: {topic_name}")
+            return True
+        except Exception as e:
+            print(f"Failed to subscribe to {topic_name}: {e}")
+            return False
+        
+    def unsubscribe_from_odometry_topic(self, topic_name: str) -> bool:
+        if not self.node:
+            return False
+        
+        try:
+            self.node.unsubscribe_from_odometry(topic_name)
+            with self.data_lock:
+                if topic_name in self.odometry_data:
+                    del self.odometry_data[topic_name]
+            print(f"Unsubscribed from odometry topic: {topic_name}")
+            return True
+        except Exception as e:
+            print(f"Failed to unsubscribe from {topic_name}: {e}")
+            return False
+        
+    def get_latest_odometry(self, topic_name: str): # The parameters might be wrong
+        with self.data_lock:
+            return self.odometry_data.get(topic_name, {})
+    
+    def get_drone_pose(self, topic_name: str):# The parameters might be wrong
+        with self.data_lock:
+            info = self.odometry_data.get(topic_name)
+            if not info:
+                return None
+            (x, y, z) = info["position"]
+            (roll, pitch, yaw) = info["rpy"]
+        return x, y, z, roll, pitch, yaw
+    
+    # START AI suggested and wrote this, and I'm not sure if we need it, but I'll leave it here since it could be useful
+    def get_drone_pose_by_id(self, drone_id: int):
+        return self.get_drone_pose(f"/rs1_drone_{drone_id}/odom")
+    
+    def is_odom_active(self, topic_name: str) -> bool:
+        with self.data_lock:
+            ts = self.odometry_data.get(topic_name, {}).get("timestamp")
+        return ts is not None and (time.time() - ts) < 2.0
+    
+    def get_latest_odometry(self, topic_name: str):
+        with self.data_lock:
+            data = self.odometry_data.get(topic_name)
+            return data.copy() if data else None
+    # END AI suggested and wrote this, and I'm not sure if we need it, but I'll leave it here since it could be useful
+
+    def _handle_odometry_message(self, topic_name: str, msg):
+        try:
+            position = msg.pose.pose.position      # x, y, z
+            orientation = msg.pose.pose.orientation   # quaternion x, y, z, w   
+            ox, oy, oz, ow = orientation.x, orientation.y, orientation.z, orientation.w
+            norm = math.sqrt(ox*ox + oy*oy + oz*oz + ow*ow) or 1.0 # Normalise to be robust
+            x, y, z, w = ox/norm, oy/norm, oz/norm, ow/norm         
+            # RPY conversion
+            ##  CONFIRM MATH
+            sinr_cosp = 2*(w*x + y*z); cosr_cosp = 1 - 2*(x*x + y*y)
+            roll = math.atan2(sinr_cosp, cosr_cosp)
+            sinp = 2*(w*y - z*x)
+            pitch = math.asin(max(-1.0, min(1.0, sinp)))
+            siny_cosp = 2*(w*z + x*y); cosy_cosp = 1 - 2*(y*y + z*z)
+            yaw = math.atan2(siny_cosp, cosy_cosp)
+
+            now = time.time()
+
+            with self.data_lock:
+                self.odometry_data[topic_name] = {
+                    "position": (position.x, position.y, position.z),
+                    "orientation": (orientation.x, orientation.y, orientation.z, orientation.w),
+                    "rpy": (roll, pitch, yaw),
+                    'odom_topics_count': len(self.odometry_data), # can be nice to have? idk, you can delete this @Marcus
+                    "timestamp": now,         # for LIVE/STALE checks
+                    "header": msg.header      # for frame_id, ROS stamp, etc.
+
+                }
+
+            # Optional: custom callbacks can receive parsed odom
+            if topic_name in self.topic_callbacks:
+                self.topic_callbacks[topic_name](topic_name, self.odometry_data[topic_name])
+
+
+        except Exception as e:
+            print(f"Error processing odometry message from {topic_name}: {e}")
     # ============================================================================
 
     def cleanup(self):
@@ -261,6 +356,7 @@ class RosNode(Node):
         super().__init__(node_name)
         self.handler = handler
         self.camera_subscriptions = {}  # topic_name -> subscription object
+        self.odometry_subscriptions = {} # topic_name -> subscription object
     
     def subscribe_to_camera(self, topic_name: str):
         # Unsubscribe if already subscribed
@@ -282,3 +378,21 @@ class RosNode(Node):
             self.destroy_subscription(self.camera_subscriptions[topic_name])
             del self.camera_subscriptions[topic_name]
             self.get_logger().info(f'Unsubscribed from camera topic: {topic_name}')
+
+    def subscribe_to_odometry(self, topic_name: str):
+        if topic_name in self.odometry_subscriptions:
+            self.unsubscribe_from_odometry(topic_name)
+        subscription = self.create_subscription (
+            Odometry,
+            topic_name,
+            lambda msg, topic=topic_name: self.handler._handle_odometry_message(topic, msg),
+            10
+        )
+        self.odometry_subscriptions[topic_name] = subscription
+        self.get_logger.info(f'Subscribed to odometry topic: {topic_name}')
+    
+    def unsubscribe_from_odometry(self, topic_name: str):
+        if topic_name in self.odometry_subscriptions:
+            self.destroy_subscription(self.odometry_subscriptions[topic_name])
+            del self.odometry_subscriptions[topic_name]
+            self.get_logger().info(f'Unsubscribed from odometry topic: {topic_name}')
