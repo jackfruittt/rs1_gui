@@ -3,6 +3,13 @@ import time
 import queue
 from typing import Optional, Dict, Callable, Any
 
+
+ROS2_AVAILABLE = False;
+
+def ros2_available() -> bool:
+    """Return if ROS2 imports succeeded on this system."""
+    return ROS2_AVAILABLE
+
 try:
     import rclpy
     from rclpy.node import Node
@@ -254,31 +261,36 @@ class RosHandler:
             
         print("ROS Handler cleanup complete.")
 
+if ROS2_AVAILABLE:
 
-class RosNode(Node):
-    
-    def __init__(self, node_name: str, handler: RosHandler):
-        super().__init__(node_name)
-        self.handler = handler
-        self.camera_subscriptions = {}  # topic_name -> subscription object
-    
-    def subscribe_to_camera(self, topic_name: str):
-        # Unsubscribe if already subscribed
-        if topic_name in self.camera_subscriptions:
-            self.unsubscribe_from_camera(topic_name)
+    class RosNode(Node):
         
-        subscription = self.create_subscription(
-            Image,
-            topic_name,
-            lambda msg, topic=topic_name: self.handler._handle_camera_message(topic, msg),
-            10
-        )
+        def __init__(self, node_name: str, handler: RosHandler):
+            super().__init__(node_name)
+            self.handler = handler
+            self.camera_subscriptions = {}  # topic_name -> subscription object
         
-        self.camera_subscriptions[topic_name] = subscription
-        self.get_logger().info(f'Subscribed to camera topic: {topic_name}')
-    
-    def unsubscribe_from_camera(self, topic_name: str):
-        if topic_name in self.camera_subscriptions:
-            self.destroy_subscription(self.camera_subscriptions[topic_name])
-            del self.camera_subscriptions[topic_name]
-            self.get_logger().info(f'Unsubscribed from camera topic: {topic_name}')
+        def subscribe_to_camera(self, topic_name: str):
+            # Unsubscribe if already subscribed
+            if topic_name in self.camera_subscriptions:
+                self.unsubscribe_from_camera(topic_name)
+            
+            subscription = self.create_subscription(
+                Image,
+                topic_name,
+                lambda msg, topic=topic_name: self.handler._handle_camera_message(topic, msg),
+                10
+            )
+            
+            self.camera_subscriptions[topic_name] = subscription
+            self.get_logger().info(f'Subscribed to camera topic: {topic_name}')
+        
+        def unsubscribe_from_camera(self, topic_name: str):
+            if topic_name in self.camera_subscriptions:
+                self.destroy_subscription(self.camera_subscriptions[topic_name])
+                del self.camera_subscriptions[topic_name]
+                self.get_logger().info(f'Unsubscribed from camera topic: {topic_name}')
+else:
+    class RosNode:
+        def __init__(self, *args, **kwargs):
+            raise RuntimeError("ROS2 not available; RosNode cannot be used in simulation.")
