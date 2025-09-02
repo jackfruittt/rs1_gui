@@ -40,6 +40,9 @@ class RosHandler:
         # Camera-specific components
         self.bridge = CvBridge() if ROS2_AVAILABLE else None
         self.available_camera_topics = []
+
+        # Odometry-specific components
+        self.available_odometry_topics = []
         
         # Remove periodic discovery - topics are fixed at startup
         self.topics_discovered = False
@@ -114,18 +117,22 @@ class RosHandler:
         
         try:
             topic_list = self.node.get_topic_names_and_types()
-            camera_topics = []
+            camera_topics, odometry_topics = [], []
             
             for topic_name, topic_types in topic_list:
                 if 'sensor_msgs/msg/Image' in topic_types:
                     camera_topics.append(topic_name)
+                if 'nav_msgs/msg/Odometry' in topic_types:
+                    odometry_topics.append(topic_name)
             
             # Update available camera topics
             with self.data_lock:
                 self.available_camera_topics = camera_topics
+                self.available_odometry_topics = odometry_topics
             
             print(f"Discovered {len(camera_topics)} camera topics: {camera_topics}")
-            
+            print(f"Discovered {len(odometry_topics)} odometry topics: {camera_topics}")
+
         except Exception as e:
             print(f"Error discovering topics: {e}")
     
@@ -284,6 +291,9 @@ class RosHandler:
             (roll, pitch, yaw) = info["rpy"]
         return x, y, z, roll, pitch, yaw
     
+    def get_available_odometry_topics(self) -> list:
+        with self.data_lock:
+            return self.available_odometry_topics.copy()
     # START AI suggested and wrote this, and I'm not sure if we need it, but I'll leave it here since it could be useful
     def get_drone_pose_by_id(self, drone_id: int):
         return self.get_drone_pose(f"/rs1_drone_{drone_id}/odom")
@@ -322,7 +332,7 @@ class RosHandler:
                     "position": (position.x, position.y, position.z),
                     "orientation": (orientation.x, orientation.y, orientation.z, orientation.w),
                     "rpy": (roll, pitch, yaw),
-                    'odom_topics_count': len(self.odometry_data), # can be nice to have? idk, you can delete this @Marcus
+                    'odometry_topics_count': len(self.odometry_data), # can be nice to have? idk, you can delete this @Marcus
                     "timestamp": now,         # for LIVE/STALE checks
                     "header": msg.header      # for frame_id, ROS stamp, etc.
 
@@ -389,7 +399,7 @@ class RosNode(Node):
             10
         )
         self.odometry_subscriptions[topic_name] = subscription
-        self.get_logger.info(f'Subscribed to odometry topic: {topic_name}')
+        self.get_logger().info(f'Subscribed to odometry topic: {topic_name}')
     
     def unsubscribe_from_odometry(self, topic_name: str):
         if topic_name in self.odometry_subscriptions:

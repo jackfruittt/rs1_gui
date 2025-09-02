@@ -49,7 +49,7 @@ class RS1GUI:
         
         # Initialize centralized ROS handler
         self.ros_handler = RosHandler('rs1_gui_main')
-        
+
         # Initialise camera component with instant switching (no delay when changing cameras)
         self.camera_component = CameraComponent(
             self.ros_handler, 
@@ -57,6 +57,14 @@ class RS1GUI:
             instant_switching=True,  # Use preload method for comparison
             preload_all=True        # Preload ALL cameras for zero-delay switching
         )
+
+        # This could be relocated to a different file.
+        odometry_topics = self.ros_handler.get_available_odometry_topics()
+        print(f"UI sees {len(odometry_topics)} odom topics: {odometry_topics}")
+
+        # Optionally auto-subscribe to all odom topics (simple & common)
+        for t in odometry_topics:
+            self.ros_handler.subscribe_to_odometry_topic(t)
         
         # Initialise panels
         self.robots_panel = RobotsPanel(self.fonts)
