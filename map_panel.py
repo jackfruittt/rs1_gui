@@ -22,7 +22,7 @@ class MapPanel:
             state = robots[i]["state"]
             
             state_color = state_colors.get(state, (255, 255, 255))
-            print(f'Robot {i+1} + {state} {state_color} {robots[i]["yaw"]}')
+            print(f'Robot {i+1} + {state} {state_color} {robots[i]["yaw"]} {robots[i]["gps"]}')
 
             # Parse GPS string to get coordinates
             gps_coords = robots[i]["gps"].split(', ')
