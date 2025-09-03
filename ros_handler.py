@@ -131,7 +131,7 @@ class RosHandler:
                 self.available_odometry_topics = odometry_topics
             
             print(f"Discovered {len(camera_topics)} camera topics: {camera_topics}")
-            print(f"Discovered {len(odometry_topics)} odometry topics: {camera_topics}")
+            print(f"Discovered {len(odometry_topics)} odometry topics: {odometry_topics}")
 
         except Exception as e:
             print(f"Error discovering topics: {e}")
