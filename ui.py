@@ -85,7 +85,7 @@ class RS1GUI:
         self.incidents = []
 
         if ros2_available:
-            for _ in range(9):
+            for _ in range(4):
                 self.drones.append(self.generate_drone())
 
             for _ in range(random.randint(3,10)):
