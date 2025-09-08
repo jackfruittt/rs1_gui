@@ -53,7 +53,7 @@ class CameraComponent:
         font = pygame.font.Font(None, 36)
         if not self.ros_handler.ros2_available:
             text = "ROS2 Not Available"
-            subtext = "Install: pip install rclpy cv_bridge"
+            subtext = "GUI in simulation mode"
         else:
             text = "No Camera Feed"
             subtext = "Waiting for topics..."

@@ -44,6 +44,9 @@ class RosHandler:
         # Odometry-specific components
         self.available_odometry_topics = []
         
+        # Odometry-specific components
+        self.available_odometry_topics = []
+        
         # Remove periodic discovery - topics are fixed at startup
         self.topics_discovered = False
         
@@ -131,8 +134,9 @@ class RosHandler:
                 self.available_odometry_topics = odometry_topics
             
             print(f"Discovered {len(camera_topics)} camera topics: {camera_topics}")
-            print(f"Discovered {len(odometry_topics)} odometry topics: {odometry_topics}")
 
+            print(f"Discovered {len(odometry_topics)} odometry topics: {odometry_topics}")
+            
         except Exception as e:
             print(f"Error discovering topics: {e}")
     
@@ -251,10 +255,11 @@ class RosHandler:
     - Orientation: msg.pose.pose.orientation (quaternion -> convert to euler for roll, pitch, yaw)
     - Convert world coordinates to map pixel coordinates for rendering
     """
+
     def subscribe_to_odometry_topic(self, topic_name: str) -> bool:
         if not self.node or not self.ros2_available:
             return False
-        
+
         try:
             self.node.subscribe_to_odometry(topic_name)
             print(f"Subscribed to odometry topic: {topic_name}")
@@ -262,11 +267,11 @@ class RosHandler:
         except Exception as e:
             print(f"Failed to subscribe to {topic_name}: {e}")
             return False
-        
+
     def unsubscribe_from_odometry_topic(self, topic_name: str) -> bool:
         if not self.node:
             return False
-        
+
         try:
             self.node.unsubscribe_from_odometry(topic_name)
             with self.data_lock:
@@ -277,11 +282,11 @@ class RosHandler:
         except Exception as e:
             print(f"Failed to unsubscribe from {topic_name}: {e}")
             return False
-        
+
     def get_latest_odometry(self, topic_name: str): # The parameters might be wrong
         with self.data_lock:
             return self.odometry_data.get(topic_name, {})
-    
+
     def get_drone_pose(self, topic_name: str):# The parameters might be wrong
         with self.data_lock:
             info = self.odometry_data.get(topic_name)
@@ -290,19 +295,19 @@ class RosHandler:
             (x, y, z) = info["position"]
             (roll, pitch, yaw) = info["rpy"]
         return x, y, z, roll, pitch, yaw
-    
+
     def get_available_odometry_topics(self) -> list:
         with self.data_lock:
             return self.available_odometry_topics.copy()
     # START AI suggested and wrote this, and I'm not sure if we need it, but I'll leave it here since it could be useful
     def get_drone_pose_by_id(self, drone_id: int):
         return self.get_drone_pose(f"/rs1_drone_{drone_id}/odom")
-    
+
     def is_odom_active(self, topic_name: str) -> bool:
         with self.data_lock:
             ts = self.odometry_data.get(topic_name, {}).get("timestamp")
         return ts is not None and (time.time() - ts) < 2.0
-    
+
     def get_latest_odometry(self, topic_name: str):
         with self.data_lock:
             data = self.odometry_data.get(topic_name)
@@ -345,6 +350,8 @@ class RosHandler:
 
         except Exception as e:
             print(f"Error processing odometry message from {topic_name}: {e}")
+
+
     # ============================================================================
 
     def cleanup(self):
@@ -373,36 +380,53 @@ class RosNode(Node):
         if topic_name in self.camera_subscriptions:
             self.unsubscribe_from_camera(topic_name)
         
-        subscription = self.create_subscription(
-            Image,
-            topic_name,
-            lambda msg, topic=topic_name: self.handler._handle_camera_message(topic, msg),
-            10
-        )
-        
-        self.camera_subscriptions[topic_name] = subscription
-        self.get_logger().info(f'Subscribed to camera topic: {topic_name}')
-    
-    def unsubscribe_from_camera(self, topic_name: str):
-        if topic_name in self.camera_subscriptions:
-            self.destroy_subscription(self.camera_subscriptions[topic_name])
-            del self.camera_subscriptions[topic_name]
-            self.get_logger().info(f'Unsubscribed from camera topic: {topic_name}')
+        def __init__(self, node_name: str, handler: RosHandler):
+            super().__init__(node_name)
+            self.handler = handler
+            self.camera_subscriptions = {}  # topic_name -> subscription object
+            self.odometry_subscriptions = {} # topic_name -> subscription object
 
-    def subscribe_to_odometry(self, topic_name: str):
-        if topic_name in self.odometry_subscriptions:
-            self.unsubscribe_from_odometry(topic_name)
-        subscription = self.create_subscription (
-            Odometry,
-            topic_name,
-            lambda msg, topic=topic_name: self.handler._handle_odometry_message(topic, msg),
-            10
-        )
-        self.odometry_subscriptions[topic_name] = subscription
-        self.get_logger().info(f'Subscribed to odometry topic: {topic_name}')
-    
-    def unsubscribe_from_odometry(self, topic_name: str):
-        if topic_name in self.odometry_subscriptions:
-            self.destroy_subscription(self.odometry_subscriptions[topic_name])
-            del self.odometry_subscriptions[topic_name]
-            self.get_logger().info(f'Unsubscribed from odometry topic: {topic_name}')
+        
+        def subscribe_to_camera(self, topic_name: str):
+            # Unsubscribe if already subscribed
+            if topic_name in self.camera_subscriptions:
+                self.unsubscribe_from_camera(topic_name)
+            
+            subscription = self.create_subscription(
+                Image,
+                topic_name,
+                lambda msg, topic=topic_name: self.handler._handle_camera_message(topic, msg),
+                10
+            )
+            
+            self.camera_subscriptions[topic_name] = subscription
+            self.get_logger().info(f'Subscribed to camera topic: {topic_name}')
+        
+        def unsubscribe_from_camera(self, topic_name: str):
+            if topic_name in self.camera_subscriptions:
+                self.destroy_subscription(self.camera_subscriptions[topic_name])
+                del self.camera_subscriptions[topic_name]
+                self.get_logger().info(f'Unsubscribed from camera topic: {topic_name}')
+
+        def subscribe_to_odometry(self, topic_name: str):
+                if topic_name in self.odometry_subscriptions:
+                    self.unsubscribe_from_odometry(topic_name)
+                subscription = self.create_subscription (
+                    Odometry,
+                    topic_name,
+                    lambda msg, topic=topic_name: self.handler._handle_odometry_message(topic, msg),
+                    10
+                )
+                self.odometry_subscriptions[topic_name] = subscription
+                self.get_logger().info(f'Subscribed to odometry topic: {topic_name}')
+
+        def unsubscribe_from_odometry(self, topic_name: str):
+            if topic_name in self.odometry_subscriptions:
+                self.destroy_subscription(self.odometry_subscriptions[topic_name])
+                del self.odometry_subscriptions[topic_name]
+                self.get_logger().info(f'Unsubscribed from odometry topic: {topic_name}')
+
+else:
+    class RosNode:
+        def __init__(self, *args, **kwargs):
+            raise RuntimeError("ROS2 not available; RosNode cannot be used in simulation.")
