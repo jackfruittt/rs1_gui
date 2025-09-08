@@ -129,7 +129,11 @@ class SpawnPromptPanel:
         while self.app.simReady is not True:
             # check topics being published and when it's determined the sim is setup and ready, then set simReady to True
             # to connect to the ros handler, it'll be `self.app.ros_handler`
-            return
+
+            drone_amount = self.app.ros_handler.get_drone_id_topics_amount()
+            if drone_amount == self.user_input:
+                self.app.simReady = True
+        return
 
     def get_button_rects(self):
         return self.button_rects

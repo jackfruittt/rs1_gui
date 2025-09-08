@@ -50,6 +50,9 @@ class RosHandler:
         
         # Odometry-specific components
         self.available_odometry_topics = []
+
+        # Drone-specific components
+        self.drone_amount = 0
         
         # Remove periodic discovery - topics are fixed at startup
         self.topics_discovered = False
@@ -354,6 +357,16 @@ class RosHandler:
 
         except Exception as e:
             print(f"Error processing odometry message from {topic_name}: {e}")
+
+    def get_drone_id_topics_amount(self) -> int:  
+        topic_list = self.node.get_topic_names_and_types()
+        drone_list = []
+        for topic_name in topic_list:
+            topic_start = topic_name[1:11]
+            if topic_start not in drone_list:
+                drone_list.append[topic_name[11].toInt]
+        self.drone_amount = drone_list
+        return len(self.drone_amount)
 
 
     # ============================================================================
