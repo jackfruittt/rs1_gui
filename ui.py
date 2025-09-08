@@ -58,7 +58,7 @@ class RS1GUI:
         
         # Initialize centralized ROS handler
         self.ros_handler = RosHandler('rs1_gui_main')
-
+        
         # Initialise camera component with instant switching (no delay when changing cameras)
         self.camera_component = CameraComponent(
             self.ros_handler, 
@@ -183,20 +183,6 @@ class RS1GUI:
         print(f"New incident generated: {incident}")
         return incident
     
-    def apply_odometry_to_robot(self, robot: dict, odom: dict) -> None:
-        x, y, z = odom["position"]
-        yaw_deg = (math.degrees(odom["rpy"][2]) + 360.0) % 360.0
-        robot["gps"] = f"{x:.1f}, {y:.1f}"
-        robot["altitude"] = f"{z:.1f}m"
-        robot["yaw"] = round(yaw_deg, 1)
-
-    def _update_robots_from_odometry(self):
-        for i, robot in enumerate(self.robots):
-            topic = f"/rs1_drone_{i+1}/odom"
-            info = self.ros_handler.get_latest_odometry(topic)
-            if info and self.ros_handler.is_odom_active(topic):
-                self.apply_odometry_to_robot(robot, info)
-        
     def draw_base_ui(self):
         """Original draw_base_ui function with ROS2 camera integration"""
         self.screen.fill(DARK_GRAY)
@@ -204,9 +190,6 @@ class RS1GUI:
         # Update and draw camera feed
         self.camera_component.update()
         self.camera_component.draw(self.screen)
-
-        # Update odometry
-        self._update_robots_from_odometry()
 
         # Map
         self.map_panel.draw_map(self.drones, self.incidents, self.screen, self.selected_incident)

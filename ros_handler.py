@@ -4,6 +4,13 @@ import queue
 import math
 from typing import Optional, Dict, Callable, Any
 
+
+ROS2_AVAILABLE = False;
+
+def ros2_available() -> bool:
+    """Return if ROS2 imports succeeded on this system."""
+    return ROS2_AVAILABLE
+
 try:
     import rclpy
     from rclpy.node import Node
@@ -40,9 +47,6 @@ class RosHandler:
         # Camera-specific components
         self.bridge = CvBridge() if ROS2_AVAILABLE else None
         self.available_camera_topics = []
-
-        # Odometry-specific components
-        self.available_odometry_topics = []
         
         # Odometry-specific components
         self.available_odometry_topics = []
@@ -227,24 +231,24 @@ class RosHandler:
     """
     To add drone odometry support, follow this pattern:
     
-    1). Add imports:
+    1. Add imports:
        from nav_msgs.msg import Odometry
        from geometry_msgs.msg import Pose
     
-    2). Add data storage in __init__:
+    2. Add data storage in __init__:
        self.odometry_data = {}
     
-    3). Add subscription methods (similar to camera methods):
-       -) subscribe_to_odometry(topic_name)
-       -) unsubscribe_from_odometry(topic_name) - THIS IS OPTIONAL, odom we will probably need persistent so we might not want to unsubscribe
-       -) get_latest_odometry(topic_name)
-       -) get_drone_pose(drone_id) -> returns {'x': float, 'y': float, 'z': float, 'roll': float, 'pitch': float, 'yaw': float}
+    3. Add subscription methods (similar to camera methods):
+       - subscribe_to_odometry(topic_name)
+       - unsubscribe_from_odometry(topic_name) - THIS IS OPTIONAL, odom we will probably need persistent so we might not want to unsubscribe
+       - get_latest_odometry(topic_name)
+       - get_drone_pose(drone_id) -> returns {'x': float, 'y': float, 'z': float, 'theta_x': float, 'theta_y': float, 'theta_z': float}
     
-    4). Add message handler:
-       -) _handle_odometry_message(topic_name, msg)
-       -) Extract: msg.pose.pose (geometry_msgs/Pose) for full 6DOF position + orientation
+    4. Add message handler:
+       - _handle_odometry_message(topic_name, msg)
+       - Extract: msg.pose.pose (geometry_msgs/Pose) for full 6DOF position + orientation
     
-    5). Update RosNode class with odometry subscription methods
+    5. Update RosNode class with odometry subscription methods
     
     Expected topics: /rs1_drone_1/odom, /rs1_drone_2/odom, etc.
     
@@ -252,7 +256,7 @@ class RosHandler:
     - Use odometry pose data to update drone markers on map_panel.py
     - Pose: msg.pose.pose (geometry_msgs/Pose) contains position + orientation
     - Position: msg.pose.pose.position.x/y/z
-    - Orientation: msg.pose.pose.orientation (quaternion -> convert to euler for roll, pitch, yaw)
+    - Orientation: msg.pose.pose.orientation (quaternion -> convert to euler for theta_x, theta_y, theta_z)
     - Convert world coordinates to map pixel coordinates for rendering
     """
 
@@ -366,19 +370,9 @@ class RosHandler:
             
         print("ROS Handler cleanup complete.")
 
+if ROS2_AVAILABLE:
 
-class RosNode(Node):
-    
-    def __init__(self, node_name: str, handler: RosHandler):
-        super().__init__(node_name)
-        self.handler = handler
-        self.camera_subscriptions = {}  # topic_name -> subscription object
-        self.odometry_subscriptions = {} # topic_name -> subscription object
-    
-    def subscribe_to_camera(self, topic_name: str):
-        # Unsubscribe if already subscribed
-        if topic_name in self.camera_subscriptions:
-            self.unsubscribe_from_camera(topic_name)
+    class RosNode(Node):
         
         def __init__(self, node_name: str, handler: RosHandler):
             super().__init__(node_name)
