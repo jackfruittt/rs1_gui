@@ -22,6 +22,7 @@ from incidents_panel import IncidentsPanel
 from drone_control_panel import DroneControlPanel
 from map_panel import MapPanel
 from incident_detail_panel import IncidentDetailPanel
+from spawn_prompt import SpawnPromptPanel
 
 class RS1GUI:
     """Main GUI application class""" 
@@ -31,6 +32,8 @@ class RS1GUI:
         self.screen = pygame.display.set_mode((1900, 860))
         pygame.display.set_caption("RS1 GUI")
         self.clock = pygame.time.Clock()
+
+        self.simReady = False
         
         # Load fonts
         self.fonts = self._load_fonts()
@@ -72,6 +75,7 @@ class RS1GUI:
             self.ros_handler.subscribe_to_odometry_topic(t)
         
         # Initialise panels
+        self.spawn_panel = SpawnPromptPanel(self, self.fonts, ros2_available)
         self.drones_panel = dronesPanel(self, self.fonts)
         self.incidents_panel = IncidentsPanel(self.fonts)
         self.drone_control_panel = DroneControlPanel(self, self.fonts)
@@ -84,12 +88,12 @@ class RS1GUI:
         self.drones = []
         self.incidents = []
 
-        if ros2_available:
-            for _ in range(4):
-                self.drones.append(self.generate_drone())
+        # if ros2_available:
+        #     for _ in range(4):
+        #         self.drones.append(self.generate_drone())
 
-            for _ in range(random.randint(3,10)):
-                self.incidents.append(self.generate_random_incident())
+        #     for _ in range(random.randint(3,10)):
+        #         self.incidents.append(self.generate_random_incident())
         
         # Fade state
         self.show_left_fade = False
@@ -221,6 +225,9 @@ class RS1GUI:
     def handle_events(self):
         """Handle all input events"""
         for event in pygame.event.get():
+
+            self.spawn_panel.handle_key(event)
+
             if event.type == pygame.QUIT:
                 self.running = False
 
@@ -303,13 +310,18 @@ class RS1GUI:
             self.handle_events()
             
             # Draw everything
-            self.draw_base_ui()
+            if self.simReady is not True:
+                self.spawn_panel.draw_prompt(self.screen)
+            else:
+                self.draw_base_ui()
+            
             
             # Update display
             pygame.display.flip()
             self.clock.tick(75)
         
         # Cleanup
+        self.spawn_panel.killSim()
         self.cleanup()
     
     def cleanup(self):
