@@ -9,18 +9,19 @@ import cv2
 import numpy as np
 import sys
 import random
+import math
 
 # Import our components
 from constants import *
 from utils import feather_image
 from ros_handler import RosHandler
+from ros_handler import ros2_available
 from camera_ros import CameraComponent  # Replaced VideoPlayer
-from robots_panel import RobotsPanel
+from drones_panel import dronesPanel
 from incidents_panel import IncidentsPanel
 from drone_control_panel import DroneControlPanel
 from map_panel import MapPanel
-from telemetry_panel import TelemetryPanel
-from popup import Popup
+from incident_detail_panel import IncidentDetailPanel
 
 class RS1GUI:
     """Main GUI application class""" 
@@ -33,11 +34,16 @@ class RS1GUI:
         
         # Load fonts
         self.fonts = self._load_fonts()
+
+        # UI state
+        self.selected_incident = -1
+        self.selected_drone = -1
+        self.running = True
         
         # Load assets
         self.forest_splash = pygame.image.load("media/images/forest_splash.jpg").convert()
         self.splash_rect = self.forest_splash.get_rect(center=(640, 360))
-        self.map_top_view = pygame.image.load("media/images/bird_view.png").convert()
+        self.map_top_view = pygame.image.load("media/images/bird_view.png").convert_alpha()
         self.drone_icon = pygame.image.load("media/images/drone.png").convert_alpha()
         self.drone_icon = pygame.transform.scale(self.drone_icon, (35, 35))
         
@@ -57,27 +63,52 @@ class RS1GUI:
             instant_switching=True,  # Use preload method for comparison
             preload_all=True        # Preload ALL cameras for zero-delay switching
         )
+
+        odometry_topics = self.ros_handler.get_available_odometry_topics()
+        print(f"UI sees {len(odometry_topics)} odom topics: {odometry_topics}")
+        odom_topics = self.ros_handler.get_available_odometry_topics()
+        print(f"UI sees {len(odom_topics)} odom topics: {odom_topics}")
+        for t in odom_topics:
+            self.ros_handler.subscribe_to_odometry_topic(t)
         
         # Initialise panels
-        self.robots_panel = RobotsPanel(self.fonts)
+        self.drones_panel = dronesPanel(self, self.fonts)
         self.incidents_panel = IncidentsPanel(self.fonts)
-        self.drone_control_panel = DroneControlPanel(self.fonts)
+        self.drone_control_panel = DroneControlPanel(self, self.fonts)
         self.map_panel = MapPanel(self.map_top_view, self.drone_icon)
-        self.telemetry_panel = TelemetryPanel(self.fonts)
-        self.popup = Popup(self.fonts)
+        self.incident_detail_panel = IncidentDetailPanel(self.fonts)
+    
         
         # Initialise data 
-        self.robots = self._generate_robots()
-        self.incidents = self._generate_incidents()
-        
-        # UI state
-        self.selected_robot = -1
-        self.running = True
+        # self.drones = self._generate_drones()
+        self.drones = []
+        self.incidents = []
+
+        if ros2_available:
+            for _ in range(4):
+                self.drones.append(self.generate_drone())
+
+            for _ in range(random.randint(3,10)):
+                self.incidents.append(self.generate_random_incident())
         
         # Fade state
         self.show_left_fade = False
         self.left_fade_start = 0
         self.left_fadeIn = True
+
+    def apply_odometry_to_robot(self, robot: dict, odom: dict) -> None:
+            x, y, z = odom["position"]
+            yaw_deg = (math.degrees(odom["rpy"][2]) + 360.0) % 360.0
+            robot["gps"] = f"{x:.1f}, {y:.1f}"
+            robot["altitude"] = f"{z:.1f}m"
+            robot["yaw"] = round(yaw_deg, 1)
+
+    def _update_drones_from_odometry(self):
+        for i, robot in enumerate(self.drones):
+            topic = f"/rs1_drone_{i+1}/odom"
+            info = self.ros_handler.get_latest_odometry(topic)
+            if info and self.ros_handler.is_odom_active(topic):
+                self.apply_odometry_to_robot(robot, info)
     
     def _load_fonts(self):
         """Load all fonts"""
@@ -106,109 +137,47 @@ class RS1GUI:
         
         return fonts
     
-    def _generate_robots(self):
-        """Generate robot data (from original ui.py)"""
-        return [
-            {
-                "battery": "92%",
-                "gps": f"{round(random.uniform(-400, 400), 3)}, {round(random.uniform(-400, 400), 3)}",
-                "altitude": "102m",
-                "state": "Offline",
-                "setPose": "-",
-                "nearPose": "-",
-                "yaw": round(random.uniform(0, 360), 1)
-            },
-            {
-                "battery": "64%",
-                "gps": f"{round(random.uniform(-400, 400), 3)}, {round(random.uniform(-400, 400), 3)}",
-                "altitude": "87m",
-                "state": "Scouting",
-                "setPose": "-",
-                "nearPose": "Lake",
-                "yaw": round(random.uniform(0, 360), 1)
-            },
-            {
-                "battery": "78%",
-                "gps": f"{round(random.uniform(-400, 400), 3)}, {round(random.uniform(-400, 400), 3)}",
-                "altitude": "56m",
-                "state": "Idle",
-                "setPose": "-",
-                "nearPose": "-",
-                "yaw": round(random.uniform(0, 360), 1)
-            },
-            {
-                "battery": "51%",
-                "gps": f"{round(random.uniform(-400, 400), 3)}, {round(random.uniform(-400, 400), 3)}",
-                "altitude": "73m",
-                "state": "Piloting",
-                "setPose": "-",
-                "nearPose": "Parking",
-                "yaw": round(random.uniform(0, 360), 1)
-            },
-            {
-                "battery": "88%",
-                "gps": f"{round(random.uniform(-400, 400), 3)}, {round(random.uniform(-400, 400), 3)}",
-                "altitude": "64m",
-                "state": "Responding",
-                "setPose": "-",
-                "nearPose": "-",
-                "yaw": round(random.uniform(0, 360), 1)
-            },
-            {
-                "battery": "33%",
-                "gps": f"{round(random.uniform(-400, 400), 3)}, {round(random.uniform(-400, 400), 3)}",
-                "altitude": "45m",
-                "state": "Offline",
-                "setPose": "-",
-                "nearPose": "Base",
-                "yaw": round(random.uniform(0, 360), 1)
-            }
-        ]
+    def generate_drone(self):
+        """Generate a drone odom simuation purposes"""
+        states = ["Scouting", "Idle", "Piloting", "Responding", "Offline"]
+        knownPoses = ["Home", "Parking", "Shed", "Gate", "Table", "-"]
+        state = random.choice(states)
+        gps = f"{round(random.uniform(-world_size[0]/2, world_size[0]/2), 3)}, {round(random.uniform(-world_size[0]/2, world_size[0]/2), 3)}"
+        alt = f"{round(random.uniform(0, 70), 3)}m"
+        yaw = round(random.uniform(0, 360), 1)
+        battery = f"{round(random.uniform(5,100))}"
+        setPose = "-"
+        nearPose = random.choice(knownPoses)
+
+        drone = {
+            "battery": battery,
+            "gps": gps,
+            "altitude": alt,
+            "state": state,
+            "setPose": setPose,
+            "nearPose": nearPose,
+            "yaw": yaw
+        }
+        print(f"New drone generated: {drone}")
+        return drone
     
-    def _generate_incidents(self):
-        """Generate incidents data (from original ui.py)"""
-        return [
-            {
-                "id": 1, "title": "Fire Detected", "time": "2025-08-01 13:20", "severity": 3,
-                "Platform": 1, "robot_coords": (-0.005, 0.002), "global_coords": (-33.8701, 151.2101)
-            },
-            {
-                "id": 2, "title": "Fungal Detected", "time": "2025-08-01 13:45", "severity": 1,
-                "Platform": 2, "robot_coords": (0.003, -0.001), "global_coords": (-33.8670, 151.2070)
-            },
-            {
-                "id": 3, "title": "Bear Detected", "time": "2025-08-01 14:05", "severity": 3,
-                "Platform": 1, "robot_coords": (-0.002, 0.004), "global_coords": (-33.8690, 151.2088)
-            },
-            {
-                "id": 4, "title": "Flood Warning", "time": "2025-08-01 14:30", "severity": 2,
-                "Platform": 2, "robot_coords": (0.001, 0.003), "global_coords": (-33.8665, 151.2065)
-            },
-            {
-                "id": 5, "title": "Unauthorized Entry", "time": "2025-08-01 15:00", "severity": 3,
-                "Platform": 1, "robot_coords": (-0.004, -0.002), "global_coords": (-33.8685, 151.2095)
-            },
-            {
-                "id": 6, "title": "Smoke Alert", "time": "2025-08-01 15:20", "severity": 2,
-                "Platform": 2, "robot_coords": (0.002, 0.001), "global_coords": (-33.8678, 151.2079)
-            },
-            {
-                "id": 7, "title": "Gas Leak Detected", "time": "2025-08-01 15:45", "severity": 3,
-                "Platform": 1, "robot_coords": (-0.001, -0.003), "global_coords": (-33.8693, 151.2083)
-            },
-            {
-                "id": 8, "title": "Tree Fallen", "time": "2025-08-01 16:10", "severity": 1,
-                "Platform": 2, "robot_coords": (0.004, -0.004), "global_coords": (-33.8659, 151.2062)
-            },
-            {
-                "id": 9, "title": "Animal Intrusion", "time": "2025-08-01 16:35", "severity": 2,
-                "Platform": 1, "robot_coords": (-0.003, 0.001), "global_coords": (-33.8682, 151.2090)
-            },
-            {
-                "id": 10, "title": "Power Outage", "time": "2025-08-01 17:00", "severity": 2,
-                "Platform": 2, "robot_coords": (0.002, -0.002), "global_coords": (-33.8667, 151.2072)
-            },
-        ]
+    def generate_random_incident(self):
+        """Generate a random incident for simulation purposes"""
+        titles = ["Fire", "Stranded Person", "Debris", "Other"]
+        title = random.choice(titles)
+        severity = random.randint(1, 3)
+        drone = random.randint(1, 2)
+        drone_coords = (round(random.uniform(-world_size[0]/2, world_size[0]/2), 3), round(random.uniform(-world_size[0]/2, world_size[0]/2), 3))
+        
+        incident = {
+            "title": title,
+            "time": "2025-08-01 12:00",
+            "severity": severity,
+            "drone": drone,
+            "drone_coords": drone_coords
+        }
+        print(f"New incident generated: {incident}")
+        return incident
     
     def draw_base_ui(self):
         """Original draw_base_ui function with ROS2 camera integration"""
@@ -219,16 +188,20 @@ class RS1GUI:
         self.camera_component.draw(self.screen)
 
         # Map
-        self.map_panel.draw_map(self.robots, self.screen)
+        self.map_panel.draw_map(self.drones, self.incidents, self.screen, self.selected_incident)
         
-        # Robots list
-        self.robots_panel.render_robots_list(self.robots, self.screen)
+        # drones list
+        # Update odometry
+        self._update_drones_from_odometry()
+        self.drones_panel.render_drones_list(self.drones, self.screen)
         
         # Right panel - either incidents or drone control
-        if self.selected_robot < 0:
+        if self.selected_drone < 0 and self.selected_incident < 0:
             self.incidents_panel.draw_incidents_panel(self.incidents, self.screen)
-        else:
+        elif self.selected_drone >= 0:
             self.drone_control_panel.drone_ui(self.screen)
+        elif self.selected_incident >= 0:
+            self.incident_detail_panel.draw_incident_detail(self.incidents[self.selected_incident], self.screen)
 
         # Camera status info (in bottom right)
         status_text = self.camera_component.get_status_info()
@@ -243,7 +216,7 @@ class RS1GUI:
             "Camera: C=Switch", 
             True, (150, 150, 150)
         )
-        self.screen.blit(controls_text, (20, 760))
+        self.screen.blit(controls_text, (1250, 790))
     
     def handle_events(self):
         """Handle all input events"""
@@ -255,33 +228,34 @@ class RS1GUI:
                 # Handle camera switching keys
                 self.camera_component.handle_keypress(event.key)
                 
-                # Handle robot selection with number keys
+                # Handle drone selection with number keys
                 if event.key >= pygame.K_1 and event.key <= pygame.K_6:
-                    # If holding shift, switch to that robot's camera
+                    # If holding shift, switch to that drone's camera
                     if pygame.key.get_pressed()[pygame.K_LSHIFT]:
                         drone_id = event.key - pygame.K_0
                         self.camera_component.switch_to_drone_camera(drone_id, "front")
                     else:
-                        # Otherwise, select that robot in the UI
-                        robot_index = event.key - pygame.K_1
-                        if robot_index < len(self.robots):
-                            self.selected_robot = robot_index
+                        # Otherwise, select that drone in the UI
+                        drone_index = event.key - pygame.K_1
+                        if drone_index < len(self.drones):
+                            self.selected_drone = drone_index
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 mx, my = event.pos
 
-                # Handle popup close
-                if self.popup.handle_close_click((mx, my)):
-                    continue
-
-                if not self.popup.popup_visible:
-                    if self.selected_robot < 0:
+                # check if incident icon on map is clicked
+                for rect, idx in self.map_panel.get_icon_buttons():
+                    if rect.collidepoint((mx, my)):
+                        print(f'Icon incident clicked: {self.incidents[idx]["title"]}')
+                        self.selected_incident = idx
+                        
+                if self.selected_incident < 0:
+                    if self.selected_drone < 0:
                         # Handle incident clicks
                         for rect, idx in self.incidents_panel.get_card_rects():
                             if rect.collidepoint((mx, my)):
                                 print(f"Incident clicked: #{idx+1} - {self.incidents[idx]['title']}")
-                                # Uncomment to enable popup:
-                                # self.popup.show_popup(self.incidents[idx])
+                                self.selected_incident = idx
                                 break
                         
                         # Handle scroll buttons
@@ -292,17 +266,30 @@ class RS1GUI:
                             if rect.collidepoint((mx, my)):
                                 print(f"Drone button clicked: {label}")
                                 if label == "Close":
-                                    self.selected_robot = -1
+                                    self.selected_drone = -1
                                 break
 
-                    # Handle robot card clicks
-                    for rect, idx in self.robots_panel.get_card_rects():
+                    # Handle drone card clicks
+                    for rect, idx in self.drones_panel.get_card_rects():
                         if rect.collidepoint((mx, my)):
-                            print(f"Robot card clicked: #{idx+1}")
-                            self.selected_robot = idx
-                            # Auto-switch camera to selected robot
+                            print(f"drone card clicked: #{idx+1}")
+                            self.selected_drone = idx
+                            # Auto-switch camera to selected drone
                             self.camera_component.switch_to_drone_camera(idx + 1, "front")
                             break
+                else:
+                    # selected incident details panel
+                    match self.incident_detail_panel.handle_click((mx, my)):
+                        case 'close':
+                            self.selected_incident = -1
+                        case 'respond':
+                            print('Respond to incident')
+                        case 'clear':
+                            print(f'clearing {self.selected_incident}')
+                            del self.incidents[self.selected_incident]
+                            self.selected_incident = -1
+                            print('clear incident')
+                            
 
             if event.type == pygame.MOUSEBUTTONUP:
                 self.incidents_panel.stop_scrolling()
@@ -317,10 +304,6 @@ class RS1GUI:
             
             # Draw everything
             self.draw_base_ui()
-            
-            # Handle popup animation and drawing
-            self.popup.handle_popup_animation()
-            self.popup.draw_popup(self.screen)
             
             # Update display
             pygame.display.flip()
