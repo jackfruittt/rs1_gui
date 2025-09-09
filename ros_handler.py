@@ -110,7 +110,8 @@ class RosHandler:
                 
                 # One-time topic discovery at startup
                 if not self.topics_discovered:
-                    self._discover_topics()
+                    # self._discover_topics()
+                    self.discover_topics()
                     self.topics_discovered = True
                 
         except Exception as e:
@@ -120,7 +121,33 @@ class RosHandler:
                 self.node.destroy_node()
             print("ROS Handler thread terminated")
     
-    def _discover_topics(self):
+    # def _discover_topics(self):
+    #     """Discover available ROS topics."""
+    #     if not self.node:
+    #         return
+        
+    #     try:
+    #         topic_list = self.node.get_topic_names_and_types()
+    #         camera_topics, odometry_topics = [], []
+            
+    #         for topic_name, topic_types in topic_list:
+    #             if 'sensor_msgs/msg/Image' in topic_types:
+    #                 camera_topics.append(topic_name)
+    #             if 'nav_msgs/msg/Odometry' in topic_types:
+    #                 odometry_topics.append(topic_name)
+            
+    #         # Update available camera topics
+    #         with self.data_lock:
+    #             self.available_camera_topics = camera_topics
+    #             self.available_odometry_topics = odometry_topics
+            
+    #         print(f"Discovered {len(camera_topics)} camera topics: {camera_topics}")
+
+    #         print(f"Discovered {len(odometry_topics)} odometry topics: {odometry_topics}")
+            
+    #     except Exception as e:
+    #         print(f"Error discovering topics: {e}")
+    def discover_topics(self):
         """Discover available ROS topics."""
         if not self.node:
             return
@@ -358,14 +385,30 @@ class RosHandler:
         except Exception as e:
             print(f"Error processing odometry message from {topic_name}: {e}")
 
-    def get_drone_id_topics_amount(self) -> int:  
+    # def get_drone_id_topics_amount(self) -> int:  
+    #     topic_list = self.node.get_topic_names_and_types()
+    #     drone_list = []
+    #     for topic_name in topic_list:
+    #         topic_start = topic_name[1:11]
+    #         if topic_start == "/rs1_drone_":
+    #             if topic_name[11] not in drone_list:
+    #                 drone_list.append(int(topic_name[11]))
+    #     self.drone_amount = drone_list
+    #     return len(self.drone_amount)
+    def get_drone_id_topics_amount(self) -> int:
         topic_list = self.node.get_topic_names_and_types()
-        drone_list = []
-        for topic_name in topic_list:
-            topic_start = topic_name[1:11]
-            if topic_start not in drone_list:
-                drone_list.append[topic_name[11].toInt]
-        self.drone_amount = drone_list
+        print(f"[ROS Handler] Topics visible: {topic_list}")
+        drone_ids = set()
+        for topic, _ in topic_list:
+            if topic.startswith("/rs1_drone_"):
+                try:
+                    # Extract the drone id after the prefix
+                    # Assuming topic format is like "/rs1_drone_1/odom"
+                    drone_id = int(topic[len("/rs1_drone_"):].split("/")[0])
+                    drone_ids.add(drone_id)
+                except Exception as e:
+                    print(f"Error parsing drone id from topic {topic}: {e}")
+        self.drone_amount = list(drone_ids)
         return len(self.drone_amount)
 
 
