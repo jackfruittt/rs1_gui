@@ -303,6 +303,20 @@ class SpawnPromptPanel:
                             'nearPose': '-',
                             'yaw': 0.0
                         })
+
+                    deadline = time.time() + 10  # wait up to 10s for cameras to appear
+                    cams = []
+                    while time.time() < deadline:
+                        try:
+                            self.app.ros_handler.discover_topics()     # refresh
+                            cams = self.app.ros_handler.get_available_camera_topics()
+                            if cams:
+                                break
+                        except Exception:
+                            pass
+                        time.sleep(0.5)
+
+                    print(f"UI sees {len(cams)} camera topics: {cams}")
                     
                     # Init camera BEFORE setting simReady to avoid race
                     self.app.camera_component = CameraComponent( # self.app.CameraComponent
