@@ -272,72 +272,69 @@ class RS1GUI:
         )
         self.screen.blit(controls_text, (1250, 790))
     
-    def handle_events(self): # it
+    def handle_events(self):
         """Handle all input events"""
         for event in pygame.event.get():
 
+            # Window close
             if event.type == pygame.QUIT:
                 self.running = False
                 return
 
-            # Handle key events
-            if event.type == pygame.KEYDOWN:
-                if pygame.K_1 <= event.key <= pygame.K_6:  # Check if key is between 1 and 6
-                    print(f"Key {event.key} pressed")
-                    # Add your logic for handling keys 1-6 here
-                elif event.key == pygame.K_ESCAPE:
+            # -------------------------
+            # Keyboard events only here
+            # -------------------------
+            elif event.type == pygame.KEYDOWN:
+                # global hotkeys
+                if event.key == pygame.K_ESCAPE:
                     self.running = False
                     return
 
-            self.spawn_panel.handle_key(event)
+                # feed the spawn panel (digit entry etc.)
+                self.spawn_panel.handle_key(event)
 
-            # if event.type == pygame.QUIT:
-            #     self.running = False
+                # number keys 1..6
+                if pygame.K_1 <= event.key <= pygame.K_6:
+                    if self.simReady:
+                        # Shift+number -> switch camera to that drone
+                        if (pygame.key.get_mods() & pygame.KMOD_SHIFT) and self.camera_component:
+                            drone_id = event.key - pygame.K_0
+                            self.camera_component.switch_to_drone_camera(drone_id, "front")
+                        else:
+                            # select drone in the UI
+                            drone_index = event.key - pygame.K_1
+                            if 0 <= drone_index < len(self.drones):
+                                self.selected_drone = drone_index
 
-            # if event.type == pygame.KEYDOWN and self.camera_component:  # Add check here
-            #     # Handle camera switching keys
-            #     self.camera_component.handle_keypress(event.key)
-
-            if self.simReady is True:
-                if event.type == pygame.KEYDOWN:
-                    # Handle camera switching keys
+                # camera key handling
+                if self.simReady and self.camera_component:
                     self.camera_component.handle_keypress(event.key)
-                
 
-                # Handle drone selection with number keys
-                if event.key >= pygame.K_1 and event.key <= pygame.K_6:
-                    # If holding shift, switch to that drone's camera
-                    if pygame.key.get_pressed()[pygame.K_LSHIFT]:
-                        drone_id = event.key - pygame.K_0
-                        self.camera_component.switch_to_drone_camera(drone_id, "front")
-                    else:
-                        # Otherwise, select that drone in the UI
-                        drone_index = event.key - pygame.K_1
-                        if drone_index < len(self.drones):
-                            self.selected_drone = drone_index
-
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            # -------------------------
+            # Mouse events
+            # -------------------------
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 mx, my = event.pos
 
-                # check if incident icon on map is clicked
+                # map incident icons
                 for rect, idx in self.map_panel.get_icon_buttons():
                     if rect.collidepoint((mx, my)):
                         print(f'Icon incident clicked: {self.incidents[idx]["title"]}')
                         self.selected_incident = idx
-                        
+                        break
+
                 if self.selected_incident < 0:
                     if self.selected_drone < 0:
-                        # Handle incident clicks
+                        # incident cards
                         for rect, idx in self.incidents_panel.get_card_rects():
                             if rect.collidepoint((mx, my)):
                                 print(f"Incident clicked: #{idx+1} - {self.incidents[idx]['title']}")
                                 self.selected_incident = idx
                                 break
-                        
-                        # Handle scroll buttons
+                        # scroll buttons
                         self.incidents_panel.handle_scroll_click((mx, my))
                     else:
-                        # Handle drone control buttons
+                        # drone control buttons
                         for rect, label in self.drone_control_panel.get_button_rects():
                             if rect.collidepoint((mx, my)):
                                 print(f"Drone button clicked: {label}")
@@ -345,74 +342,59 @@ class RS1GUI:
                                     self.selected_drone = -1
                                 break
 
-                    # Handle drone card clicks
+                    # drone card clicks -> optional camera jump
                     for rect, idx in self.drones_panel.get_card_rects():
                         if rect.collidepoint((mx, my)):
                             print(f"drone card clicked: #{idx+1}")
                             self.selected_drone = idx
-                            # Auto-switch camera to selected drone
-                            self.camera_component.switch_to_drone_camera(idx + 1, "front")
+                            if self.camera_component:  # ✅ guard
+                                self.camera_component.switch_to_drone_camera(idx + 1, "front")
                             break
                 else:
-                    # selected incident details panel
-                    match self.incident_detail_panel.handle_click((mx, my)):
-                        case 'close':
-                            self.selected_incident = -1
-                        case 'respond':
-                            print('Respond to incident')
-                        case 'clear':
-                            print(f'clearing {self.selected_incident}')
-                            del self.incidents[self.selected_incident]
-                            self.selected_incident = -1
-                            print('clear incident')
-                            
+                    action = self.incident_detail_panel.handle_click((mx, my))
+                    if action == 'close':
+                        self.selected_incident = -1
+                    elif action == 'respond':
+                        print('Respond to incident')
+                    elif action == 'clear':
+                        print(f'clearing {self.selected_incident}')
+                        del self.incidents[self.selected_incident]
+                        self.selected_incident = -1
+                        print('clear incident')
 
-            if event.type == pygame.MOUSEBUTTONUP:
+            elif event.type == pygame.MOUSEBUTTONUP:
                 self.incidents_panel.stop_scrolling()
-    
+
+
     def run(self):
-        """Main application loop"""
         print("Starting RS1 Drone Control GUI...")
-        
         while self.running:
-            # Handle events
             self.handle_events()
-            
-            # Draw everything
-            if self.simReady is not True:
+            if not self.simReady:
                 self.spawn_panel.draw_prompt(self.screen)
             else:
                 self.draw_base_ui()
-            
-            
-            # Update display
             pygame.display.flip()
             self.clock.tick(75)
-        
-        # Cleanup
-        if self.event.type == pygame.KEYDOWN and self.camera_component:
-            self.camera_component.handle_keypress(self.event.key)
 
-        if self.simReady and self.event.type == pygame.KEYDOWN and self.camera_component:
-            self.camera_component.handle_keypress(self.event.key)
-
-        # when switching to a drone camera on click
-        if self.camera_component:
-            self.camera_component.switch_to_drone_camera(self.idx + 1, "front")
-
+        # Clean, simple shutdown
         self.spawn_panel.killSim()
         self.cleanup()
-        if self.camera_component:
-            self.camera_component.cleanup()
 
-    
     def cleanup(self):
-        """Clean up all components"""
         print("Starting GUI cleanup...")
-        self.ros_handler.cleanup()
-        self.camera_component.cleanup()
+        try:
+            self.ros_handler.cleanup()
+        except Exception as e:
+            print(f"ROS cleanup error: {e}")
+        if self.camera_component:
+            try:
+                self.camera_component.cleanup()
+            except Exception as e:
+                print(f"Camera cleanup error: {e}")
         pygame.quit()
         print("GUI cleanup complete.")
+
 
     def _sync_drones_from_odom(self):
         if not self.ros_available:
