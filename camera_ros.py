@@ -53,7 +53,7 @@ class CameraComponent:
         font = pygame.font.Font(None, 36)
         if not self.ros_handler.ros2_available:
             text = "ROS2 Not Available"
-            subtext = "Install: pip install rclpy cv_bridge"
+            subtext = "GUI in simulation mode"
         else:
             text = "No Camera Feed"
             subtext = "Waiting for topics..."
@@ -222,6 +222,12 @@ class CameraComponent:
         
         next_index = (self.current_topic_index + 1) % len(self.available_topics)
         return self.switch_to_topic(next_index)
+     
+    def switch_to_previous_topic(self) -> bool:
+        if not self.available_topics:
+            return False
+        previous_index = (self.current_topic_index - 1) % len(self.available_topics)
+        return self.switch_to_topic(previous_index)
     
     def switch_to_drone_camera(self, drone_id: int, camera_type: str = "front") -> bool:
         """
