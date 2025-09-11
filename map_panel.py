@@ -71,13 +71,14 @@ class MapPanel:
 
             # Parse GPS string to get coordinates
             gps_coords = robots[i]["gps"].split(', ')
-            gps_x = float(gps_coords[0])
-            gps_y = float(gps_coords[1])
+            gps_x = float(gps_coords[1])
+            gps_y = float(gps_coords[0])
 
             # print(f'Drone {i+1} {gps_x} {gps_y}')
 
-            imgX = mapRange(gps_x, -(world_size[0]/2), (world_size[0]/2), 0, self.mapImgSize[0])
-            imgY = mapRange(gps_y, -(world_size[1]/2), (world_size[1]/2), 0, self.mapImgSize[1])
+            # Temporary Fix to align Drone Images on GUI Map to match Gazebo Positions with Ace Branch rs1_robot drone_spawner.py
+            imgX = mapRange(-gps_x, -(world_size[0]/2), (world_size[0]/2), 0, self.mapImgSize[1]) - 28
+            imgY = mapRange(-gps_y, -(world_size[1]/2), (world_size[1]/2), 0, self.mapImgSize[1]) - 55
             
             icon_copy = self.drone_icon.copy()
             icon_copy = pygame.transform.rotate(icon_copy, robots[i]["yaw"])
