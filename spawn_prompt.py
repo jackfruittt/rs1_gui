@@ -328,6 +328,12 @@ class SpawnPromptPanel:
                     
                     self.app.odometry_topics = self.app.ros_handler.get_available_odometry_topics()
                     print(f"UI sees {len(self.app.odometry_topics)} odom topics: {self.app.odometry_topics}")
+
+
+                    self.app.button_topics = self.app.ros_handler.get_available_button_topics()
+                    print(f"UI sees {len(self.app.button_topics)} button topics: {self.app.button_topics}")
+                    for t in self.app.button_topics:
+                        self.app.ros_handler.subscribe_to_button_topic(t)
                     
 
                     odom_topics = self.app.ros_handler.get_available_odometry_topics()
@@ -349,6 +355,8 @@ class SpawnPromptPanel:
                     # Removed duplicate: No need for self.app.odom_topics = ... again
                     for t in self.app.odometry_topics:  # Use odometry_topics consistently
                         self.app.ros_handler.subscribe_to_odometry_topic(t)
+                    
+
                     
                     self.app.simReady = True
                     break

@@ -111,6 +111,11 @@ class RS1GUI:
         self.drones = []
         self.incidents = []
 
+        # To store button state and handling button data
+        self.buttons = []
+        self.last_button_states = {}
+        self.last_drone_id = 0
+
         # if ros2_available:
         #     for _ in range(4):
         #         self.drones.append(self.generate_drone())
@@ -217,6 +222,9 @@ class RS1GUI:
             status_text = self.camera_component.get_status_info()
         else:
             status_text = "Cameras: not initialised yet"
+
+        if self.ros_available:
+            self.update_controller_buttons()
 
         if self.ros_available and self.simReady:
             self._sync_drones_from_odom()   # <-- add this
@@ -394,6 +402,61 @@ class RS1GUI:
                 print(f"Camera cleanup error: {e}")
         pygame.quit()
         print("GUI cleanup complete.")
+
+    # Function to handle camera switching using the teensyjoy controller
+    # Looked at how other topics were being subscribed to and handled in
+    #  ui.py, ros_handler.py and spawn_prompt.py
+    def update_controller_buttons(self):
+        if not self.ros_available:
+            return
+        # Technically only "one" button topic (string type topic)
+        butt_topics = self.ros_handler.get_available_button_topics()
+        new_list = []
+
+        # Loop redundant i think cause only one button topic anyways
+        for topic in butt_topics:
+            butt = self.ros_handler.get_latest_button(topic)
+
+            # Check if there is data
+            if butt:
+                data = butt["data"]
+                button_states = [int(x.strip()) for x in data.split(',')]
+
+                # Compare with previous states for debounce
+                prev_states = self.last_button_states.get(topic, [0]*len(button_states))
+
+                # Detect rising edges by comparing previous and current button states 
+                for i, (prev, curr) in enumerate(zip(prev_states, button_states)):
+                    if prev == 0 and curr == 1:
+                        # Check if button id corresponds 
+                        if i == 5:
+                            self.camera_component.switch_to_previous_topic()
+                        elif i == 7:
+                            self.camera_component.switch_to_next_topic()
+                        #elif i == 6: # Waypoint button
+                            # Print out Waypoint Data in GUI??
+         
+                        # Doesnt Work atm - need to keep track of what camera view is currently active
+                        # So it switches views based on drone selected via teensyjoy
+                        # elif i == 8:
+                        #     # Drones is index 1 
+                        #     if self.last_drone_id + 1 < len(self.drones)+1:
+                        #         self.last_drone_id += 1
+                        #     else:
+                        #         self.last_drone_id = 1
+                        #     self.camera_component.switch_to_drone_camera(self.last_drone_id, "front")
+
+                        # Can add other remote functionality here i.e. waypoint save, +/- vel, drone change notification
+
+                # Save states for next cycle
+                self.last_button_states[topic] = button_states
+
+                # Not sure what this does but will need clarification
+                new_list.append({
+                    'topic': topic,
+                    'button_states': button_states,
+                    'pressed_buttons': [i for i, state in enumerate(button_states) if state == 1]
+                })
 
 
     def _sync_drones_from_odom(self):
