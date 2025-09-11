@@ -38,16 +38,41 @@ pkill -f "multi_drone_composition_controller" || true
 pkill -f "controller_node" || true
 sleep 2
 
+# ~/RS1/rs1_ws$ source install/setup.bash 
+
 # Source workspace
-if [ -f "$HOME/rs1_ws/install/setup.bash" ]; then
-    source "$HOME/rs1_ws/install/setup.bash"
-    echo "Sourced ROS2 workspace from ~/rs1_ws"
+# if [ -f "$HOME/RS1/rs1_ws/install/setup.bash" ]; then
+#     source "$HOME/RS1/rs1_ws/install/setup.bash"
+#     echo "Sourced ROS2 workspace from ~/RS1/rs1_ws"
+# elif [ -f "rs1_ws/install/setup.bash" ]; then
+#     source rs1_ws/install/setup.bash
+#     echo "Sourced ROS2 workspace from ./rs1_ws"
+# else
+#     echo "Warning: Could not find rs1_ws workspace setup.bash"
+#     echo "Make sure your workspace is built and sourced"
+# fi
+
+if [ -f "$HOME/RS1/rs1_ws/install/setup.bash" ]; then
+  . "$HOME/RS1/rs1_ws/install/setup.bash"
+  echo "Sourced ROS2 workspace from ~/RS1/rs1_ws"
+elif [ -f "$HOME/rs1_ws/install/setup.bash" ]; then
+  . "$HOME/rs1_ws/install/setup.bash"
+  echo "Sourced ROS2 workspace from ~/rs1_ws"
 elif [ -f "rs1_ws/install/setup.bash" ]; then
-    source rs1_ws/install/setup.bash
-    echo "Sourced ROS2 workspace from ./rs1_ws"
+  . rs1_ws/install/setup.bash
+  echo "Sourced ROS2 workspace from ./rs1_ws"
 else
-    echo "Warning: Could not find rs1_ws workspace setup.bash"
-    echo "Make sure your workspace is built and sourced"
+  echo "Warning: Could not find rs1_ws workspace setup.bash"
+  echo "Make sure your workspace is built and sourced"
+fi
+
+# --- Neutralise Qt poisoning (OpenCV injects its own plugins) ---
+unset QT_PLUGIN_PATH
+unset QT_QPA_PLATFORM_PLUGIN_PATH
+export QT_QPA_PLATFORM=xcb
+if [[ " $* " == *" gui:=false "* ]]; then
+  export QT_QPA_PLATFORM=offscreen   # no X/Wayland, no GUI
+  export RS1_IGN_HEADLESS=1          # we'll use this in the launch (see below)
 fi
 
 echo ""
@@ -57,8 +82,16 @@ echo "Drones: $NUM_DRONES"
 echo "Launch arguments: $@"
 echo ""
 
-# Launch the composition spawner with all arguments
-ros2 launch rs1_robot rs1_swarm_composed.py num_drones:=$NUM_DRONES "$@"
+echo "[spawner] QT_PLUGIN_PATH='${QT_PLUGIN_PATH:-<unset>}'"
+echo "[spawner] QT_QPA_PLATFORM='${QT_QPA_PLATFORM:-<unset>}'"
+echo "[spawner] RS1_IGN_HEADLESS='${RS1_IGN_HEADLESS:-<unset>}'"
+
+# # Launch the composition spawner with all arguments
+# ros2 launch rs1_robot rs1_swarm_composed.py num_drones:=$NUM_DRONES "$@"
+ros2 launch rs1_robot rs1_swarm_composed.py \
+  num_drones:=$NUM_DRONES \
+  "$@"
+
 
 echo ""
 echo "=========================================="

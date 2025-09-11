@@ -18,6 +18,7 @@ try:
     from cv_bridge import CvBridge
     from nav_msgs.msg import Odometry
     from geometry_msgs.msg import Pose
+    from std_msgs.msg import String
     ROS2_AVAILABLE = True
 except ImportError:
     ROS2_AVAILABLE = False
@@ -43,6 +44,10 @@ class RosHandler:
         self.telemetry_data = {}  # Store telemetry data
         self.odometry_data = {} # Store odometry data
         self.topic_callbacks = {}  # Custom callbacks for topics
+
+        # Button-specific components
+        self.button_data = {} # Testing Remote Control
+        self.available_button_topics = []
         
         # Camera-specific components
         self.bridge = CvBridge() if ROS2_AVAILABLE else None
@@ -50,6 +55,9 @@ class RosHandler:
         
         # Odometry-specific components
         self.available_odometry_topics = []
+
+        # Drone-specific components
+        self.drone_amount = 0
         
         # Remove periodic discovery - topics are fixed at startup
         self.topics_discovered = False
@@ -107,7 +115,8 @@ class RosHandler:
                 
                 # One-time topic discovery at startup
                 if not self.topics_discovered:
-                    self._discover_topics()
+                    # self._discover_topics()
+                    self.discover_topics()
                     self.topics_discovered = True
                 
         except Exception as e:
@@ -117,32 +126,89 @@ class RosHandler:
                 self.node.destroy_node()
             print("ROS Handler thread terminated")
     
-    def _discover_topics(self):
+    # def _discover_topics(self):
+    #     """Discover available ROS topics."""
+    #     if not self.node:
+    #         return
+        
+    #     try:
+    #         topic_list = self.node.get_topic_names_and_types()
+    #         camera_topics, odometry_topics = [], []
+            
+    #         for topic_name, topic_types in topic_list:
+    #             if 'sensor_msgs/msg/Image' in topic_types:
+    #                 camera_topics.append(topic_name)
+    #             if 'nav_msgs/msg/Odometry' in topic_types:
+    #                 odometry_topics.append(topic_name)
+            
+    #         # Update available camera topics
+    #         with self.data_lock:
+    #             self.available_camera_topics = camera_topics
+    #             self.available_odometry_topics = odometry_topics
+            
+    #         print(f"Discovered {len(camera_topics)} camera topics: {camera_topics}")
+
+    #         print(f"Discovered {len(odometry_topics)} odometry topics: {odometry_topics}")
+            
+    #     except Exception as e:
+    #         print(f"Error discovering topics: {e}")
+    def discover_topics(self):
         """Discover available ROS topics."""
         if not self.node:
             return
         
         try:
             topic_list = self.node.get_topic_names_and_types()
-            camera_topics, odometry_topics = [], []
+            camera_topics, odometry_topics, button_topics = [], [], []
             
             for topic_name, topic_types in topic_list:
                 if 'sensor_msgs/msg/Image' in topic_types:
                     camera_topics.append(topic_name)
                 if 'nav_msgs/msg/Odometry' in topic_types:
                     odometry_topics.append(topic_name)
+                # Here I directly mapped the topic name as there are other String Type Topics
+                if '/rs1_teensyjoy/button_control' in topic_name:
+                    button_topics.append(topic_name)
             
             # Update available camera topics
             with self.data_lock:
                 self.available_camera_topics = camera_topics
                 self.available_odometry_topics = odometry_topics
+                self.available_button_topics = button_topics
             
             print(f"Discovered {len(camera_topics)} camera topics: {camera_topics}")
 
             print(f"Discovered {len(odometry_topics)} odometry topics: {odometry_topics}")
+
+            print(f"Discovered {len(button_topics)} button topics: {button_topics}")
             
         except Exception as e:
             print(f"Error discovering topics: {e}")
+    
+    # Button related functions based off the camera and odometry ones
+    # Some may be redundant
+    def subscribe_to_button_topic(self, topic_name: str) -> bool:
+        if not self.node or not self.ros2_available:
+            return False
+        try:
+            self.node.subscribe_to_button(topic_name)
+            print(f"Subscribed to button topic: {topic_name}")
+            return True
+        except Exception as e:
+            print(f"Failed to subscribe to {topic_name}: {e}")
+            return False
+    
+    def get_button_info(self, topic_name: str) -> Dict[str, Any]:
+        with self.data_lock:
+            return self.camera_data.get(topic_name, {})
+        
+    def get_available_button_topics(self) -> list:
+        with self.data_lock:
+            return self.available_button_topics.copy()
+    
+    def get_latest_button(self, topic_name: str): 
+        with self.data_lock:
+            return self.button_data.get(topic_name, {})
     
     def subscribe_to_camera_topic(self, topic_name: str) -> bool:
         if not self.node or not self.ros2_available:
@@ -224,6 +290,19 @@ class RosHandler:
             return False
         
         return time.time() - info.get('timestamp', 0) < 2.0
+    
+    # Button Callback function
+    def _handle_button_message(self, topic_name: str, msg):
+        try:
+            with self.data_lock:
+                self.button_data[topic_name] = {
+                    "data": msg.data,
+                    "timestamp": time.time()
+                }
+            if topic_name in self.topic_callbacks:
+                self.topic_callbacks[topic_name](topic_name, msg.data)
+        except Exception as e:
+            print(f"Error processing button message from {topic_name}: {e}")
     
     # ============================================================================
     # EXAMPLE: Adding Drone Odometry Topics
@@ -355,6 +434,32 @@ class RosHandler:
         except Exception as e:
             print(f"Error processing odometry message from {topic_name}: {e}")
 
+    # def get_drone_id_topics_amount(self) -> int:  
+    #     topic_list = self.node.get_topic_names_and_types()
+    #     drone_list = []
+    #     for topic_name in topic_list:
+    #         topic_start = topic_name[1:11]
+    #         if topic_start == "/rs1_drone_":
+    #             if topic_name[11] not in drone_list:
+    #                 drone_list.append(int(topic_name[11]))
+    #     self.drone_amount = drone_list
+    #     return len(self.drone_amount)
+    def get_drone_id_topics_amount(self) -> int:
+        topic_list = self.node.get_topic_names_and_types()
+        print(f"[ROS Handler] Topics visible: {topic_list}")
+        drone_ids = set()
+        for topic, _ in topic_list:
+            if topic.startswith("/rs1_drone_"):
+                try:
+                    # Extract the drone id after the prefix
+                    # Assuming topic format is like "/rs1_drone_1/odom"
+                    drone_id = int(topic[len("/rs1_drone_"):].split("/")[0])
+                    drone_ids.add(drone_id)
+                except Exception as e:
+                    print(f"Error parsing drone id from topic {topic}: {e}")
+        self.drone_amount = list(drone_ids)
+        return len(self.drone_amount)
+
 
     # ============================================================================
 
@@ -379,6 +484,7 @@ if ROS2_AVAILABLE:
             self.handler = handler
             self.camera_subscriptions = {}  # topic_name -> subscription object
             self.odometry_subscriptions = {} # topic_name -> subscription object
+            self.button_subscriptions = {} # For buttons
 
         
         def subscribe_to_camera(self, topic_name: str):
@@ -419,6 +525,27 @@ if ROS2_AVAILABLE:
                 self.destroy_subscription(self.odometry_subscriptions[topic_name])
                 del self.odometry_subscriptions[topic_name]
                 self.get_logger().info(f'Unsubscribed from odometry topic: {topic_name}')
+        
+        # Finally found where the functions are lmfao
+        def subscribe_to_button(self, topic_name: str):
+            if topic_name in self.button_subscriptions:
+                self.unsubscribe_from_button(topic_name)
+
+            subscription = self.create_subscription(
+                String, 
+                topic_name,
+                lambda msg, topic=topic_name: self.handler._handle_button_message(topic, msg),
+                10
+            )
+            self.button_subscriptions[topic_name] = subscription
+            self.get_logger().info(f'Subscribed to button topic: {topic_name}')
+
+        # Not sure if needed but added as well
+        def unsubscribe_from_button(self, topic_name: str):
+            if topic_name in self.button_subscriptions:
+                self.destroy_subscription(self.button_subscriptions[topic_name])
+                del self.button_subscriptions[topic_name]
+                self.get_logger().info(f'Unsubscribed from button topic: {topic_name}')
 
 else:
     class RosNode:

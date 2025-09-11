@@ -222,6 +222,12 @@ class CameraComponent:
         
         next_index = (self.current_topic_index + 1) % len(self.available_topics)
         return self.switch_to_topic(next_index)
+     
+    def switch_to_previous_topic(self) -> bool:
+        if not self.available_topics:
+            return False
+        previous_index = (self.current_topic_index - 1) % len(self.available_topics)
+        return self.switch_to_topic(previous_index)
     
     def switch_to_drone_camera(self, drone_id: int, camera_type: str = "front") -> bool:
         """
