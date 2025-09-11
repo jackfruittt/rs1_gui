@@ -2,7 +2,6 @@ import pygame
 from constants import *
 from utils import feather_image
 
-
 class IncidentsPanel:
     def __init__(self, fonts):
         self.fonts = fonts
@@ -36,7 +35,7 @@ class IncidentsPanel:
             pygame.draw.rect(incidents_panel, DARK_GRAY, (30, y + 10, 60, 60))  # Image placeholder
             pygame.draw.rect(incidents_panel, severity_colors[inc["severity"] - 1], (20, y + 75, PANEL_WIDTH - 80, 5))
 
-            t1 = self.fonts['small_font'].render(f'#{i+1} {inc["title"]}', True, BLACK)
+            t1 = self.fonts['small_font'].render(f'{inc["title"]}', True, BLACK)
             t2 = self.fonts['small_font'].render(inc["time"], True, BLACK)
             incidents_panel.blit(t1, (100, y + 10))
             incidents_panel.blit(t2, (100, y + 40))

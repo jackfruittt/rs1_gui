@@ -24,7 +24,8 @@ state_colors = {
     "Scouting":  BLUE,
     "Idle":      RED,
     "Piloting":  GREEN,
-    "Responding": YELLOW
+    "Responding": YELLOW,
+    "Active" : GREEN
 }
 
 # Severity colors and messages
@@ -39,12 +40,12 @@ ANIM_DURATION = 200  # milliseconds
 scroll_speed = 5
 
 # World and map settings
-world_size = (800, 800)
+world_size = (70,70)
 
 # Panel dimensions 
-PANEL_WIDTH = 440
+PANEL_WIDTH = 660
 PANEL_HEIGHT = 430
-PANEL_X = 1460
+PANEL_X = 1220
 PANEL_Y = 0
 
 # Button dimensions 
