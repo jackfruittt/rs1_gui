@@ -3,9 +3,11 @@ from constants import *
 
 
 class DroneControlPanel:
-    def __init__(self, fonts):
+    def __init__(self, app, fonts):
+        self.app = app
         self.fonts = fonts
         self.button_rects = []
+        
     
     def drone_ui(self, screen):
         """Original drone_ui function - Draw Drone panel and handle click detection."""
@@ -32,7 +34,7 @@ class DroneControlPanel:
         drone_panel.fill(BLACK)
 
         # Title
-        title_surface = self.fonts['large_font'].render("Drone", True, WHITE)
+        title_surface = self.fonts['large_font'].render(f'Drone #{self.app.selected_drone + 1}', True, WHITE)
         title_rect = title_surface.get_rect(topright=(PANEL_WIDTH - 10, 10))
         drone_panel.blit(title_surface, title_rect)
 
