@@ -56,7 +56,7 @@ class dronesPanel:
             panel_surface.blit(loc_text, (90, y + 45))
 
             # Battery
-            batt_text = self.fonts['inter_smaller'].render(f"{drone['battery']} battery", True, WHITE)
+            batt_text = self.fonts['inter_smaller'].render(f"{drone['battery']}% battery", True, WHITE)
             panel_surface.blit(batt_text, (90, y + 70))
 
             # Selection arrow for currently selected drone
