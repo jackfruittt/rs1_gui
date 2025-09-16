@@ -42,10 +42,10 @@ class RosHandler:
         
         # Thread-safe data storage
         self.data_lock = threading.Lock()
-        self.camera_data = {}  # Store latest camera images by topic
-        self.telemetry_data = {}  # Store telemetry data
-        self.odometry_data = {} # Store odometry data
-        self.topic_callbacks = {}  # Custom callbacks for topics
+        self.camera_data = {}       # Store latest camera images by topic
+        self.telemetry_data = {}    # Store telemetry data
+        self.odometry_data = {}     # Store odometry data
+        self.topic_callbacks = {}   # Custom callbacks for topics
 
         # Button-specific components
         self.button_data = {} # Testing Remote Control
@@ -73,6 +73,7 @@ class RosHandler:
         if self.ros2_available:
             self._start_ros_node()
     
+    # We can probably delete this now.
     def set_expected_drone_topics(self, num_drones: int, camera_types: list = None):
         """
         Set expected drone topics without discovery.
@@ -86,7 +87,6 @@ class RosHandler:
         expected_topics = []
         expected_incidents = []
 
-        # This needs to be made more robust, so that it checks for the actual drone id. I'll need to make a function which strips the topics to drone id, because it's not guaranteed that the drones start chronologically from 1
         for drone_id in range(1, num_drones + 1):
             for camera_type in camera_types:
                 topic_name = f"/rs1_drone_{drone_id}/{camera_type}/image"
@@ -156,12 +156,10 @@ class RosHandler:
                     camera_topics.append(topic_name)
                 if 'nav_msgs/msg/Odometry' in topic_types:
                     odometry_topics.append(topic_name)
-                # Here I directly mapped the topic name as there are other String Type Topics
-                if '/rs1_teensyjoy/button_control' in topic_name:
+                if '/rs1_teensyjoy/button_control' in topic_name: # Here I directly mapped the topic name as there are other String Type Topics
                     button_topics.append(topic_name)
                 if topic_name.endswith('/incident') and 'std_msgs/msg/String' in topic_types:
                     incident_topics.append(topic_name)
-
 
                 # Collect drone ids from any segment like rs1_drone_<id>
                 parts = [p for p in topic_name.split('/') if p]
@@ -180,7 +178,6 @@ class RosHandler:
                 self.available_camera_topics = camera_topics
                 self.available_odometry_topics = odometry_topics
                 self.available_incident_topics = target_incident_topics
-                # Optional: keep the discovered ids if useful elsewhere
                 self.discovered_drone_ids = sorted(drone_ids)
                 self.available_button_topics = button_topics
 
@@ -532,20 +529,17 @@ class RosHandler:
         self.drone_amount = list(drone_ids)
         return len(self.drone_amount)
 
-
-        # ============================================================================
-
-        def cleanup(self):
-            print("Cleaning up ROS Handler...")
-            self.running = False
+    def cleanup(self):
+        print("Cleaning up ROS Handler...")
+        self.running = False
+        
+        if self.ros_thread and self.ros_thread.is_alive():
+            self.ros_thread.join(timeout=2)
+        
+        if self.node:
+            self.node.destroy_node()
             
-            if self.ros_thread and self.ros_thread.is_alive():
-                self.ros_thread.join(timeout=2)
-            
-            if self.node:
-                self.node.destroy_node()
-                
-            print("ROS Handler cleanup complete.")
+        print("ROS Handler cleanup complete.")
 
 if ROS2_AVAILABLE:
 
@@ -554,10 +548,10 @@ if ROS2_AVAILABLE:
         def __init__(self, node_name: str, handler: RosHandler):
             super().__init__(node_name)
             self.handler = handler
-            self.camera_subscriptions = {}  # topic_name -> subscription object
-            self.odometry_subscriptions = {} # topic_name -> subscription object
-            self.incident_subscriptions = {} # topic_name -> incident object
-            self.button_subscriptions = {} # For buttons
+            self.camera_subscriptions = {}      # topic_name -> subscription object
+            self.odometry_subscriptions = {}    # topic_name -> subscription object
+            self.incident_subscriptions = {}    # topic_name -> incident object
+            self.button_subscriptions = {}      # For buttons
 
         
         def subscribe_to_camera(self, topic_name: str):
