@@ -43,6 +43,9 @@ class RS1GUI:
         self.ros_available = ros2_available()   # was True
         self.drones = []
         self.camera_component = None
+        self._incident_seen = {}          # key: (drone, id) -> index in self.incidents
+        self._incident_cleared = set()    # optional: keys you've cleared in UI
+
         
         # Load fonts
         self.fonts = self._load_fonts()
@@ -89,21 +92,6 @@ class RS1GUI:
         self.drone_control_panel = DroneControlPanel(self, self.fonts)
         self.map_panel = MapPanel(self.map_top_view, self.drone_icon)
         self.incident_detail_panel = IncidentDetailPanel(self.fonts)
-
-        # # Initialise camera component with instant switching (no delay when changing cameras)
-        # self.camera_component = CameraComponent(
-        #     self.ros_handler, 
-        #     display_rect=(1240, 460, 640, 360),
-        #     instant_switching=True,  # Use preload method for comparison
-        #     preload_all=True        # Preload ALL cameras for zero-delay switching
-        # )
-
-        # self.odometry_topics = self.ros_handler.get_available_odometry_topics()
-        # print(f"UI sees {len(self.odometry_topics)} odom topics: {self.odometry_topics}")
-        # self.odom_topics = self.ros_handler.get_available_odometry_topics()
-        # print(f"UI sees {len(self.odom_topics)} odom topics: {self.odom_topics}")
-        # for t in self.odom_topics:
-        #     self.ros_handler.subscribe_to_odometry_topic(t)
     
         
         # Initialise data 
@@ -141,6 +129,43 @@ class RS1GUI:
             info = self.ros_handler.get_latest_odometry(topic)
             if info and self.ros_handler.is_odom_active(topic):
                 self.apply_odometry_to_robot(robot, info)
+
+    def _sync_incidents_from_ros(self):
+        # Ask the handler which incident topics exist
+        topics = getattr(self, "incident_topics", None) or \
+                (self.ros_handler.get_available_incident_topics() if self.ros_available else [])
+
+        for t in topics:
+            inc = self.ros_handler.get_latest_incident(t)  # last incident per topic
+            if not inc:
+                continue
+            key = (inc["drone"], inc["id"])
+            if key in self._incident_cleared:
+                continue  # don't re-show locally cleared items
+            if key in self._incident_seen:
+                idx = self._incident_seen[key]
+                # Update existing item in place (keeps selection indices stF_syuable)
+                self.incidents[idx].update(inc)
+            else:
+                self._incident_seen[key] = len(self.incidents)
+                self.incidents.append(inc)
+
+        # (Optional) keep the list small and roughly newest-first without re-sorting every frame
+        MAX_INC = 200
+        if len(self.incidents) > MAX_INC:
+            # simple trim from the front; adjust bookkeeping
+            drop = len(self.incidents) - MAX_INC
+            dropped = set()
+            for i in range(drop):
+                old = self.incidents[i]
+                dropped.add((old["drone"], old["id"]))
+            self.incidents = self.incidents[drop:]
+            # rebuild index map
+            self._incident_seen.clear()
+            for i, it in enumerate(self.incidents):
+                self._incident_seen[(it["drone"], it["id"])] = i
+            # also clean cleared set
+            self._incident_cleared.difference_update(dropped)
     
     def _load_fonts(self):
         """Load all fonts"""
@@ -227,7 +252,8 @@ class RS1GUI:
             self.update_controller_buttons()
 
         if self.ros_available and self.simReady:
-            self._sync_drones_from_odom()   # <-- add this
+            self._sync_drones_from_odom()
+            self._sync_incidents_from_ros() 
 
 
         if self.ros_available and self.simReady:
@@ -364,9 +390,20 @@ class RS1GUI:
                         self.selected_incident = -1
                     elif action == 'respond':
                         print('Respond to incident')
+                    # elif action == 'clear':
+                    #     print(f'clearing {self.selected_incident}')
+                    #     del self.incidents[self.selected_incident]
+                    #     self.selected_incident = -1
+                    #     print('clear incident')
                     elif action == 'clear':
-                        print(f'clearing {self.selected_incident}')
+                        inc = self.incidents[self.selected_incident]
+                        key = (inc["drone"], inc["id"])
+                        self._incident_cleared.add(key)       # remember it's cleared locally
                         del self.incidents[self.selected_incident]
+                        # rebuild index map after deletion
+                        self._incident_seen.clear()
+                        for i, it in enumerate(self.incidents):
+                            self._incident_seen[(it["drone"], it["id"])] = i
                         self.selected_incident = -1
                         print('clear incident')
 

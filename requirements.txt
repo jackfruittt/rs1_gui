@@ -1,0 +1,9 @@
+cv_bridge==3.2.1
+geometry_msgs==4.9.0
+nav_msgs==4.9.0
+numpy==1.21.5
+opencv_python==4.10.0.84
+pygame==2.6.1
+rclpy==3.3.17
+sensor_msgs==4.9.0
+std_msgs==4.9.0
