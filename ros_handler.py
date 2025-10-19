@@ -21,6 +21,7 @@ try:
     from nav_msgs.msg import Odometry
     from geometry_msgs.msg import Pose
     from std_msgs.msg import String
+    from std_srvs.srv import SetBool
     ROS2_AVAILABLE = True
 except ImportError:
     ROS2_AVAILABLE = False
@@ -49,8 +50,11 @@ class RosHandler:
 
         # Button-specific components
         self.button_data = {} # Testing Remote Control
-        self.available_button_topics = []
-        
+        self.available_button_topics = []         
+
+        # For syncing GUI drone selection with controller
+        self.current_gui_drone_id = 1
+
         # Camera-specific components
         self.bridge = CvBridge() if ROS2_AVAILABLE else None
         self.available_camera_topics = []
@@ -147,7 +151,7 @@ class RosHandler:
         
         try:
             topic_list = self.node.get_topic_names_and_types()
-            camera_topics, odometry_topics, button_topics, incident_topics = [], [], [], []
+            camera_topics, odometry_topics, available_controller_topic, button_topics, incident_topics = [], [], [], [], []
             
             drone_ids = set()
 
@@ -203,6 +207,33 @@ class RosHandler:
             print(f"Failed to subscribe to {topic_name}: {e}")
             return False
         
+    # Controller related functions
+    def call_teensy_connect(self, connect: bool):
+        # True - connect, False - disconnect
+        if not self.node or not self.ros2_available:
+            print("ROS2 not available, cannot call service")
+            return False
+        return self.node.call_connect_service(connect)
+
+    def publish_current_drone_id(self, drone_id: int):
+        if not self.node or not self.ros2_available:
+            return False
+            
+        try:
+            with self.data_lock:
+                self.current_gui_drone_id = drone_id
+                
+            self.node.publish_drone_id(drone_id)
+            print(f"Published GUI drone ID: {drone_id}")
+            return True
+        except Exception as e:
+            print(f"Failed to publish drone ID: {e}")
+            return False
+
+    def get_current_gui_drone_id(self) -> int:
+        with self.data_lock:
+            return self.current_gui_drone_id
+        
     # Button related functions based off the camera and odometry ones
     # Some may be redundant
     def subscribe_to_button_topic(self, topic_name: str) -> bool:
@@ -215,10 +246,6 @@ class RosHandler:
         except Exception as e:
             print(f"Failed to subscribe to {topic_name}: {e}")
             return False
-    
-    def get_button_info(self, topic_name: str) -> Dict[str, Any]:
-        with self.data_lock:
-            return self.camera_data.get(topic_name, {})
         
     def get_available_button_topics(self) -> list:
         with self.data_lock:
@@ -318,6 +345,20 @@ class RosHandler:
             return False
         
         return time.time() - info.get('timestamp', 0) < 2.0
+    
+    def _handle_controller_message(self, topic_name: str, msg):
+        try:
+            with self.data_lock:
+                self.controller_data[topic_name] = {
+                    "axes": msg.axes,
+                    "buttons": msg.buttons,
+                    "timestamp": time.time()
+                }
+            if topic_name in self.topic_callbacks:
+                self.topic_callbacks[topic_name](topic_name, msg.data)
+        except Exception as e:
+            print(f"Error processing controller message from {topic_name}: {e}")
+        
     
     # Button Callback function
     def _handle_button_message(self, topic_name: str, msg):
@@ -552,6 +593,21 @@ if ROS2_AVAILABLE:
             self.odometry_subscriptions = {}    # topic_name -> subscription object
             self.incident_subscriptions = {}    # topic_name -> incident object
             self.button_subscriptions = {}      # For buttons
+            self.controller_subscription = {}   # For controller
+
+            # For connecting to the controller 
+            self.teensy_connect_client = self.create_client(SetBool, '/rs1_teensyjoy/connect')
+
+            self.drone_id_publisher = self.create_publisher(
+                String,
+                '/rs1_gui/current_drone_id',
+                10
+            )
+
+        def publish_drone_id(self, drone_id: int):
+            msg = String()
+            msg.data = str(drone_id)
+            self.drone_id_publisher.publish(msg)
 
         
         def subscribe_to_camera(self, topic_name: str):
@@ -612,6 +668,34 @@ if ROS2_AVAILABLE:
                 del self.incident_subscription[topic_name]
                 self.get_logger().info(f'Unsubscribed from incident topic: {topic_name}')
 
+        def call_connect_service(self, connect: bool) -> bool:
+            if not self.teensy_connect_client.wait_for_service(timeout_sec=1.0):
+                self.get_logger().warn('Teensy connect service not available')
+                return False
+            
+            request = SetBool.Request()
+            request.data = connect
+            
+            try:
+                future = self.teensy_connect_client.call_async(request)
+                # We're in the ROS thread, so we can wait briefly
+                rclpy.spin_until_future_complete(self, future, timeout_sec=1.0)
+                
+                if future.done():
+                    response = future.result()
+                    if response.success:
+                        self.get_logger().info(f'Teensy connect service: {response.message}')
+                        return True
+                    else:
+                        self.get_logger().warn(f'Teensy connect failed: {response.message}')
+                        return False
+                else:
+                    self.get_logger().warn('Service call timed out')
+                    return False
+                    
+            except Exception as e:
+                self.get_logger().error(f'Service call failed: {e}')
+                return False
         
         # Finally found where the functions are lmfao
         def subscribe_to_button(self, topic_name: str):

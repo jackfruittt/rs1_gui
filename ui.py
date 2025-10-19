@@ -99,6 +99,9 @@ class RS1GUI:
         self.drones = []
         self.incidents = []
 
+        # Controller Checking, 0 - no controller found, 1 - controller connected 
+        self.controller_connected = 0 
+
         # To store button state and handling button data
         self.buttons = []
         self.last_button_states = {}
@@ -374,13 +377,47 @@ class RS1GUI:
                                 print(f"Drone button clicked: {label}")
                                 if label == "Close":
                                     self.selected_drone = -1
+                                    if self.ros_available:
+                                        success = self.ros_handler.call_teensy_connect(False)
+                                        if success:
+                                            print("Disconnected from teensy joystick")
+                                            self.controller_connected = 0
+                                        else:
+                                            print("Failed to disconnect from teensy joystick")
+
+                                    # Manually Pilot
+                                elif label == "PILOT":
+                                    if self.ros_available:
+                                        if self.selected_drone >= 0:
+                                            self.ros_handler.publish_current_drone_id(self.selected_drone + 1)
+                                        success = self.ros_handler.call_teensy_connect(True)
+                                        if success:
+                                            print("Connected to teensy joystick")
+                                            self.controller_connected = 1
+                                        else:
+                                            print("Failed to connect to teensy joystick")
+
+                                    # Return to Auto-pilot
+                                elif label == "SCOUT":
+                                    if self.ros_available:
+                                        success = self.ros_handler.call_teensy_connect(False)
+                                        if success:
+                                            print("Disconnected from teensy joystick")
+                                            self.controller_connected = 0
+                                        else:
+                                            print("Failed to disconnect from teensy joystick")
                                 break
+                                
+                                
 
                     # drone card clicks -> optional camera jump
                     for rect, idx in self.drones_panel.get_card_rects():
                         if rect.collidepoint((mx, my)):
                             print(f"drone card clicked: #{idx+1}")
                             self.selected_drone = idx
+                            # Edited to publish current drone id to ROS handler
+                            if self.ros_available:
+                                self.ros_handler.publish_current_drone_id(idx + 1)
                             if self.camera_component:  # ✅ guard
                                 self.camera_component.switch_to_drone_camera(idx + 1, "front")
                             break
@@ -444,7 +481,7 @@ class RS1GUI:
     # Looked at how other topics were being subscribed to and handled in
     #  ui.py, ros_handler.py and spawn_prompt.py
     def update_controller_buttons(self):
-        if not self.ros_available:
+        if not self.ros_available or not self.controller_connected:
             return
         # Technically only "one" button topic (string type topic)
         butt_topics = self.ros_handler.get_available_button_topics()
@@ -467,11 +504,27 @@ class RS1GUI:
                     if prev == 0 and curr == 1:
                         # Check if button id corresponds 
                         if i == 5:
-                            self.camera_component.switch_to_previous_topic()
+                            self.camera_component.cycle_drone_camera(self.selected_drone, len(self.drones), -1)
+
                         elif i == 7:
-                            self.camera_component.switch_to_next_topic()
+                            self.camera_component.cycle_drone_camera(self.selected_drone, len(self.drones), 1)
+
                         #elif i == 6: # Waypoint button
                             # Print out Waypoint Data in GUI??
+
+                        elif i == 8:
+                            if self.selected_drone == -1:
+                                self.selected_drone = 0
+                            self.selected_drone = self.selected_drone + 1
+
+                            if self.selected_drone >= len(self.drones):
+                                self.selected_drone = 0
+
+                            if self.ros_available:
+                                self.ros_handler.publish_current_drone_id(self.selected_drone + 1)
+                            
+                            # +1 extra cause camera indexing 
+                            self.camera_component.switch_to_drone_camera(self.selected_drone + 1, "front")
          
                         # Doesnt Work atm - need to keep track of what camera view is currently active
                         # So it switches views based on drone selected via teensyjoy
