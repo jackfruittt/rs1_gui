@@ -1,0 +1,948 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ros_handler &mdash; rs1_gui 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            rs1_gui
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">rs1_gui</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">rs1_gui</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Module code</a></li>
+      <li class="breadcrumb-item active">ros_handler</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ros_handler</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">queue</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Any</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">io</span><span class="w"> </span><span class="kn">import</span> <span class="n">StringIO</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">csv</span>
+
+
+<span class="n">ROS2_AVAILABLE</span> <span class="o">=</span> <span class="kc">False</span><span class="p">;</span>
+
+<div class="viewcode-block" id="ros2_available">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.ros2_available">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">ros2_available</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return if ROS2 imports succeeded on this system.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">ROS2_AVAILABLE</span></div>
+
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">rclpy</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">rclpy.node</span><span class="w"> </span><span class="kn">import</span> <span class="n">Node</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">sensor_msgs.msg</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">cv_bridge</span><span class="w"> </span><span class="kn">import</span> <span class="n">CvBridge</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">nav_msgs.msg</span><span class="w"> </span><span class="kn">import</span> <span class="n">Odometry</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">geometry_msgs.msg</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pose</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">std_msgs.msg</span><span class="w"> </span><span class="kn">import</span> <span class="n">String</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">std_srvs.srv</span><span class="w"> </span><span class="kn">import</span> <span class="n">SetBool</span>
+    <span class="n">ROS2_AVAILABLE</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">ROS2_AVAILABLE</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;ROS2 not available. ROS Handler will run in simulation mode.&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="RosHandler">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosHandler">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RosHandler</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Centralized ROS2 handler that manages all ROS topics in a single thread.</span>
+<span class="sd">    This allows the pygame GUI to remain responsive while handling ROS communications.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;rs1_gui_handler&#39;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">node_name</span> <span class="o">=</span> <span class="n">node_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">node</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ros_thread</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">running</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ros2_available</span> <span class="o">=</span> <span class="n">ROS2_AVAILABLE</span>
+        
+        <span class="c1"># Thread-safe data storage</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">camera_data</span> <span class="o">=</span> <span class="p">{}</span>       <span class="c1"># Store latest camera images by topic</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">telemetry_data</span> <span class="o">=</span> <span class="p">{}</span>    <span class="c1"># Store telemetry data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">odometry_data</span> <span class="o">=</span> <span class="p">{}</span>     <span class="c1"># Store odometry data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">topic_callbacks</span> <span class="o">=</span> <span class="p">{}</span>   <span class="c1"># Custom callbacks for topics</span>
+
+        <span class="c1"># Button-specific components</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">button_data</span> <span class="o">=</span> <span class="p">{}</span> <span class="c1"># Testing Remote Control</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">available_button_topics</span> <span class="o">=</span> <span class="p">[]</span>         
+
+        <span class="c1"># For syncing GUI drone selection with controller</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_gui_drone_id</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="c1"># Camera-specific components</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bridge</span> <span class="o">=</span> <span class="n">CvBridge</span><span class="p">()</span> <span class="k">if</span> <span class="n">ROS2_AVAILABLE</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">available_camera_topics</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="c1"># Odometry-specific components</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">available_odometry_topics</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Incident-specific components</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">available_incident_topics</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Array of drone ids (modular, doesn&#39;t need to be 1,2,3 could be 2,5,12)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">discovered_drone_ids</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Drone-specific components</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">drone_amount</span> <span class="o">=</span> <span class="mi">0</span>
+        
+        <span class="c1"># Remove periodic discovery - topics are fixed at startup</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">topics_discovered</span> <span class="o">=</span> <span class="kc">False</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros2_available</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_start_ros_node</span><span class="p">()</span>
+    
+    <span class="c1"># We can probably delete this now.</span>
+<div class="viewcode-block" id="RosHandler.set_expected_drone_topics">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosHandler.set_expected_drone_topics">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_expected_drone_topics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_drones</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">camera_types</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set expected drone topics without discovery.</span>
+<span class="sd">        Args:</span>
+<span class="sd">            num_drones: Number of drones (1, 2, 3, etc.)</span>
+<span class="sd">            camera_types: List of camera types per drone (default: [&#39;front&#39;, &#39;bottom&#39;])</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">camera_types</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">camera_types</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;front&#39;</span><span class="p">,</span> <span class="s1">&#39;bottom&#39;</span><span class="p">]</span>
+        
+        <span class="n">expected_topics</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">expected_incidents</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">drone_id</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_drones</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">camera_type</span> <span class="ow">in</span> <span class="n">camera_types</span><span class="p">:</span>
+                <span class="n">topic_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;/rs1_drone_</span><span class="si">{</span><span class="n">drone_id</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">camera_type</span><span class="si">}</span><span class="s2">/image&quot;</span>
+                <span class="n">expected_topics</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">topic_name</span><span class="p">)</span>
+            <span class="n">expected_incidents</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/rs1_drone_</span><span class="si">{</span><span class="n">drone_id</span><span class="si">}</span><span class="s2">/incident&quot;</span><span class="p">)</span>
+        
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_lock</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">available_camera_topics</span> <span class="o">=</span> <span class="n">expected_topics</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">available_incident_topics</span> <span class="o">=</span> <span class="n">expected_incidents</span>
+        
+        <span class="c1"># Should I remove this now?</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">topics_discovered</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># Skip automatic discovery</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Set expected topics for </span><span class="si">{</span><span class="n">num_drones</span><span class="si">}</span><span class="s2"> drones: </span><span class="si">{</span><span class="n">expected_topics</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">_start_ros_node</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Start the ROS2 node in a separate thread.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros2_available</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">running</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ros_thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_ros_thread_worker</span><span class="p">,</span> <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ros_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        
+        <span class="c1"># Give ROS2 time to initialise</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">_ros_thread_worker</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Main worker thread for ROS2 operations.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">rclpy</span><span class="o">.</span><span class="n">ok</span><span class="p">():</span>
+                <span class="n">rclpy</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
+            
+            <span class="bp">self</span><span class="o">.</span><span class="n">node</span> <span class="o">=</span> <span class="n">RosNode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">node_name</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+            
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ROS Handler started with node: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">node_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            
+            <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">running</span> <span class="ow">and</span> <span class="n">rclpy</span><span class="o">.</span><span class="n">ok</span><span class="p">():</span>
+                <span class="n">rclpy</span><span class="o">.</span><span class="n">spin_once</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">node</span><span class="p">,</span> <span class="n">timeout_sec</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+                
+                <span class="c1"># One-time topic discovery at startup</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">topics_discovered</span><span class="p">:</span>
+                    <span class="c1"># self._discover_topics()</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">discover_topics</span><span class="p">()</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">topics_discovered</span> <span class="o">=</span> <span class="kc">True</span>
+                
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ROS Handler thread error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">node</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">node</span><span class="o">.</span><span class="n">destroy_node</span><span class="p">()</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;ROS Handler thread terminated&quot;</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="RosHandler.discover_topics">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosHandler.discover_topics">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">discover_topics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Discover available ROS topics.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">node</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">topic_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">node</span><span class="o">.</span><span class="n">get_topic_names_and_types</span><span class="p">()</span>
+            <span class="n">camera_topics</span><span class="p">,</span> <span class="n">odometry_topics</span><span class="p">,</span> <span class="n">available_controller_topic</span><span class="p">,</span> <span class="n">button_topics</span><span class="p">,</span> <span class="n">incident_topics</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
+            
+            <span class="n">drone_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+            <span class="k">for</span> <span class="n">topic_name</span><span class="p">,</span> <span class="n">topic_types</span> <span class="ow">in</span> <span class="n">topic_list</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s1">&#39;sensor_msgs/msg/Image&#39;</span> <span class="ow">in</span> <span class="n">topic_types</span><span class="p">:</span>
+                    <span class="n">camera_topics</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">topic_name</span><span class="p">)</span>
+                <span class="k">if</span> <span class="s1">&#39;nav_msgs/msg/Odometry&#39;</span> <span class="ow">in</span> <span class="n">topic_types</span><span class="p">:</span>
+                    <span class="n">odometry_topics</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">topic_name</span><span class="p">)</span>
+                <span class="k">if</span> <span class="s1">&#39;/rs1_teensyjoy/button_control&#39;</span> <span class="ow">in</span> <span class="n">topic_name</span><span class="p">:</span> <span class="c1"># Here I directly mapped the topic name as there are other String Type Topics</span>
+                    <span class="n">button_topics</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">topic_name</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">topic_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;/incident&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="s1">&#39;std_msgs/msg/String&#39;</span> <span class="ow">in</span> <span class="n">topic_types</span><span class="p">:</span>
+                    <span class="n">incident_topics</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">topic_name</span><span class="p">)</span>
+
+                <span class="c1"># Collect drone ids from any segment like rs1_drone_&lt;id&gt;</span>
+                <span class="n">parts</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">topic_name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">p</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">seg</span> <span class="ow">in</span> <span class="n">parts</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">seg</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;rs1_drone_&#39;</span><span class="p">):</span>
+                        <span class="n">suffix</span> <span class="o">=</span> <span class="n">seg</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="s1">&#39;rs1_drone_&#39;</span><span class="p">):]</span>
+                        <span class="k">if</span> <span class="n">suffix</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+                            <span class="n">drone_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">suffix</span><span class="p">))</span>
+
+                <span class="c1"># Build proactive incident topics from discovered drone ids</span>
+                <span class="n">proactive_incidents</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;/rs1_drone_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">/incident&quot;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">drone_ids</span><span class="p">)]</span>
+                <span class="n">target_incident_topics</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">incident_topics</span><span class="p">)</span> <span class="o">|</span> <span class="nb">set</span><span class="p">(</span><span class="n">proactive_incidents</span><span class="p">))</span>
+
+            <span class="c1"># Update available camera topics</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_lock</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">available_camera_topics</span> <span class="o">=</span> <span class="n">camera_topics</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">available_odometry_topics</span> <span class="o">=</span> <span class="n">odometry_topics</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">available_incident_topics</span> <span class="o">=</span> <span class="n">target_incident_topics</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">discovered_drone_ids</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">drone_ids</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">available_button_topics</span> <span class="o">=</span> <span class="n">button_topics</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Discovered drone ids: </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">drone_ids</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Discovered </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">camera_topics</span><span class="p">)</span><span class="si">}</span><span class="s2"> camera topics: </span><span class="si">{</span><span class="n">camera_topics</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Discovered </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">odometry_topics</span><span class="p">)</span><span class="si">}</span><span class="s2"> odometry topics: </span><span class="si">{</span><span class="n">odometry_topics</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Discovered </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">incident_topics</span><span class="p">)</span><span class="si">}</span><span class="s2"> incident topics: </span><span class="si">{</span><span class="n">incident_topics</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Discovered </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">button_topics</span><span class="p">)</span><span class="si">}</span><span class="s2"> button topics: </span><span class="si">{</span><span class="n">button_topics</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Proactive incident subscriptions (all): </span><span class="si">{</span><span class="n">target_incident_topics</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error discovering topics: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+    
+
+<div class="viewcode-block" id="RosHandler.subscribe_to_incident_topic">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosHandler.subscribe_to_incident_topic">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">subscribe_to_incident_topic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">node</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros2_available</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">node</span><span class="o">.</span><span class="n">subscribe_to_incident</span><span class="p">(</span><span class="n">topic_name</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Subscribed to incident topic: </span><span class="si">{</span><span class="n">topic_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to subscribe to </span><span class="si">{</span><span class="n">topic_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span></div>
+
+        
+    <span class="c1"># Controller related functions</span>
+<div class="viewcode-block" id="RosHandler.call_teensy_connect">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosHandler.call_teensy_connect">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">call_teensy_connect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">connect</span><span class="p">:</span> <span class="nb">bool</span><span class="p">):</span>
+        <span class="c1"># True - connect, False - disconnect</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">node</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros2_available</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;ROS2 not available, cannot call service&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">node</span><span class="o">.</span><span class="n">call_connect_service</span><span class="p">(</span><span class="n">connect</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RosHandler.publish_current_drone_id">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosHandler.publish_current_drone_id">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">publish_current_drone_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">drone_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">node</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros2_available</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+            
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_lock</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">current_gui_drone_id</span> <span class="o">=</span> <span class="n">drone_id</span>
+                
+            <span class="bp">self</span><span class="o">.</span><span class="n">node</span><span class="o">.</span><span class="n">publish_drone_id</span><span class="p">(</span><span class="n">drone_id</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Published GUI drone ID: </span><span class="si">{</span><span class="n">drone_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to publish drone ID: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="RosHandler.get_current_gui_drone_id">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosHandler.get_current_gui_drone_id">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_current_gui_drone_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_lock</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_gui_drone_id</span></div>
+
+        
+    <span class="c1"># Button related functions based off the camera and odometry ones</span>
+    <span class="c1"># Some may be redundant</span>
+<div class="viewcode-block" id="RosHandler.subscribe_to_button_topic">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosHandler.subscribe_to_button_topic">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">subscribe_to_button_topic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">node</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros2_available</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">node</span><span class="o">.</span><span class="n">subscribe_to_button</span><span class="p">(</span><span class="n">topic_name</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Subscribed to button topic: </span><span class="si">{</span><span class="n">topic_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to subscribe to </span><span class="si">{</span><span class="n">topic_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span></div>
+
+        
+<div class="viewcode-block" id="RosHandler.get_available_button_topics">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosHandler.get_available_button_topics">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_available_button_topics</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_lock</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_button_topics</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="RosHandler.get_latest_button">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosHandler.get_latest_button">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_latest_button</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span> 
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_lock</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">button_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">topic_name</span><span class="p">,</span> <span class="p">{})</span></div>
+
+        
+<div class="viewcode-block" id="RosHandler.get_available_incident_topics">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosHandler.get_available_incident_topics">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_available_incident_topics</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_lock</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_incident_topics</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
+
+        
+<div class="viewcode-block" id="RosHandler.get_latest_incident">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosHandler.get_latest_incident">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_latest_incident</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span> <span class="c1">#AI</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_lock</span><span class="p">:</span>
+            <span class="n">seq</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;incident_data&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">topic_name</span><span class="p">)</span> 
+            <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">seq</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="k">if</span> <span class="n">seq</span> <span class="k">else</span> <span class="kc">None</span></div>
+
+
+    
+<div class="viewcode-block" id="RosHandler.subscribe_to_camera_topic">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosHandler.subscribe_to_camera_topic">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">subscribe_to_camera_topic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">node</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros2_available</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">node</span><span class="o">.</span><span class="n">subscribe_to_camera</span><span class="p">(</span><span class="n">topic_name</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Subscribed to camera topic: </span><span class="si">{</span><span class="n">topic_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to subscribe to </span><span class="si">{</span><span class="n">topic_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span></div>
+
+    
+<div class="viewcode-block" id="RosHandler.unsubscribe_from_camera_topic">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosHandler.unsubscribe_from_camera_topic">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unsubscribe_from_camera_topic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">node</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">node</span><span class="o">.</span><span class="n">unsubscribe_from_camera</span><span class="p">(</span><span class="n">topic_name</span><span class="p">)</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_lock</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">topic_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera_data</span><span class="p">:</span>
+                    <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera_data</span><span class="p">[</span><span class="n">topic_name</span><span class="p">]</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsubscribed from camera topic: </span><span class="si">{</span><span class="n">topic_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to unsubscribe from </span><span class="si">{</span><span class="n">topic_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span></div>
+
+    
+<div class="viewcode-block" id="RosHandler.get_latest_camera_image">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosHandler.get_latest_camera_image">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_latest_camera_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_lock</span><span class="p">:</span>
+            <span class="n">camera_info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">topic_name</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="n">image</span> <span class="o">=</span> <span class="n">camera_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;image&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="c1"># Only copy when actually needed by the GUI</span>
+            <span class="k">return</span> <span class="n">image</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">if</span> <span class="n">image</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span></div>
+
+    
+<div class="viewcode-block" id="RosHandler.get_camera_info">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosHandler.get_camera_info">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_camera_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_lock</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">topic_name</span><span class="p">,</span> <span class="p">{})</span></div>
+
+    
+<div class="viewcode-block" id="RosHandler.get_available_camera_topics">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosHandler.get_available_camera_topics">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_available_camera_topics</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_lock</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_camera_topics</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="RosHandler.register_topic_callback">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosHandler.register_topic_callback">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">register_topic_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">callback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">topic_callbacks</span><span class="p">[</span><span class="n">topic_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">callback</span></div>
+
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">_handle_camera_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bridge</span><span class="p">:</span>
+                <span class="n">cv_image</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bridge</span><span class="o">.</span><span class="n">imgmsg_to_cv2</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="s1">&#39;bgr8&#39;</span><span class="p">)</span>
+                
+                <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_lock</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">camera_data</span><span class="p">[</span><span class="n">topic_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="s1">&#39;image&#39;</span><span class="p">:</span> <span class="n">cv_image</span><span class="p">,</span> 
+                        <span class="s1">&#39;timestamp&#39;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+                        <span class="s1">&#39;header&#39;</span><span class="p">:</span> <span class="n">msg</span><span class="o">.</span><span class="n">header</span>
+                    <span class="p">}</span>
+                
+                <span class="c1"># Call custom callback if registered</span>
+                <span class="k">if</span> <span class="n">topic_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">topic_callbacks</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">topic_callbacks</span><span class="p">[</span><span class="n">topic_name</span><span class="p">](</span><span class="n">topic_name</span><span class="p">,</span> <span class="n">cv_image</span><span class="p">)</span>
+                    
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error processing camera message from </span><span class="si">{</span><span class="n">topic_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="RosHandler.get_status_info">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosHandler.get_status_info">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_status_info</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get status information about the ROS handler.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s1">&#39;ros2_available&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros2_available</span><span class="p">,</span>
+            <span class="s1">&#39;running&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">running</span><span class="p">,</span>
+            <span class="s1">&#39;node_name&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_name</span><span class="p">,</span>
+            <span class="s1">&#39;camera_topics_count&#39;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">available_camera_topics</span><span class="p">),</span>
+            <span class="s1">&#39;active_camera_subscriptions&#39;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">camera_data</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera_data</span> <span class="k">else</span> <span class="mi">0</span>
+        <span class="p">}</span></div>
+
+    
+<div class="viewcode-block" id="RosHandler.is_topic_active">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosHandler.is_topic_active">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_topic_active</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_camera_info</span><span class="p">(</span><span class="n">topic_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">info</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        
+        <span class="k">return</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;timestamp&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">2.0</span></div>
+
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">_handle_controller_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_lock</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">controller_data</span><span class="p">[</span><span class="n">topic_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;axes&quot;</span><span class="p">:</span> <span class="n">msg</span><span class="o">.</span><span class="n">axes</span><span class="p">,</span>
+                    <span class="s2">&quot;buttons&quot;</span><span class="p">:</span> <span class="n">msg</span><span class="o">.</span><span class="n">buttons</span><span class="p">,</span>
+                    <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+                <span class="p">}</span>
+            <span class="k">if</span> <span class="n">topic_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">topic_callbacks</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">topic_callbacks</span><span class="p">[</span><span class="n">topic_name</span><span class="p">](</span><span class="n">topic_name</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error processing controller message from </span><span class="si">{</span><span class="n">topic_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+    
+    <span class="c1"># Button Callback function</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_handle_button_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_lock</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">button_data</span><span class="p">[</span><span class="n">topic_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">msg</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+                    <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+                <span class="p">}</span>
+            <span class="k">if</span> <span class="n">topic_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">topic_callbacks</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">topic_callbacks</span><span class="p">[</span><span class="n">topic_name</span><span class="p">](</span><span class="n">topic_name</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error processing button message from </span><span class="si">{</span><span class="n">topic_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+
+<div class="viewcode-block" id="RosHandler.subscribe_to_odometry_topic">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosHandler.subscribe_to_odometry_topic">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">subscribe_to_odometry_topic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">node</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros2_available</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">node</span><span class="o">.</span><span class="n">subscribe_to_odometry</span><span class="p">(</span><span class="n">topic_name</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Subscribed to odometry topic: </span><span class="si">{</span><span class="n">topic_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to subscribe to </span><span class="si">{</span><span class="n">topic_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="RosHandler.unsubscribe_from_odometry_topic">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosHandler.unsubscribe_from_odometry_topic">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unsubscribe_from_odometry_topic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">node</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">node</span><span class="o">.</span><span class="n">unsubscribe_from_odometry</span><span class="p">(</span><span class="n">topic_name</span><span class="p">)</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_lock</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">topic_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">odometry_data</span><span class="p">:</span>
+                    <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">odometry_data</span><span class="p">[</span><span class="n">topic_name</span><span class="p">]</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsubscribed from odometry topic: </span><span class="si">{</span><span class="n">topic_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to unsubscribe from </span><span class="si">{</span><span class="n">topic_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_latest_odometry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span> <span class="c1"># The parameters might be wrong</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_lock</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">odometry_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">topic_name</span><span class="p">,</span> <span class="p">{})</span>
+
+<div class="viewcode-block" id="RosHandler.get_drone_pose">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosHandler.get_drone_pose">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_drone_pose</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span><span class="c1"># The parameters might be wrong</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_lock</span><span class="p">:</span>
+            <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">odometry_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">topic_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">info</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span>
+            <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;position&quot;</span><span class="p">]</span>
+            <span class="p">(</span><span class="n">roll</span><span class="p">,</span> <span class="n">pitch</span><span class="p">,</span> <span class="n">yaw</span><span class="p">)</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;rpy&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">roll</span><span class="p">,</span> <span class="n">pitch</span><span class="p">,</span> <span class="n">yaw</span></div>
+
+
+<div class="viewcode-block" id="RosHandler.get_available_odometry_topics">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosHandler.get_available_odometry_topics">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_available_odometry_topics</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_lock</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_odometry_topics</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
+
+    <span class="c1"># START AI suggested and wrote this, and I&#39;m not sure if we need it, but I&#39;ll leave it here since it could be useful</span>
+<div class="viewcode-block" id="RosHandler.get_drone_pose_by_id">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosHandler.get_drone_pose_by_id">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_drone_pose_by_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">drone_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_drone_pose</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/rs1_drone_</span><span class="si">{</span><span class="n">drone_id</span><span class="si">}</span><span class="s2">/odom&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RosHandler.is_odom_active">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosHandler.is_odom_active">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_odom_active</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_lock</span><span class="p">:</span>
+            <span class="n">ts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">odometry_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">topic_name</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;timestamp&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ts</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">ts</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">2.0</span></div>
+
+
+<div class="viewcode-block" id="RosHandler.get_latest_odometry">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosHandler.get_latest_odometry">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_latest_odometry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_lock</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">odometry_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">topic_name</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">if</span> <span class="n">data</span> <span class="k">else</span> <span class="kc">None</span></div>
+
+    <span class="c1"># END AI suggested and wrote this, and I&#39;m not sure if we need it, but I&#39;ll leave it here since it could be useful</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_handle_odometry_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">position</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">pose</span><span class="o">.</span><span class="n">pose</span><span class="o">.</span><span class="n">position</span>      <span class="c1"># x, y, z</span>
+            <span class="n">orientation</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">pose</span><span class="o">.</span><span class="n">pose</span><span class="o">.</span><span class="n">orientation</span>   <span class="c1"># quaternion x, y, z, w   </span>
+            <span class="n">ox</span><span class="p">,</span> <span class="n">oy</span><span class="p">,</span> <span class="n">oz</span><span class="p">,</span> <span class="n">ow</span> <span class="o">=</span> <span class="n">orientation</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">orientation</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">orientation</span><span class="o">.</span><span class="n">z</span><span class="p">,</span> <span class="n">orientation</span><span class="o">.</span><span class="n">w</span>
+            <span class="n">norm</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">ox</span><span class="o">*</span><span class="n">ox</span> <span class="o">+</span> <span class="n">oy</span><span class="o">*</span><span class="n">oy</span> <span class="o">+</span> <span class="n">oz</span><span class="o">*</span><span class="n">oz</span> <span class="o">+</span> <span class="n">ow</span><span class="o">*</span><span class="n">ow</span><span class="p">)</span> <span class="ow">or</span> <span class="mf">1.0</span> <span class="c1"># Normalise to be robust</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">w</span> <span class="o">=</span> <span class="n">ox</span><span class="o">/</span><span class="n">norm</span><span class="p">,</span> <span class="n">oy</span><span class="o">/</span><span class="n">norm</span><span class="p">,</span> <span class="n">oz</span><span class="o">/</span><span class="n">norm</span><span class="p">,</span> <span class="n">ow</span><span class="o">/</span><span class="n">norm</span>         
+            <span class="c1"># RPY conversion</span>
+            <span class="c1">##  CONFIRM MATH</span>
+            <span class="n">sinr_cosp</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="n">w</span><span class="o">*</span><span class="n">x</span> <span class="o">+</span> <span class="n">y</span><span class="o">*</span><span class="n">z</span><span class="p">);</span> <span class="n">cosr_cosp</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="o">*</span><span class="n">x</span> <span class="o">+</span> <span class="n">y</span><span class="o">*</span><span class="n">y</span><span class="p">)</span>
+            <span class="n">roll</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">atan2</span><span class="p">(</span><span class="n">sinr_cosp</span><span class="p">,</span> <span class="n">cosr_cosp</span><span class="p">)</span>
+            <span class="n">sinp</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="n">w</span><span class="o">*</span><span class="n">y</span> <span class="o">-</span> <span class="n">z</span><span class="o">*</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">pitch</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">asin</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">sinp</span><span class="p">)))</span>
+            <span class="n">siny_cosp</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="n">w</span><span class="o">*</span><span class="n">z</span> <span class="o">+</span> <span class="n">x</span><span class="o">*</span><span class="n">y</span><span class="p">);</span> <span class="n">cosy_cosp</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="n">y</span><span class="o">*</span><span class="n">y</span> <span class="o">+</span> <span class="n">z</span><span class="o">*</span><span class="n">z</span><span class="p">)</span>
+            <span class="n">yaw</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">atan2</span><span class="p">(</span><span class="n">siny_cosp</span><span class="p">,</span> <span class="n">cosy_cosp</span><span class="p">)</span>
+
+            <span class="n">now</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_lock</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">odometry_data</span><span class="p">[</span><span class="n">topic_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">position</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">position</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">position</span><span class="o">.</span><span class="n">z</span><span class="p">),</span>
+                    <span class="s2">&quot;orientation&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">orientation</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">orientation</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">orientation</span><span class="o">.</span><span class="n">z</span><span class="p">,</span> <span class="n">orientation</span><span class="o">.</span><span class="n">w</span><span class="p">),</span>
+                    <span class="s2">&quot;rpy&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">roll</span><span class="p">,</span> <span class="n">pitch</span><span class="p">,</span> <span class="n">yaw</span><span class="p">),</span>
+                    <span class="s1">&#39;odometry_topics_count&#39;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">odometry_data</span><span class="p">),</span> <span class="c1"># can be nice to have? idk, you can delete this @Marcus</span>
+                    <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">now</span><span class="p">,</span>         <span class="c1"># for LIVE/STALE checks</span>
+                    <span class="s2">&quot;header&quot;</span><span class="p">:</span> <span class="n">msg</span><span class="o">.</span><span class="n">header</span>      <span class="c1"># for frame_id, ROS stamp, etc.</span>
+
+                <span class="p">}</span>
+
+            <span class="c1"># Optional: custom callbacks can receive parsed odom</span>
+            <span class="k">if</span> <span class="n">topic_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">topic_callbacks</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">topic_callbacks</span><span class="p">[</span><span class="n">topic_name</span><span class="p">](</span><span class="n">topic_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">odometry_data</span><span class="p">[</span><span class="n">topic_name</span><span class="p">])</span>
+
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error processing odometry message from </span><span class="si">{</span><span class="n">topic_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_handle_incident_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parse a single std_msgs/String incident message and append it to the per-topic store.</span>
+
+<span class="sd">        Expected CSV (one line, no header):</span>
+<span class="sd">        drone_id, incident_id, title, severity, iso_time, x, y, z, description</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Lazy-init store so __init__ doesn&#39;t need edits</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;incident_data&quot;</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">incident_data</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># topic_name -&gt; [incident dict, ...]</span>
+
+            <span class="c1"># std_msgs/String keeps payload in .data</span>
+            <span class="n">payload</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">data</span>
+
+            <span class="c1"># CSV -&gt; dict (handles quoted commas in description)</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="n">StringIO</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+            <span class="n">fieldnames</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;drone_id&quot;</span><span class="p">,</span><span class="s2">&quot;incident_id&quot;</span><span class="p">,</span><span class="s2">&quot;title&quot;</span><span class="p">,</span><span class="s2">&quot;severity&quot;</span><span class="p">,</span><span class="s2">&quot;iso_time&quot;</span><span class="p">,</span><span class="s2">&quot;x&quot;</span><span class="p">,</span><span class="s2">&quot;y&quot;</span><span class="p">,</span><span class="s2">&quot;z&quot;</span><span class="p">,</span><span class="s2">&quot;description&quot;</span><span class="p">]</span>
+            <span class="n">reader</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">DictReader</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s2">&quot;,&quot;</span><span class="p">,</span> <span class="n">fieldnames</span><span class="o">=</span><span class="n">fieldnames</span><span class="p">,</span> <span class="n">skipinitialspace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">row</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">reader</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">row</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;INCIDENT PARSE FAIL: empty payload on topic </span><span class="si">{</span><span class="n">topic_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">return</span>
+
+            <span class="c1"># Required fields (drone_id numeric)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">drone_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;drone_id&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;INCIDENT PARSE FAIL: bad drone_id. Row=</span><span class="si">{</span><span class="n">row</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">return</span>
+
+            <span class="n">incident_id</span> <span class="o">=</span> <span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;incident_id&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">drone_id</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">*</span><span class="mi">1000</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">title</span> <span class="o">=</span> <span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;title&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="ow">or</span> <span class="s2">&quot;Unknown&quot;</span>
+
+            <span class="c1"># Severity -&gt; int in [1..3]</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">severity</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;severity&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;1&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="n">severity</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">severity</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">severity</span><span class="p">))</span>
+
+            <span class="n">iso_time</span> <span class="o">=</span> <span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;iso_time&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+            <span class="c1"># Coords -&gt; floats</span>
+            <span class="k">def</span><span class="w"> </span><span class="nf">_to_float</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="nb">float</span><span class="p">((</span><span class="n">v</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+                <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="kc">None</span>
+
+            <span class="n">x</span> <span class="o">=</span> <span class="n">_to_float</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">))</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">_to_float</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;y&quot;</span><span class="p">))</span>
+            <span class="n">z</span> <span class="o">=</span> <span class="n">_to_float</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;z&quot;</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">y</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">z</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;INCIDENT PARSE FAIL: bad coords. Row=</span><span class="si">{</span><span class="n">row</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">return</span>
+
+            <span class="n">desc</span> <span class="o">=</span> <span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;description&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+            <span class="n">incident</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">incident_id</span><span class="p">,</span>
+                <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="n">title</span><span class="p">,</span>
+                <span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="n">iso_time</span><span class="p">,</span>           <span class="c1"># display string (ISO)</span>
+                <span class="s2">&quot;severity&quot;</span><span class="p">:</span> <span class="n">severity</span><span class="p">,</span>       <span class="c1"># 1..3</span>
+                <span class="s2">&quot;drone&quot;</span><span class="p">:</span> <span class="n">drone_id</span><span class="p">,</span>          <span class="c1"># int</span>
+                <span class="s2">&quot;drone_coords&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">),</span>     <span class="c1"># floats</span>
+                <span class="s2">&quot;altitude&quot;</span><span class="p">:</span> <span class="n">z</span><span class="p">,</span>              <span class="c1"># float</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">desc</span><span class="p">,</span>
+                <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;open&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;last_update&quot;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+            <span class="p">}</span>
+
+            <span class="c1"># Append latest per topic (mirrors your odom storage style)</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_lock</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">incident_data</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">topic_name</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">incident</span><span class="p">)</span>
+
+            <span class="c1"># Optional: notify any custom callback registered for this topic</span>
+            <span class="n">cb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">topic_callbacks</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">topic_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">cb</span><span class="p">:</span>
+                <span class="n">cb</span><span class="p">(</span><span class="n">topic_name</span><span class="p">,</span> <span class="n">incident</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error processing INCIDENT message from </span><span class="si">{</span><span class="n">topic_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="RosHandler.get_drone_id_topics_amount">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosHandler.get_drone_id_topics_amount">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_drone_id_topics_amount</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">topic_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">node</span><span class="o">.</span><span class="n">get_topic_names_and_types</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[ROS Handler] Topics visible: </span><span class="si">{</span><span class="n">topic_list</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">drone_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">topic</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">topic_list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">topic</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;/rs1_drone_&quot;</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="c1"># Extract the drone id after the prefix</span>
+                    <span class="c1"># Assuming topic format is like &quot;/rs1_drone_1/odom&quot;</span>
+                    <span class="n">drone_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">topic</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="s2">&quot;/rs1_drone_&quot;</span><span class="p">):]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+                    <span class="n">drone_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">drone_id</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error parsing drone id from topic </span><span class="si">{</span><span class="n">topic</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">drone_amount</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">drone_ids</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">drone_amount</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RosHandler.cleanup">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosHandler.cleanup">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Cleaning up ROS Handler...&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">running</span> <span class="o">=</span> <span class="kc">False</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_thread</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_thread</span><span class="o">.</span><span class="n">is_alive</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ros_thread</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">node</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">node</span><span class="o">.</span><span class="n">destroy_node</span><span class="p">()</span>
+            
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;ROS Handler cleanup complete.&quot;</span><span class="p">)</span></div>
+</div>
+
+
+<span class="k">if</span> <span class="n">ROS2_AVAILABLE</span><span class="p">:</span>
+
+    <span class="k">class</span><span class="w"> </span><span class="nc">RosNode</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+        
+        <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">handler</span><span class="p">:</span> <span class="n">RosHandler</span><span class="p">):</span>
+            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">node_name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">handler</span> <span class="o">=</span> <span class="n">handler</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">camera_subscriptions</span> <span class="o">=</span> <span class="p">{}</span>      <span class="c1"># topic_name -&gt; subscription object</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">odometry_subscriptions</span> <span class="o">=</span> <span class="p">{}</span>    <span class="c1"># topic_name -&gt; subscription object</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">incident_subscriptions</span> <span class="o">=</span> <span class="p">{}</span>    <span class="c1"># topic_name -&gt; incident object</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">button_subscriptions</span> <span class="o">=</span> <span class="p">{}</span>      <span class="c1"># For buttons</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">controller_subscription</span> <span class="o">=</span> <span class="p">{}</span>   <span class="c1"># For controller</span>
+
+            <span class="c1"># For connecting to the controller </span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">teensy_connect_client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_client</span><span class="p">(</span><span class="n">SetBool</span><span class="p">,</span> <span class="s1">&#39;/rs1_teensyjoy/connect&#39;</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">drone_id_publisher</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_publisher</span><span class="p">(</span>
+                <span class="n">String</span><span class="p">,</span>
+                <span class="s1">&#39;/rs1_gui/current_drone_id&#39;</span><span class="p">,</span>
+                <span class="mi">10</span>
+            <span class="p">)</span>
+
+<div class="viewcode-block" id="RosNode.publish_drone_id">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosNode.publish_drone_id">[docs]</a>
+        <span class="k">def</span><span class="w"> </span><span class="nf">publish_drone_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">drone_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="n">String</span><span class="p">()</span>
+            <span class="n">msg</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">drone_id</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">drone_id_publisher</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+
+        
+<div class="viewcode-block" id="RosNode.subscribe_to_camera">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosNode.subscribe_to_camera">[docs]</a>
+        <span class="k">def</span><span class="w"> </span><span class="nf">subscribe_to_camera</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="c1"># Unsubscribe if already subscribed</span>
+            <span class="k">if</span> <span class="n">topic_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera_subscriptions</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">unsubscribe_from_camera</span><span class="p">(</span><span class="n">topic_name</span><span class="p">)</span>
+            
+            <span class="n">subscription</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_subscription</span><span class="p">(</span>
+                <span class="n">Image</span><span class="p">,</span>
+                <span class="n">topic_name</span><span class="p">,</span>
+                <span class="k">lambda</span> <span class="n">msg</span><span class="p">,</span> <span class="n">topic</span><span class="o">=</span><span class="n">topic_name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">handler</span><span class="o">.</span><span class="n">_handle_camera_message</span><span class="p">(</span><span class="n">topic</span><span class="p">,</span> <span class="n">msg</span><span class="p">),</span>
+                <span class="mi">10</span>
+            <span class="p">)</span>
+            
+            <span class="bp">self</span><span class="o">.</span><span class="n">camera_subscriptions</span><span class="p">[</span><span class="n">topic_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">subscription</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Subscribed to camera topic: </span><span class="si">{</span><span class="n">topic_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+        
+<div class="viewcode-block" id="RosNode.unsubscribe_from_camera">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosNode.unsubscribe_from_camera">[docs]</a>
+        <span class="k">def</span><span class="w"> </span><span class="nf">unsubscribe_from_camera</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">topic_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera_subscriptions</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">destroy_subscription</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">camera_subscriptions</span><span class="p">[</span><span class="n">topic_name</span><span class="p">])</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera_subscriptions</span><span class="p">[</span><span class="n">topic_name</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Unsubscribed from camera topic: </span><span class="si">{</span><span class="n">topic_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RosNode.subscribe_to_odometry">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosNode.subscribe_to_odometry">[docs]</a>
+        <span class="k">def</span><span class="w"> </span><span class="nf">subscribe_to_odometry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">topic_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">odometry_subscriptions</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">unsubscribe_from_odometry</span><span class="p">(</span><span class="n">topic_name</span><span class="p">)</span>
+                <span class="n">subscription</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_subscription</span> <span class="p">(</span>
+                    <span class="n">Odometry</span><span class="p">,</span>
+                    <span class="n">topic_name</span><span class="p">,</span>
+                    <span class="k">lambda</span> <span class="n">msg</span><span class="p">,</span> <span class="n">topic</span><span class="o">=</span><span class="n">topic_name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">handler</span><span class="o">.</span><span class="n">_handle_odometry_message</span><span class="p">(</span><span class="n">topic</span><span class="p">,</span> <span class="n">msg</span><span class="p">),</span>
+                    <span class="mi">10</span>
+                <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">odometry_subscriptions</span><span class="p">[</span><span class="n">topic_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">subscription</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Subscribed to odometry topic: </span><span class="si">{</span><span class="n">topic_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RosNode.unsubscribe_from_odometry">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosNode.unsubscribe_from_odometry">[docs]</a>
+        <span class="k">def</span><span class="w"> </span><span class="nf">unsubscribe_from_odometry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">topic_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">odometry_subscriptions</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">destroy_subscription</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">odometry_subscriptions</span><span class="p">[</span><span class="n">topic_name</span><span class="p">])</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">odometry_subscriptions</span><span class="p">[</span><span class="n">topic_name</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Unsubscribed from odometry topic: </span><span class="si">{</span><span class="n">topic_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RosNode.subscribe_to_incident">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosNode.subscribe_to_incident">[docs]</a>
+        <span class="k">def</span><span class="w"> </span><span class="nf">subscribe_to_incident</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">topic_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">incident_subscriptions</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">destroy_subscription</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">incident_subscriptions</span><span class="p">[</span><span class="n">topic_name</span><span class="p">])</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">incident_subscriptions</span><span class="p">[</span><span class="n">topic_name</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Unsubscribed from incident topic: </span><span class="si">{</span><span class="n">topic_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="n">subscription</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_subscription</span><span class="p">(</span>
+                <span class="n">String</span><span class="p">,</span>
+                <span class="n">topic_name</span><span class="p">,</span>
+                <span class="k">lambda</span> <span class="n">msg</span><span class="p">,</span> <span class="n">topic</span><span class="o">=</span><span class="n">topic_name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">handler</span><span class="o">.</span><span class="n">_handle_incident_message</span><span class="p">(</span><span class="n">topic</span><span class="p">,</span> <span class="n">msg</span><span class="p">),</span>
+                <span class="mi">10</span>
+            <span class="p">)</span></div>
+
+  
+
+<div class="viewcode-block" id="RosNode.unsubscribe_from_incident">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosNode.unsubscribe_from_incident">[docs]</a>
+        <span class="k">def</span><span class="w"> </span><span class="nf">unsubscribe_from_incident</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">topic_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">incident_subscription</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">destroy_subscription</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">incident_subscription</span><span class="p">[</span><span class="n">topic_name</span><span class="p">])</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">incident_subscription</span><span class="p">[</span><span class="n">topic_name</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Unsubscribed from incident topic: </span><span class="si">{</span><span class="n">topic_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RosNode.call_connect_service">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosNode.call_connect_service">[docs]</a>
+        <span class="k">def</span><span class="w"> </span><span class="nf">call_connect_service</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">connect</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">teensy_connect_client</span><span class="o">.</span><span class="n">wait_for_service</span><span class="p">(</span><span class="n">timeout_sec</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Teensy connect service not available&#39;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">False</span>
+            
+            <span class="n">request</span> <span class="o">=</span> <span class="n">SetBool</span><span class="o">.</span><span class="n">Request</span><span class="p">()</span>
+            <span class="n">request</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">connect</span>
+            
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">future</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">teensy_connect_client</span><span class="o">.</span><span class="n">call_async</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+                <span class="c1"># We&#39;re in the ROS thread, so we can wait briefly</span>
+                <span class="n">rclpy</span><span class="o">.</span><span class="n">spin_until_future_complete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">future</span><span class="p">,</span> <span class="n">timeout_sec</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+                
+                <span class="k">if</span> <span class="n">future</span><span class="o">.</span><span class="n">done</span><span class="p">():</span>
+                    <span class="n">response</span> <span class="o">=</span> <span class="n">future</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">success</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Teensy connect service: </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">message</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                        <span class="k">return</span> <span class="kc">True</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Teensy connect failed: </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">message</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                        <span class="k">return</span> <span class="kc">False</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Service call timed out&#39;</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="kc">False</span>
+                    
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Service call failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">False</span></div>
+
+        
+        <span class="c1"># Finally found where the functions are lmfao</span>
+<div class="viewcode-block" id="RosNode.subscribe_to_button">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosNode.subscribe_to_button">[docs]</a>
+        <span class="k">def</span><span class="w"> </span><span class="nf">subscribe_to_button</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">topic_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">button_subscriptions</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">unsubscribe_from_button</span><span class="p">(</span><span class="n">topic_name</span><span class="p">)</span>
+
+            <span class="n">subscription</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_subscription</span><span class="p">(</span>
+                <span class="n">String</span><span class="p">,</span> 
+                <span class="n">topic_name</span><span class="p">,</span>
+                <span class="k">lambda</span> <span class="n">msg</span><span class="p">,</span> <span class="n">topic</span><span class="o">=</span><span class="n">topic_name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">handler</span><span class="o">.</span><span class="n">_handle_button_message</span><span class="p">(</span><span class="n">topic</span><span class="p">,</span> <span class="n">msg</span><span class="p">),</span>
+                <span class="mi">10</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">button_subscriptions</span><span class="p">[</span><span class="n">topic_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">subscription</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Subscribed to button topic: </span><span class="si">{</span><span class="n">topic_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+
+        <span class="c1"># Not sure if needed but added as well</span>
+<div class="viewcode-block" id="RosNode.unsubscribe_from_button">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosNode.unsubscribe_from_button">[docs]</a>
+        <span class="k">def</span><span class="w"> </span><span class="nf">unsubscribe_from_button</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">topic_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">button_subscriptions</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">destroy_subscription</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">button_subscriptions</span><span class="p">[</span><span class="n">topic_name</span><span class="p">])</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">button_subscriptions</span><span class="p">[</span><span class="n">topic_name</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Unsubscribed from button topic: </span><span class="si">{</span><span class="n">topic_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+
+<span class="k">else</span><span class="p">:</span>
+<div class="viewcode-block" id="RosNode">
+<a class="viewcode-back" href="../ros_handler.html#ros_handler.RosNode">[docs]</a>
+    <span class="k">class</span><span class="w"> </span><span class="nc">RosNode</span><span class="p">:</span>
+        <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;ROS2 not available; RosNode cannot be used in simulation.&quot;</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Marcus Frischknecht, Matthew Chua, Jackson Russell, Ace Viray.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

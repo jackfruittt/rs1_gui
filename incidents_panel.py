@@ -2,8 +2,13 @@ import pygame
 from constants import *
 from utils import feather_image
 
-
 class IncidentsPanel:
+
+    """
+    Incident panel overlaid onto main GUI home screen to visualise identified incidents in the environment.
+    
+    """
+
     def __init__(self, fonts):
         self.fonts = fonts
         self.incident_y = 80  # starting y position for incident list
@@ -14,7 +19,17 @@ class IncidentsPanel:
         self.scroll_direction = 1
     
     def draw_incidents_panel(self, incidents, screen):
-        """Original draw_incidents_panel function"""
+        """
+        Original draw_incidents_panel function, with scrolling functionality.
+
+        Displays a panel showing a list of detected incidents with severity indicators.
+        
+        Args:
+            - incidents (list): List of incident data dictionaries.
+            - screen (pygame.Surface): The surface to draw the incidents panel onto scrollable panel displaying a list of detected incidents with severity indicators.
+
+        
+        """
         # Prepare list for click detection
         self.incident_card_rects = []
 
@@ -36,7 +51,7 @@ class IncidentsPanel:
             pygame.draw.rect(incidents_panel, DARK_GRAY, (30, y + 10, 60, 60))  # Image placeholder
             pygame.draw.rect(incidents_panel, severity_colors[inc["severity"] - 1], (20, y + 75, PANEL_WIDTH - 80, 5))
 
-            t1 = self.fonts['small_font'].render(f'#{i+1} {inc["title"]}', True, BLACK)
+            t1 = self.fonts['small_font'].render(f'{inc["title"]}', True, BLACK)
             t2 = self.fonts['small_font'].render(inc["time"], True, BLACK)
             incidents_panel.blit(t1, (100, y + 10))
             incidents_panel.blit(t2, (100, y + 40))

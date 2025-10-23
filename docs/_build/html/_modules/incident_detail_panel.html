@@ -1,0 +1,296 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>incident_detail_panel &mdash; rs1_gui 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            rs1_gui
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">rs1_gui</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">rs1_gui</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Module code</a></li>
+      <li class="breadcrumb-item active">incident_detail_panel</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for incident_detail_panel</h1><div class="highlight"><pre>
+<span></span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pygame</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">constants</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">feather_image</span>
+
+<div class="viewcode-block" id="IncidentDetailPanel">
+<a class="viewcode-back" href="../incident_detail_panel.html#incident_detail_panel.IncidentDetailPanel">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">IncidentDetailPanel</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Detail view for a single incident. Intended to replace the incidents list panel</span>
+<span class="sd">    when the user clicks on an incident card.</span>
+
+<span class="sd">    Style and sizing follow the same conventions as IncidentsPanel.</span>
+
+<span class="sd">    Exposes click handling for three controls:</span>
+<span class="sd">      - Close (top-right &#39;X&#39;)</span>
+<span class="sd">      - Respond (primary action button)</span>
+<span class="sd">      - Clear (secondary action button)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fonts</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fonts</span> <span class="o">=</span> <span class="n">fonts</span>
+        <span class="c1"># Absolute rects (screen space) for click detection</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_close_rect_abs</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_respond_rect_abs</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_clear_rect_abs</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="IncidentDetailPanel.draw_incident_detail">
+<a class="viewcode-back" href="../incident_detail_panel.html#incident_detail_panel.IncidentDetailPanel.draw_incident_detail">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">draw_incident_detail</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">incident</span><span class="p">,</span> <span class="n">screen</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Render the incident detail panel.</span>
+
+<span class="sd">        The User is notified in the main screen of the GUI of the detected incident details if any.</span>
+
+<span class="sd">        The included details of the incident can be seen below</span>
+
+<span class="sd">        NOTE: Update this param incident if the csv structure changes</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            - param incident: dict with keys:</span>
+<span class="sd">            id, title, time, severity, Platform, drone_coords, global_coords</span>
+<span class="sd">            - param screen: pygame Surface (main screen)</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Root panel surface (transparent)</span>
+        <span class="n">panel</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">Surface</span><span class="p">((</span><span class="n">PANEL_WIDTH</span><span class="p">,</span> <span class="n">PANEL_HEIGHT</span><span class="p">),</span> <span class="n">pygame</span><span class="o">.</span><span class="n">SRCALPHA</span><span class="p">)</span>
+        <span class="n">panel</span><span class="o">.</span><span class="n">fill</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+
+        <span class="c1"># ===== Top bars (match list panel) =====</span>
+        <span class="n">pygame</span><span class="o">.</span><span class="n">draw</span><span class="o">.</span><span class="n">rect</span><span class="p">(</span><span class="n">panel</span><span class="p">,</span> <span class="n">GRAY</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">PANEL_WIDTH</span><span class="p">,</span> <span class="mi">77</span><span class="p">))</span>
+        <span class="n">pygame</span><span class="o">.</span><span class="n">draw</span><span class="o">.</span><span class="n">rect</span><span class="p">(</span><span class="n">panel</span><span class="p">,</span> <span class="n">DARK_GRAY</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">PANEL_WIDTH</span><span class="p">,</span> <span class="mi">20</span><span class="p">))</span>
+
+        <span class="c1"># Title</span>
+        <span class="n">title_text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fonts</span><span class="p">[</span><span class="s1">&#39;font&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="s2">&quot;Incident Detail&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">WHITE</span><span class="p">)</span>
+        <span class="n">panel</span><span class="o">.</span><span class="n">blit</span><span class="p">(</span><span class="n">title_text</span><span class="p">,</span> <span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">))</span>
+
+        <span class="c1"># Close button (&#39;X&#39;) in top-right</span>
+        <span class="n">close_size</span> <span class="o">=</span> <span class="mi">50</span>
+        <span class="n">close_rel</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">Rect</span><span class="p">(</span><span class="n">PANEL_WIDTH</span> <span class="o">-</span> <span class="n">close_size</span> <span class="o">-</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">24</span><span class="p">,</span> <span class="n">close_size</span><span class="p">,</span> <span class="n">close_size</span><span class="p">)</span>
+        <span class="n">pygame</span><span class="o">.</span><span class="n">draw</span><span class="o">.</span><span class="n">rect</span><span class="p">(</span><span class="n">panel</span><span class="p">,</span> <span class="n">LIGHT_GRAY</span><span class="p">,</span> <span class="n">close_rel</span><span class="p">)</span>
+        <span class="n">x_text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fonts</span><span class="p">[</span><span class="s1">&#39;small_font&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="s2">&quot;X&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">BLACK</span><span class="p">)</span>
+        <span class="c1"># Center &#39;X&#39; in the button</span>
+        <span class="n">panel</span><span class="o">.</span><span class="n">blit</span><span class="p">(</span><span class="n">x_text</span><span class="p">,</span> <span class="p">(</span><span class="n">close_rel</span><span class="o">.</span><span class="n">x</span> <span class="o">+</span> <span class="p">(</span><span class="n">close_rel</span><span class="o">.</span><span class="n">w</span> <span class="o">-</span> <span class="n">x_text</span><span class="o">.</span><span class="n">get_width</span><span class="p">())</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span>
+                            <span class="n">close_rel</span><span class="o">.</span><span class="n">y</span> <span class="o">+</span> <span class="p">(</span><span class="n">close_rel</span><span class="o">.</span><span class="n">h</span> <span class="o">-</span> <span class="n">x_text</span><span class="o">.</span><span class="n">get_height</span><span class="p">())</span> <span class="o">//</span> <span class="mi">2</span><span class="p">))</span>
+
+        <span class="c1"># Store absolute rect for click detection</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_close_rect_abs</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">Rect</span><span class="p">(</span><span class="n">PANEL_X</span> <span class="o">+</span> <span class="n">close_rel</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">PANEL_Y</span> <span class="o">+</span> <span class="n">close_rel</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
+                                           <span class="n">close_rel</span><span class="o">.</span><span class="n">w</span><span class="p">,</span> <span class="n">close_rel</span><span class="o">.</span><span class="n">h</span><span class="p">)</span>
+
+        <span class="c1"># ===== Content card =====</span>
+        <span class="n">content_margin</span> <span class="o">=</span> <span class="mi">20</span>
+        <span class="n">card_top</span> <span class="o">=</span> <span class="mi">90</span>
+        <span class="n">card_height</span> <span class="o">=</span> <span class="n">PANEL_HEIGHT</span> <span class="o">-</span> <span class="n">card_top</span> <span class="o">-</span> <span class="mi">90</span>
+        <span class="n">pygame</span><span class="o">.</span><span class="n">draw</span><span class="o">.</span><span class="n">rect</span><span class="p">(</span><span class="n">panel</span><span class="p">,</span> <span class="n">LIGHT_GRAY</span><span class="p">,</span> <span class="p">(</span><span class="n">content_margin</span><span class="p">,</span> <span class="n">card_top</span><span class="p">,</span>
+                                             <span class="n">PANEL_WIDTH</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">content_margin</span><span class="p">,</span> <span class="n">card_height</span><span class="p">))</span>
+
+        <span class="c1"># Severity accent line (bottom of the content card)</span>
+        <span class="n">sev_color</span> <span class="o">=</span> <span class="n">severity_colors</span><span class="p">[</span><span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">incidents_severity_index</span><span class="p">(</span><span class="n">incident</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">severity_colors</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">))]</span>
+        <span class="n">pygame</span><span class="o">.</span><span class="n">draw</span><span class="o">.</span><span class="n">rect</span><span class="p">(</span><span class="n">panel</span><span class="p">,</span> <span class="n">sev_color</span><span class="p">,</span> <span class="p">(</span><span class="n">content_margin</span><span class="p">,</span> <span class="n">card_top</span> <span class="o">+</span> <span class="n">card_height</span> <span class="o">-</span> <span class="mi">6</span><span class="p">,</span>
+                                            <span class="n">PANEL_WIDTH</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">content_margin</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+
+        <span class="c1"># ===== Image placeholder =====</span>
+        <span class="c1"># Keep proportions and spacing similar to list panel; slightly larger for detail</span>
+        <span class="n">img_w</span><span class="p">,</span> <span class="n">img_h</span> <span class="o">=</span> <span class="mi">220</span><span class="p">,</span> <span class="mi">160</span>
+        <span class="n">img_x</span> <span class="o">=</span> <span class="n">content_margin</span> <span class="o">+</span> <span class="mi">10</span>
+        <span class="n">img_y</span> <span class="o">=</span> <span class="n">card_top</span> <span class="o">+</span> <span class="mi">10</span>
+        <span class="n">pygame</span><span class="o">.</span><span class="n">draw</span><span class="o">.</span><span class="n">rect</span><span class="p">(</span><span class="n">panel</span><span class="p">,</span> <span class="n">DARK_GRAY</span><span class="p">,</span> <span class="p">(</span><span class="n">img_x</span><span class="p">,</span> <span class="n">img_y</span><span class="p">,</span> <span class="n">img_w</span><span class="p">,</span> <span class="n">img_h</span><span class="p">))</span>
+
+        <span class="c1"># ===== Textual details =====</span>
+        <span class="c1"># Left column: image; right column: metadata</span>
+        <span class="n">meta_x</span> <span class="o">=</span> <span class="n">img_x</span> <span class="o">+</span> <span class="n">img_w</span> <span class="o">+</span> <span class="mi">20</span>
+        <span class="n">meta_y</span> <span class="o">=</span> <span class="n">img_y</span>
+        <span class="n">line_gap</span> <span class="o">=</span> <span class="mi">10</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">line</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">font_key</span><span class="o">=</span><span class="s1">&#39;small_font&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">BLACK</span><span class="p">):</span>
+            <span class="n">surf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fonts</span><span class="p">[</span><span class="n">font_key</span><span class="p">]</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">color</span><span class="p">)</span>
+            <span class="k">nonlocal</span> <span class="n">meta_y</span>
+            <span class="n">panel</span><span class="o">.</span><span class="n">blit</span><span class="p">(</span><span class="n">surf</span><span class="p">,</span> <span class="p">(</span><span class="n">meta_x</span><span class="p">,</span> <span class="n">meta_y</span><span class="p">))</span>
+            <span class="n">meta_y</span> <span class="o">+=</span> <span class="n">surf</span><span class="o">.</span><span class="n">get_height</span><span class="p">()</span> <span class="o">+</span> <span class="n">line_gap</span>
+
+        <span class="c1"># Header with id and title</span>
+        <span class="n">hdr</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">incident</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Unknown&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">line</span><span class="p">(</span><span class="n">hdr</span><span class="p">,</span> <span class="n">font_key</span><span class="o">=</span><span class="s1">&#39;font&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Time &amp; severity</span>
+        <span class="n">line</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Time: </span><span class="si">{</span><span class="n">incident</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;time&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;—&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">line</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Severity: </span><span class="si">{</span><span class="n">incident</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;severity&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;—&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Platform / coordinates</span>
+        <span class="n">line</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Drone: </span><span class="si">{</span><span class="n">incident</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;drone&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;—&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">drone_coords</span> <span class="o">=</span> <span class="n">incident</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;drone_coords&#39;</span><span class="p">,</span> <span class="p">(</span><span class="s1">&#39;—&#39;</span><span class="p">,</span> <span class="s1">&#39;—&#39;</span><span class="p">))</span>
+        <span class="n">line</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Drone coords: </span><span class="si">{</span><span class="n">drone_coords</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="c1"># ===== Action buttons (bottom area) =====</span>
+        <span class="n">btn_w</span><span class="p">,</span> <span class="n">btn_h</span> <span class="o">=</span> <span class="mi">140</span><span class="p">,</span> <span class="mi">46</span>
+        <span class="n">space</span> <span class="o">=</span> <span class="mi">16</span>
+        <span class="n">btn_y</span> <span class="o">=</span> <span class="n">PANEL_HEIGHT</span> <span class="o">-</span> <span class="n">btn_h</span> <span class="o">-</span> <span class="mi">20</span>
+
+        <span class="c1"># Primary: Respond (right-aligned group)</span>
+        <span class="n">respond_rel</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">Rect</span><span class="p">(</span><span class="n">PANEL_WIDTH</span> <span class="o">-</span> <span class="n">content_margin</span> <span class="o">-</span> <span class="n">btn_w</span><span class="p">,</span> <span class="n">btn_y</span><span class="p">,</span> <span class="n">btn_w</span><span class="p">,</span> <span class="n">btn_h</span><span class="p">)</span>
+        <span class="n">clear_rel</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">Rect</span><span class="p">(</span><span class="n">respond_rel</span><span class="o">.</span><span class="n">x</span> <span class="o">-</span> <span class="n">btn_w</span> <span class="o">-</span> <span class="n">space</span><span class="p">,</span> <span class="n">btn_y</span><span class="p">,</span> <span class="n">btn_w</span><span class="p">,</span> <span class="n">btn_h</span><span class="p">)</span>
+
+        <span class="c1"># Buttons visual</span>
+        <span class="k">for</span> <span class="n">r</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="p">((</span><span class="n">clear_rel</span><span class="p">,</span> <span class="s2">&quot;Clear&quot;</span><span class="p">),</span> <span class="p">(</span><span class="n">respond_rel</span><span class="p">,</span> <span class="s2">&quot;Respond&quot;</span><span class="p">)):</span>
+            <span class="n">pygame</span><span class="o">.</span><span class="n">draw</span><span class="o">.</span><span class="n">rect</span><span class="p">(</span><span class="n">panel</span><span class="p">,</span> <span class="n">LIGHT_GRAY</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
+            <span class="n">txt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fonts</span><span class="p">[</span><span class="s1">&#39;small_font&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">BLACK</span><span class="p">)</span>
+            <span class="n">panel</span><span class="o">.</span><span class="n">blit</span><span class="p">(</span><span class="n">txt</span><span class="p">,</span> <span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">x</span> <span class="o">+</span> <span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">w</span> <span class="o">-</span> <span class="n">txt</span><span class="o">.</span><span class="n">get_width</span><span class="p">())</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span>
+                             <span class="n">r</span><span class="o">.</span><span class="n">y</span> <span class="o">+</span> <span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">h</span> <span class="o">-</span> <span class="n">txt</span><span class="o">.</span><span class="n">get_height</span><span class="p">())</span> <span class="o">//</span> <span class="mi">2</span><span class="p">))</span>
+
+        <span class="c1"># Feathered bottom strip (same visual motif as list panel)</span>
+        <span class="n">bottom_rect</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">Surface</span><span class="p">((</span><span class="n">PANEL_WIDTH</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span> <span class="n">pygame</span><span class="o">.</span><span class="n">SRCALPHA</span><span class="p">)</span>
+        <span class="n">bottom_rect</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">DARK_GRAY</span><span class="p">)</span>
+        <span class="n">bottom_feathered</span> <span class="o">=</span> <span class="n">feather_image</span><span class="p">(</span><span class="n">bottom_rect</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span>
+                                         <span class="n">feather_top</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">feather_right</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                         <span class="n">feather_bottom</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">feather_left</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">panel</span><span class="o">.</span><span class="n">blit</span><span class="p">(</span><span class="n">bottom_feathered</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">PANEL_HEIGHT</span> <span class="o">-</span> <span class="mi">30</span><span class="p">))</span>
+
+        <span class="c1"># Store absolute rects for click handling</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_respond_rect_abs</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">Rect</span><span class="p">(</span><span class="n">PANEL_X</span> <span class="o">+</span> <span class="n">respond_rel</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">PANEL_Y</span> <span class="o">+</span> <span class="n">respond_rel</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
+                                             <span class="n">respond_rel</span><span class="o">.</span><span class="n">w</span><span class="p">,</span> <span class="n">respond_rel</span><span class="o">.</span><span class="n">h</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_clear_rect_abs</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">Rect</span><span class="p">(</span><span class="n">PANEL_X</span> <span class="o">+</span> <span class="n">clear_rel</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">PANEL_Y</span> <span class="o">+</span> <span class="n">clear_rel</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
+                                           <span class="n">clear_rel</span><span class="o">.</span><span class="n">w</span><span class="p">,</span> <span class="n">clear_rel</span><span class="o">.</span><span class="n">h</span><span class="p">)</span>
+
+        <span class="c1"># Final blit</span>
+        <span class="n">screen</span><span class="o">.</span><span class="n">blit</span><span class="p">(</span><span class="n">panel</span><span class="p">,</span> <span class="p">(</span><span class="n">PANEL_X</span><span class="p">,</span> <span class="n">PANEL_Y</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="IncidentDetailPanel.handle_click">
+<a class="viewcode-back" href="../incident_detail_panel.html#incident_detail_panel.IncidentDetailPanel.handle_click">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">handle_click</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pos</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Translate a mouse position (screen coords) into a semantic action.</span>
+<span class="sd">        Returns one of: &#39;close&#39;, &#39;respond&#39;, &#39;clear&#39;, or None if no control was hit.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            - pos (tuple): (x, y) mouse position in screen coordinates.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            - str or None: Action string if a control was clicked, else None. str output depends on which control was clicked.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_close_rect_abs</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_close_rect_abs</span><span class="o">.</span><span class="n">collidepoint</span><span class="p">(</span><span class="n">pos</span><span class="p">):</span>
+            <span class="k">return</span> <span class="s1">&#39;close&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_respond_rect_abs</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_respond_rect_abs</span><span class="o">.</span><span class="n">collidepoint</span><span class="p">(</span><span class="n">pos</span><span class="p">):</span>
+            <span class="k">return</span> <span class="s1">&#39;respond&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clear_rect_abs</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clear_rect_abs</span><span class="o">.</span><span class="n">collidepoint</span><span class="p">(</span><span class="n">pos</span><span class="p">):</span>
+            <span class="k">return</span> <span class="s1">&#39;clear&#39;</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="incidents_severity_index">
+<a class="viewcode-back" href="../incident_detail_panel.html#incident_detail_panel.incidents_severity_index">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">incidents_severity_index</span><span class="p">(</span><span class="n">incident</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Helper to convert incident[&#39;severity&#39;] to index for severity_colors,</span>
+<span class="sd">    clamping to valid range (0-based).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        - incident (dict): Incident data dictionary.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        - int: Severity index (0-based).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sev</span> <span class="o">=</span> <span class="n">incident</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;severity&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">sev</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">sev</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="n">sev</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="c1"># Map severity 1..N to index 0..N-1, clamp</span>
+    <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">sev</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Marcus Frischknecht, Matthew Chua, Jackson Russell, Ace Viray.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
