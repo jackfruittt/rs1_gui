@@ -4,13 +4,27 @@ from constants import *
 
 class DroneControlPanel:
     def __init__(self, app, fonts):
+        """
+        Initialises the drone control panel.
+        
+        Args:
+            - app: The main application instance.
+            - fonts: Dictionary of Pygame font objects.
+        """
         self.app = app
         self.fonts = fonts
         self.button_rects = []
         
     
     def drone_ui(self, screen):
-        """Original drone_ui function - Draw Drone panel and handle click detection."""
+        """
+        Original drone_ui function - Draw Drone panel and handle click detection.
+        
+        Drone control panel in the GUI. Handles drawing the panel and buttons onto the screen.
+
+        Args:
+            - screen (pygame.Surface): The surface to draw the drone control panel onto.
+        """
         self.button_rects = []  # Reset for click detection
 
         # Button definitions

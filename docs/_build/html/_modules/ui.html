@@ -1,0 +1,740 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ui &mdash; rs1_gui 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            rs1_gui
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">rs1_gui</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">rs1_gui</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Module code</a></li>
+      <li class="breadcrumb-item active">ui</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ui</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">RS1 Drone Swarm Control GUI - Main UI File (Refactored)</span>
+<span class="sd">This is the main file that integrates all components together.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="c1"># Force a known domain (use the same everywhere)</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;ROS_DOMAIN_ID&quot;</span><span class="p">,</span> <span class="s2">&quot;0&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[GUI] ROS_DOMAIN_ID=</span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;ROS_DOMAIN_ID&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pygame</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">cv2</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+
+
+<span class="c1"># Import our components</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">constants</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">feather_image</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ros_handler</span><span class="w"> </span><span class="kn">import</span> <span class="n">RosHandler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ros_handler</span><span class="w"> </span><span class="kn">import</span> <span class="n">ros2_available</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">camera_ros</span><span class="w"> </span><span class="kn">import</span> <span class="n">CameraComponent</span>  <span class="c1"># Replaced VideoPlayer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">drones_panel</span><span class="w"> </span><span class="kn">import</span> <span class="n">dronesPanel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">incidents_panel</span><span class="w"> </span><span class="kn">import</span> <span class="n">IncidentsPanel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">drone_control_panel</span><span class="w"> </span><span class="kn">import</span> <span class="n">DroneControlPanel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">map_panel</span><span class="w"> </span><span class="kn">import</span> <span class="n">MapPanel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">incident_detail_panel</span><span class="w"> </span><span class="kn">import</span> <span class="n">IncidentDetailPanel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">spawn_prompt</span><span class="w"> </span><span class="kn">import</span> <span class="n">SpawnPromptPanel</span>
+
+<div class="viewcode-block" id="RS1GUI">
+<a class="viewcode-back" href="../ui.html#ui.RS1GUI">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RS1GUI</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Main GUI application class&quot;&quot;&quot;</span> 
+    
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">pygame</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">screen</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">display</span><span class="o">.</span><span class="n">set_mode</span><span class="p">((</span><span class="mi">1900</span><span class="p">,</span> <span class="mi">860</span><span class="p">))</span>
+        <span class="n">pygame</span><span class="o">.</span><span class="n">display</span><span class="o">.</span><span class="n">set_caption</span><span class="p">(</span><span class="s2">&quot;RS1 GUI&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clock</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">Clock</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">simReady</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ros_available</span> <span class="o">=</span> <span class="n">ros2_available</span><span class="p">()</span>   <span class="c1"># was True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">drones</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">camera_component</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_incident_seen</span> <span class="o">=</span> <span class="p">{}</span>          <span class="c1"># key: (drone, id) -&gt; index in self.incidents</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_incident_cleared</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>    <span class="c1"># optional: keys you&#39;ve cleared in UI</span>
+
+        
+        <span class="c1"># Load fonts</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fonts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_fonts</span><span class="p">()</span>
+
+        <span class="c1"># camera (fully guarded)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera_component</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">camera_component</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">camera_component</span><span class="o">.</span><span class="n">draw</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">screen</span><span class="p">)</span>
+            <span class="n">status_text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera_component</span><span class="o">.</span><span class="n">get_status_info</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">status_text</span> <span class="o">=</span> <span class="s2">&quot;Cameras: not initialised yet&quot;</span>
+
+        <span class="c1"># sync drones from odom once per frame</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_available</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">simReady</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sync_drones_from_odom</span><span class="p">()</span>
+
+        <span class="c1"># UI state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selected_incident</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selected_drone</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">running</span> <span class="o">=</span> <span class="kc">True</span>
+        
+        <span class="c1"># Load assets</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">forest_splash</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;media/images/forest_splash.jpg&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">convert</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splash_rect</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">forest_splash</span><span class="o">.</span><span class="n">get_rect</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="p">(</span><span class="mi">640</span><span class="p">,</span> <span class="mi">360</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_top_view</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;media/images/bird_view.png&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">convert_alpha</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">drone_icon</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;media/images/drone.png&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">convert_alpha</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">drone_icon</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">transform</span><span class="o">.</span><span class="n">scale</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">drone_icon</span><span class="p">,</span> <span class="p">(</span><span class="mi">35</span><span class="p">,</span> <span class="mi">35</span><span class="p">))</span>
+        
+        <span class="c1"># Create feathered splash</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">feathered_splash</span> <span class="o">=</span> <span class="n">feather_image</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">forest_splash</span><span class="p">,</span> <span class="mi">150</span><span class="p">,</span> <span class="mi">150</span><span class="p">,</span> 
+            <span class="n">feather_top</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">feather_right</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">feather_bottom</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+        
+        <span class="c1"># Initialize centralized ROS handler</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span> <span class="o">=</span> <span class="n">RosHandler</span><span class="p">(</span><span class="s1">&#39;rs1_gui_main&#39;</span><span class="p">)</span>
+        <span class="c1"># Initialize camera component as None initially</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">camera_component</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># Initialise panels</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spawn_panel</span> <span class="o">=</span> <span class="n">SpawnPromptPanel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fonts</span><span class="p">,</span> <span class="n">ros2_available</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">drones_panel</span> <span class="o">=</span> <span class="n">dronesPanel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fonts</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">incidents_panel</span> <span class="o">=</span> <span class="n">IncidentsPanel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fonts</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">drone_control_panel</span> <span class="o">=</span> <span class="n">DroneControlPanel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fonts</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_panel</span> <span class="o">=</span> <span class="n">MapPanel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">map_top_view</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">drone_icon</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">incident_detail_panel</span> <span class="o">=</span> <span class="n">IncidentDetailPanel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fonts</span><span class="p">)</span>
+    
+        
+        <span class="c1"># Initialise data </span>
+        <span class="c1"># self.drones = self._generate_drones()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">drones</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">incidents</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Controller Checking, 0 - no controller found, 1 - controller connected </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">controller_connected</span> <span class="o">=</span> <span class="mi">0</span> 
+
+        <span class="c1"># To store button state and handling button data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">buttons</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_button_states</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_drone_id</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="c1"># if ros2_available:</span>
+        <span class="c1">#     for _ in range(4):</span>
+        <span class="c1">#         self.drones.append(self.generate_drone())</span>
+
+        <span class="c1">#     for _ in range(random.randint(3,10)):</span>
+        <span class="c1">#         self.incidents.append(self.generate_random_incident())</span>
+        
+        <span class="c1"># Fade state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">show_left_fade</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">left_fade_start</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">left_fadeIn</span> <span class="o">=</span> <span class="kc">True</span>
+
+<div class="viewcode-block" id="RS1GUI.apply_odometry_to_robot">
+<a class="viewcode-back" href="../ui.html#ui.RS1GUI.apply_odometry_to_robot">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">apply_odometry_to_robot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">robot</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">odom</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">odom</span><span class="p">[</span><span class="s2">&quot;position&quot;</span><span class="p">]</span>
+            <span class="n">yaw_deg</span> <span class="o">=</span> <span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">odom</span><span class="p">[</span><span class="s2">&quot;rpy&quot;</span><span class="p">][</span><span class="mi">2</span><span class="p">])</span> <span class="o">+</span> <span class="mf">360.0</span><span class="p">)</span> <span class="o">%</span> <span class="mf">360.0</span>
+            <span class="n">robot</span><span class="p">[</span><span class="s2">&quot;gps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">x</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">y</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">robot</span><span class="p">[</span><span class="s2">&quot;altitude&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">z</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">m&quot;</span>
+            <span class="n">robot</span><span class="p">[</span><span class="s2">&quot;yaw&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">yaw_deg</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_update_drones_from_odometry</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">robot</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">drones</span><span class="p">):</span>
+            <span class="n">topic</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;/rs1_drone_</span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">/odom&quot;</span>
+            <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">get_latest_odometry</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">info</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">is_odom_active</span><span class="p">(</span><span class="n">topic</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">apply_odometry_to_robot</span><span class="p">(</span><span class="n">robot</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_sync_incidents_from_ros</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Ask the handler which incident topics exist</span>
+        <span class="n">topics</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;incident_topics&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> \
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">get_available_incident_topics</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_available</span> <span class="k">else</span> <span class="p">[])</span>
+
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">topics</span><span class="p">:</span>
+            <span class="n">inc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">get_latest_incident</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>  <span class="c1"># last incident per topic</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">inc</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="p">(</span><span class="n">inc</span><span class="p">[</span><span class="s2">&quot;drone&quot;</span><span class="p">],</span> <span class="n">inc</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_incident_cleared</span><span class="p">:</span>
+                <span class="k">continue</span>  <span class="c1"># don&#39;t re-show locally cleared items</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_incident_seen</span><span class="p">:</span>
+                <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_incident_seen</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+                <span class="c1"># Update existing item in place (keeps selection indices stF_syuable)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">incidents</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">inc</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_incident_seen</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">incidents</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">incidents</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">inc</span><span class="p">)</span>
+
+        <span class="c1"># (Optional) keep the list small and roughly newest-first without re-sorting every frame</span>
+        <span class="n">MAX_INC</span> <span class="o">=</span> <span class="mi">200</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">incidents</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">MAX_INC</span><span class="p">:</span>
+            <span class="c1"># simple trim from the front; adjust bookkeeping</span>
+            <span class="n">drop</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">incidents</span><span class="p">)</span> <span class="o">-</span> <span class="n">MAX_INC</span>
+            <span class="n">dropped</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">drop</span><span class="p">):</span>
+                <span class="n">old</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">incidents</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">dropped</span><span class="o">.</span><span class="n">add</span><span class="p">((</span><span class="n">old</span><span class="p">[</span><span class="s2">&quot;drone&quot;</span><span class="p">],</span> <span class="n">old</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">incidents</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">incidents</span><span class="p">[</span><span class="n">drop</span><span class="p">:]</span>
+            <span class="c1"># rebuild index map</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_incident_seen</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">it</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">incidents</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_incident_seen</span><span class="p">[(</span><span class="n">it</span><span class="p">[</span><span class="s2">&quot;drone&quot;</span><span class="p">],</span> <span class="n">it</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">])]</span> <span class="o">=</span> <span class="n">i</span>
+            <span class="c1"># also clean cleared set</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_incident_cleared</span><span class="o">.</span><span class="n">difference_update</span><span class="p">(</span><span class="n">dropped</span><span class="p">)</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">_load_fonts</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load all fonts&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">fonts</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s1">&#39;font&#39;</span><span class="p">:</span> <span class="n">pygame</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">Font</span><span class="p">(</span><span class="s2">&quot;media/fonts/TurretRoad-Bold.otf&quot;</span><span class="p">,</span> <span class="mi">32</span><span class="p">),</span>
+                <span class="s1">&#39;small_font&#39;</span><span class="p">:</span> <span class="n">pygame</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">Font</span><span class="p">(</span><span class="s2">&quot;media/fonts/TurretRoad-Bold.otf&quot;</span><span class="p">,</span> <span class="mi">20</span><span class="p">),</span>
+                <span class="s1">&#39;large_font&#39;</span><span class="p">:</span> <span class="n">pygame</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">Font</span><span class="p">(</span><span class="s2">&quot;media/fonts/TurretRoad-ExtraBold.otf&quot;</span><span class="p">,</span> <span class="mi">48</span><span class="p">),</span>
+                <span class="s1">&#39;state_font&#39;</span><span class="p">:</span> <span class="n">pygame</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">Font</span><span class="p">(</span><span class="s2">&quot;media/fonts/boston.ttf&quot;</span><span class="p">,</span> <span class="mi">38</span><span class="p">),</span>
+                <span class="s1">&#39;inter_large&#39;</span><span class="p">:</span> <span class="n">pygame</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">Font</span><span class="p">(</span><span class="s2">&quot;media/fonts/Inter-Regular.ttf&quot;</span><span class="p">,</span> <span class="mi">48</span><span class="p">),</span>
+                <span class="s1">&#39;inter_medium&#39;</span><span class="p">:</span> <span class="n">pygame</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">Font</span><span class="p">(</span><span class="s2">&quot;media/fonts/Inter-Regular.ttf&quot;</span><span class="p">,</span> <span class="mi">32</span><span class="p">),</span>
+                <span class="s1">&#39;inter_small&#39;</span><span class="p">:</span> <span class="n">pygame</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">Font</span><span class="p">(</span><span class="s2">&quot;media/fonts/Inter-Regular.ttf&quot;</span><span class="p">,</span> <span class="mi">18</span><span class="p">),</span>
+                <span class="s1">&#39;inter_smaller&#39;</span><span class="p">:</span> <span class="n">pygame</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">Font</span><span class="p">(</span><span class="s2">&quot;media/fonts/Inter-Regular.ttf&quot;</span><span class="p">,</span> <span class="mi">16</span><span class="p">),</span>
+                <span class="s1">&#39;inter_bold_large&#39;</span><span class="p">:</span> <span class="n">pygame</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">Font</span><span class="p">(</span><span class="s2">&quot;media/fonts/Inter-Bold.ttf&quot;</span><span class="p">,</span> <span class="mi">48</span><span class="p">),</span>
+                <span class="s1">&#39;inter_bold_medium&#39;</span><span class="p">:</span> <span class="n">pygame</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">Font</span><span class="p">(</span><span class="s2">&quot;media/fonts/Inter-Bold.ttf&quot;</span><span class="p">,</span> <span class="mi">32</span><span class="p">),</span>
+            <span class="p">}</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error loading fonts: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="c1"># Fallback to default font</span>
+            <span class="n">default_font</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">Font</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">24</span><span class="p">)</span>
+            <span class="n">fonts</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">default_font</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span>
+                <span class="s1">&#39;font&#39;</span><span class="p">,</span> <span class="s1">&#39;small_font&#39;</span><span class="p">,</span> <span class="s1">&#39;large_font&#39;</span><span class="p">,</span> <span class="s1">&#39;state_font&#39;</span><span class="p">,</span> <span class="s1">&#39;inter_large&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;inter_medium&#39;</span><span class="p">,</span> <span class="s1">&#39;inter_small&#39;</span><span class="p">,</span> <span class="s1">&#39;inter_smaller&#39;</span><span class="p">,</span> <span class="s1">&#39;inter_bold_large&#39;</span><span class="p">,</span> 
+                <span class="s1">&#39;inter_bold_medium&#39;</span>
+            <span class="p">]}</span>
+        
+        <span class="k">return</span> <span class="n">fonts</span>
+    
+<div class="viewcode-block" id="RS1GUI.generate_drone">
+<a class="viewcode-back" href="../ui.html#ui.RS1GUI.generate_drone">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_drone</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate a drone odom simuation purposes&quot;&quot;&quot;</span>
+        <span class="n">states</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Scouting&quot;</span><span class="p">,</span> <span class="s2">&quot;Idle&quot;</span><span class="p">,</span> <span class="s2">&quot;Piloting&quot;</span><span class="p">,</span> <span class="s2">&quot;Responding&quot;</span><span class="p">,</span> <span class="s2">&quot;Offline&quot;</span><span class="p">]</span>
+        <span class="n">knownPoses</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Home&quot;</span><span class="p">,</span> <span class="s2">&quot;Parking&quot;</span><span class="p">,</span> <span class="s2">&quot;Shed&quot;</span><span class="p">,</span> <span class="s2">&quot;Gate&quot;</span><span class="p">,</span> <span class="s2">&quot;Table&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">]</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">states</span><span class="p">)</span>
+        <span class="n">gps</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="n">world_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">world_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">),</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="n">world_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">world_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">),</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">alt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">70</span><span class="p">),</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="si">}</span><span class="s2">m&quot;</span>
+        <span class="n">yaw</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">360</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">battery</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="mi">100</span><span class="p">))</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">setPose</span> <span class="o">=</span> <span class="s2">&quot;-&quot;</span>
+        <span class="n">nearPose</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">knownPoses</span><span class="p">)</span>
+
+        <span class="n">drone</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;battery&quot;</span><span class="p">:</span> <span class="n">battery</span><span class="p">,</span>
+            <span class="s2">&quot;gps&quot;</span><span class="p">:</span> <span class="n">gps</span><span class="p">,</span>
+            <span class="s2">&quot;altitude&quot;</span><span class="p">:</span> <span class="n">alt</span><span class="p">,</span>
+            <span class="s2">&quot;state&quot;</span><span class="p">:</span> <span class="n">state</span><span class="p">,</span>
+            <span class="s2">&quot;setPose&quot;</span><span class="p">:</span> <span class="n">setPose</span><span class="p">,</span>
+            <span class="s2">&quot;nearPose&quot;</span><span class="p">:</span> <span class="n">nearPose</span><span class="p">,</span>
+            <span class="s2">&quot;yaw&quot;</span><span class="p">:</span> <span class="n">yaw</span>
+        <span class="p">}</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;New drone generated: </span><span class="si">{</span><span class="n">drone</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">drone</span></div>
+
+    
+<div class="viewcode-block" id="RS1GUI.generate_random_incident">
+<a class="viewcode-back" href="../ui.html#ui.RS1GUI.generate_random_incident">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_random_incident</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate a random incident for simulation purposes&quot;&quot;&quot;</span>
+        <span class="n">titles</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Fire&quot;</span><span class="p">,</span> <span class="s2">&quot;Stranded Person&quot;</span><span class="p">,</span> <span class="s2">&quot;Debris&quot;</span><span class="p">,</span> <span class="s2">&quot;Other&quot;</span><span class="p">]</span>
+        <span class="n">title</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">titles</span><span class="p">)</span>
+        <span class="n">severity</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+        <span class="n">drone</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">drone_coords</span> <span class="o">=</span> <span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="n">world_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">world_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">),</span> <span class="mi">3</span><span class="p">),</span> <span class="nb">round</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="n">world_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">world_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">),</span> <span class="mi">3</span><span class="p">))</span>
+        
+        <span class="n">incident</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="n">title</span><span class="p">,</span>
+            <span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="s2">&quot;2025-08-01 12:00&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;severity&quot;</span><span class="p">:</span> <span class="n">severity</span><span class="p">,</span>
+            <span class="s2">&quot;drone&quot;</span><span class="p">:</span> <span class="n">drone</span><span class="p">,</span>
+            <span class="s2">&quot;drone_coords&quot;</span><span class="p">:</span> <span class="n">drone_coords</span>
+        <span class="p">}</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;New incident generated: </span><span class="si">{</span><span class="n">incident</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">incident</span></div>
+
+    
+<div class="viewcode-block" id="RS1GUI.draw_base_ui">
+<a class="viewcode-back" href="../ui.html#ui.RS1GUI.draw_base_ui">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">draw_base_ui</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Original draw_base_ui function with ROS2 camera integration&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">screen</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">DARK_GRAY</span><span class="p">)</span>
+
+        <span class="c1"># Update and draw camera feed if available</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera_component</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">camera_component</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">camera_component</span><span class="o">.</span><span class="n">draw</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">screen</span><span class="p">)</span>
+            <span class="n">status_text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera_component</span><span class="o">.</span><span class="n">get_status_info</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">status_text</span> <span class="o">=</span> <span class="s2">&quot;Cameras: not initialised yet&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_available</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update_controller_buttons</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_available</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">simReady</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sync_drones_from_odom</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sync_incidents_from_ros</span><span class="p">()</span> 
+
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_available</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">simReady</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">drones</span><span class="p">:</span>
+                <span class="n">topic</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;/</span><span class="si">{</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;ns&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">/odom&quot;</span>
+                <span class="c1"># replace with the actual getter you have; names I&#39;ve seen in your file include</span>
+                <span class="c1"># get_latest_odometry(...) or get_odometry_data(...). Use whichever exists.</span>
+                <span class="n">od</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">get_latest_odometry</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="p">,</span> <span class="s1">&#39;get_latest_odometry&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+                <span class="k">if</span> <span class="n">od</span><span class="p">:</span>
+                    <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">od</span><span class="p">[</span><span class="s2">&quot;position&quot;</span><span class="p">]</span>
+                    <span class="n">yaw</span> <span class="o">=</span> <span class="n">od</span><span class="p">[</span><span class="s2">&quot;rpy&quot;</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span>
+                    <span class="n">d</span><span class="p">[</span><span class="s1">&#39;gps&#39;</span><span class="p">]</span>      <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">x</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">y</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="n">d</span><span class="p">[</span><span class="s1">&#39;altitude&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">z</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">m&quot;</span>
+                    <span class="n">d</span><span class="p">[</span><span class="s1">&#39;yaw&#39;</span><span class="p">]</span>      <span class="o">=</span> <span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">yaw</span><span class="p">)</span> <span class="o">+</span> <span class="mf">360.0</span><span class="p">)</span> <span class="o">%</span> <span class="mf">360.0</span>
+
+        <span class="c1"># Map</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_panel</span><span class="o">.</span><span class="n">draw_map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">drones</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">incidents</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">screen</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_incident</span><span class="p">)</span>
+        
+        <span class="c1"># drones list</span>
+        <span class="c1"># Update odometry</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_drones_from_odometry</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">drones_panel</span><span class="o">.</span><span class="n">render_drones_list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">drones</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">screen</span><span class="p">)</span>
+        
+        <span class="c1"># Right panel - either incidents or drone control</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_drone</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_incident</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">incidents_panel</span><span class="o">.</span><span class="n">draw_incidents_panel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">incidents</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">screen</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_drone</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">drone_control_panel</span><span class="o">.</span><span class="n">drone_ui</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">screen</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_incident</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">incident_detail_panel</span><span class="o">.</span><span class="n">draw_incident_detail</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">incidents</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">selected_incident</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">screen</span><span class="p">)</span>
+
+        <span class="c1"># Camera status info (in bottom right)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera_component</span><span class="p">:</span>
+            <span class="n">status_text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera_component</span><span class="o">.</span><span class="n">get_status_info</span><span class="p">()</span>
+
+        <span class="n">debug_text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fonts</span><span class="p">[</span><span class="s1">&#39;small_font&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">render</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;RS1 </span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">clock</span><span class="o">.</span><span class="n">get_fps</span><span class="p">())</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">status_text</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">WHITE</span>
+        <span class="p">)</span>
+        <span class="n">debug_text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fonts</span><span class="p">[</span><span class="s1">&#39;small_font&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">render</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;RS1 </span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">clock</span><span class="o">.</span><span class="n">get_fps</span><span class="p">())</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">status_text</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> 
+            <span class="kc">True</span><span class="p">,</span> <span class="n">WHITE</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">screen</span><span class="o">.</span><span class="n">blit</span><span class="p">(</span><span class="n">debug_text</span><span class="p">,</span> <span class="p">(</span><span class="mi">700</span><span class="p">,</span> <span class="mi">760</span><span class="p">))</span>
+        
+        <span class="c1"># Controls info</span>
+        <span class="n">controls_text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fonts</span><span class="p">[</span><span class="s1">&#39;small_font&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">render</span><span class="p">(</span>
+            <span class="s2">&quot;Camera: C=Switch&quot;</span><span class="p">,</span> 
+            <span class="kc">True</span><span class="p">,</span> <span class="p">(</span><span class="mi">150</span><span class="p">,</span> <span class="mi">150</span><span class="p">,</span> <span class="mi">150</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">screen</span><span class="o">.</span><span class="n">blit</span><span class="p">(</span><span class="n">controls_text</span><span class="p">,</span> <span class="p">(</span><span class="mi">1250</span><span class="p">,</span> <span class="mi">790</span><span class="p">))</span></div>
+
+    
+<div class="viewcode-block" id="RS1GUI.handle_events">
+<a class="viewcode-back" href="../ui.html#ui.RS1GUI.handle_events">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">handle_events</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handle all input events&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">pygame</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">():</span>
+
+            <span class="c1"># Window close</span>
+            <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">pygame</span><span class="o">.</span><span class="n">QUIT</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">running</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">return</span>
+
+            <span class="c1"># -------------------------</span>
+            <span class="c1"># Keyboard events only here</span>
+            <span class="c1"># -------------------------</span>
+            <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">pygame</span><span class="o">.</span><span class="n">KEYDOWN</span><span class="p">:</span>
+                <span class="c1"># global hotkeys</span>
+                <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="n">pygame</span><span class="o">.</span><span class="n">K_ESCAPE</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">running</span> <span class="o">=</span> <span class="kc">False</span>
+                    <span class="k">return</span>
+
+                <span class="c1"># feed the spawn panel (digit entry etc.)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">spawn_panel</span><span class="o">.</span><span class="n">handle_key</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+
+                <span class="c1"># number keys 1..6</span>
+                <span class="k">if</span> <span class="n">pygame</span><span class="o">.</span><span class="n">K_1</span> <span class="o">&lt;=</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="o">&lt;=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">K_6</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">simReady</span><span class="p">:</span>
+                        <span class="c1"># Shift+number -&gt; switch camera to that drone</span>
+                        <span class="k">if</span> <span class="p">(</span><span class="n">pygame</span><span class="o">.</span><span class="n">key</span><span class="o">.</span><span class="n">get_mods</span><span class="p">()</span> <span class="o">&amp;</span> <span class="n">pygame</span><span class="o">.</span><span class="n">KMOD_SHIFT</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera_component</span><span class="p">:</span>
+                            <span class="n">drone_id</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="o">-</span> <span class="n">pygame</span><span class="o">.</span><span class="n">K_0</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">camera_component</span><span class="o">.</span><span class="n">switch_to_drone_camera</span><span class="p">(</span><span class="n">drone_id</span><span class="p">,</span> <span class="s2">&quot;front&quot;</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="c1"># select drone in the UI</span>
+                            <span class="n">drone_index</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="o">-</span> <span class="n">pygame</span><span class="o">.</span><span class="n">K_1</span>
+                            <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">drone_index</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">drones</span><span class="p">):</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">selected_drone</span> <span class="o">=</span> <span class="n">drone_index</span>
+
+                <span class="c1"># camera key handling</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">simReady</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera_component</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">camera_component</span><span class="o">.</span><span class="n">handle_keypress</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">key</span><span class="p">)</span>
+
+            <span class="c1"># -------------------------</span>
+            <span class="c1"># Mouse events</span>
+            <span class="c1"># -------------------------</span>
+            <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">pygame</span><span class="o">.</span><span class="n">MOUSEBUTTONDOWN</span> <span class="ow">and</span> <span class="n">event</span><span class="o">.</span><span class="n">button</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">mx</span><span class="p">,</span> <span class="n">my</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">pos</span>
+
+                <span class="c1"># map incident icons</span>
+                <span class="k">for</span> <span class="n">rect</span><span class="p">,</span> <span class="n">idx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">map_panel</span><span class="o">.</span><span class="n">get_icon_buttons</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="n">rect</span><span class="o">.</span><span class="n">collidepoint</span><span class="p">((</span><span class="n">mx</span><span class="p">,</span> <span class="n">my</span><span class="p">)):</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Icon incident clicked: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">incidents</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="s2">&quot;title&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">selected_incident</span> <span class="o">=</span> <span class="n">idx</span>
+                        <span class="k">break</span>
+
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_incident</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_drone</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="c1"># incident cards</span>
+                        <span class="k">for</span> <span class="n">rect</span><span class="p">,</span> <span class="n">idx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">incidents_panel</span><span class="o">.</span><span class="n">get_card_rects</span><span class="p">():</span>
+                            <span class="k">if</span> <span class="n">rect</span><span class="o">.</span><span class="n">collidepoint</span><span class="p">((</span><span class="n">mx</span><span class="p">,</span> <span class="n">my</span><span class="p">)):</span>
+                                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Incident clicked: #</span><span class="si">{</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">incidents</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="s1">&#39;title&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">selected_incident</span> <span class="o">=</span> <span class="n">idx</span>
+                                <span class="k">break</span>
+                        <span class="c1"># scroll buttons</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">incidents_panel</span><span class="o">.</span><span class="n">handle_scroll_click</span><span class="p">((</span><span class="n">mx</span><span class="p">,</span> <span class="n">my</span><span class="p">))</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="c1"># drone control buttons</span>
+                        <span class="k">for</span> <span class="n">rect</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">drone_control_panel</span><span class="o">.</span><span class="n">get_button_rects</span><span class="p">():</span>
+                            <span class="k">if</span> <span class="n">rect</span><span class="o">.</span><span class="n">collidepoint</span><span class="p">((</span><span class="n">mx</span><span class="p">,</span> <span class="n">my</span><span class="p">)):</span>
+                                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Drone button clicked: </span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                                <span class="k">if</span> <span class="n">label</span> <span class="o">==</span> <span class="s2">&quot;Close&quot;</span><span class="p">:</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">selected_drone</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+                                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_available</span><span class="p">:</span>
+                                        <span class="n">success</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">call_teensy_connect</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+                                        <span class="k">if</span> <span class="n">success</span><span class="p">:</span>
+                                            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Disconnected from teensy joystick&quot;</span><span class="p">)</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">controller_connected</span> <span class="o">=</span> <span class="mi">0</span>
+                                        <span class="k">else</span><span class="p">:</span>
+                                            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Failed to disconnect from teensy joystick&quot;</span><span class="p">)</span>
+
+                                    <span class="c1"># Manually Pilot</span>
+                                <span class="k">elif</span> <span class="n">label</span> <span class="o">==</span> <span class="s2">&quot;PILOT&quot;</span><span class="p">:</span>
+                                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_available</span><span class="p">:</span>
+                                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_drone</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">publish_current_drone_id</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selected_drone</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                                        <span class="n">success</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">call_teensy_connect</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+                                        <span class="k">if</span> <span class="n">success</span><span class="p">:</span>
+                                            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Connected to teensy joystick&quot;</span><span class="p">)</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">controller_connected</span> <span class="o">=</span> <span class="mi">1</span>
+                                        <span class="k">else</span><span class="p">:</span>
+                                            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Failed to connect to teensy joystick&quot;</span><span class="p">)</span>
+
+                                    <span class="c1"># Return to Auto-pilot</span>
+                                <span class="k">elif</span> <span class="n">label</span> <span class="o">==</span> <span class="s2">&quot;SCOUT&quot;</span><span class="p">:</span>
+                                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_available</span><span class="p">:</span>
+                                        <span class="n">success</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">call_teensy_connect</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+                                        <span class="k">if</span> <span class="n">success</span><span class="p">:</span>
+                                            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Disconnected from teensy joystick&quot;</span><span class="p">)</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">controller_connected</span> <span class="o">=</span> <span class="mi">0</span>
+                                        <span class="k">else</span><span class="p">:</span>
+                                            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Failed to disconnect from teensy joystick&quot;</span><span class="p">)</span>
+                                <span class="k">break</span>
+                                
+                                
+
+                    <span class="c1"># drone card clicks -&gt; optional camera jump</span>
+                    <span class="k">for</span> <span class="n">rect</span><span class="p">,</span> <span class="n">idx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">drones_panel</span><span class="o">.</span><span class="n">get_card_rects</span><span class="p">():</span>
+                        <span class="k">if</span> <span class="n">rect</span><span class="o">.</span><span class="n">collidepoint</span><span class="p">((</span><span class="n">mx</span><span class="p">,</span> <span class="n">my</span><span class="p">)):</span>
+                            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;drone card clicked: #</span><span class="si">{</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">selected_drone</span> <span class="o">=</span> <span class="n">idx</span>
+                            <span class="c1"># Edited to publish current drone id to ROS handler</span>
+                            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_available</span><span class="p">:</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">publish_current_drone_id</span><span class="p">(</span><span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera_component</span><span class="p">:</span>  <span class="c1"># ✅ guard</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">camera_component</span><span class="o">.</span><span class="n">switch_to_drone_camera</span><span class="p">(</span><span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;front&quot;</span><span class="p">)</span>
+                            <span class="k">break</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">action</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">incident_detail_panel</span><span class="o">.</span><span class="n">handle_click</span><span class="p">((</span><span class="n">mx</span><span class="p">,</span> <span class="n">my</span><span class="p">))</span>
+                    <span class="k">if</span> <span class="n">action</span> <span class="o">==</span> <span class="s1">&#39;close&#39;</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">selected_incident</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+                    <span class="k">elif</span> <span class="n">action</span> <span class="o">==</span> <span class="s1">&#39;respond&#39;</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Respond to incident&#39;</span><span class="p">)</span>
+                    <span class="c1"># elif action == &#39;clear&#39;:</span>
+                    <span class="c1">#     print(f&#39;clearing {self.selected_incident}&#39;)</span>
+                    <span class="c1">#     del self.incidents[self.selected_incident]</span>
+                    <span class="c1">#     self.selected_incident = -1</span>
+                    <span class="c1">#     print(&#39;clear incident&#39;)</span>
+                    <span class="k">elif</span> <span class="n">action</span> <span class="o">==</span> <span class="s1">&#39;clear&#39;</span><span class="p">:</span>
+                        <span class="n">inc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">incidents</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">selected_incident</span><span class="p">]</span>
+                        <span class="n">key</span> <span class="o">=</span> <span class="p">(</span><span class="n">inc</span><span class="p">[</span><span class="s2">&quot;drone&quot;</span><span class="p">],</span> <span class="n">inc</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">])</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_incident_cleared</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>       <span class="c1"># remember it&#39;s cleared locally</span>
+                        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">incidents</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">selected_incident</span><span class="p">]</span>
+                        <span class="c1"># rebuild index map after deletion</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_incident_seen</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+                        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">it</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">incidents</span><span class="p">):</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_incident_seen</span><span class="p">[(</span><span class="n">it</span><span class="p">[</span><span class="s2">&quot;drone&quot;</span><span class="p">],</span> <span class="n">it</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">])]</span> <span class="o">=</span> <span class="n">i</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">selected_incident</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;clear incident&#39;</span><span class="p">)</span>
+
+            <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">pygame</span><span class="o">.</span><span class="n">MOUSEBUTTONUP</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">incidents_panel</span><span class="o">.</span><span class="n">stop_scrolling</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="RS1GUI.run">
+<a class="viewcode-back" href="../ui.html#ui.RS1GUI.run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Starting RS1 Drone Control GUI...&quot;</span><span class="p">)</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">running</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">handle_events</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">simReady</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">spawn_panel</span><span class="o">.</span><span class="n">draw_prompt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">screen</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">draw_base_ui</span><span class="p">()</span>
+            <span class="n">pygame</span><span class="o">.</span><span class="n">display</span><span class="o">.</span><span class="n">flip</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">clock</span><span class="o">.</span><span class="n">tick</span><span class="p">(</span><span class="mi">75</span><span class="p">)</span>
+
+        <span class="c1"># Clean, simple shutdown</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spawn_panel</span><span class="o">.</span><span class="n">killSim</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="RS1GUI.cleanup">
+<a class="viewcode-back" href="../ui.html#ui.RS1GUI.cleanup">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Starting GUI cleanup...&quot;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ROS cleanup error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera_component</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">camera_component</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Camera cleanup error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">pygame</span><span class="o">.</span><span class="n">quit</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;GUI cleanup complete.&quot;</span><span class="p">)</span></div>
+
+
+    <span class="c1"># Function to handle camera switching using the teensyjoy controller</span>
+    <span class="c1"># Looked at how other topics were being subscribed to and handled in</span>
+    <span class="c1">#  ui.py, ros_handler.py and spawn_prompt.py</span>
+<div class="viewcode-block" id="RS1GUI.update_controller_buttons">
+<a class="viewcode-back" href="../ui.html#ui.RS1GUI.update_controller_buttons">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_controller_buttons</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_available</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">controller_connected</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="c1"># Technically only &quot;one&quot; button topic (string type topic)</span>
+        <span class="n">butt_topics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">get_available_button_topics</span><span class="p">()</span>
+        <span class="n">new_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Loop redundant i think cause only one button topic anyways</span>
+        <span class="k">for</span> <span class="n">topic</span> <span class="ow">in</span> <span class="n">butt_topics</span><span class="p">:</span>
+            <span class="n">butt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">get_latest_button</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span>
+
+            <span class="c1"># Check if there is data</span>
+            <span class="k">if</span> <span class="n">butt</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">butt</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
+                <span class="n">button_states</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)]</span>
+
+                <span class="c1"># Compare with previous states for debounce</span>
+                <span class="n">prev_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_button_states</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">topic</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">button_states</span><span class="p">))</span>
+
+                <span class="c1"># Detect rising edges by comparing previous and current button states </span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">prev</span><span class="p">,</span> <span class="n">curr</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">prev_states</span><span class="p">,</span> <span class="n">button_states</span><span class="p">)):</span>
+                    <span class="k">if</span> <span class="n">prev</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">curr</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="c1"># Check if button id corresponds </span>
+                        <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">5</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">camera_component</span><span class="o">.</span><span class="n">cycle_drone_camera</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selected_drone</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">drones</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+                        <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">7</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">camera_component</span><span class="o">.</span><span class="n">cycle_drone_camera</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selected_drone</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">drones</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
+
+                        <span class="c1">#elif i == 6: # Waypoint button</span>
+                            <span class="c1"># Print out Waypoint Data in GUI??</span>
+
+                        <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">8</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_drone</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">selected_drone</span> <span class="o">=</span> <span class="mi">0</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">selected_drone</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_drone</span> <span class="o">+</span> <span class="mi">1</span>
+
+                            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_drone</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">drones</span><span class="p">):</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">selected_drone</span> <span class="o">=</span> <span class="mi">0</span>
+
+                            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_available</span><span class="p">:</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">publish_current_drone_id</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selected_drone</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                            
+                            <span class="c1"># +1 extra cause camera indexing </span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">camera_component</span><span class="o">.</span><span class="n">switch_to_drone_camera</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selected_drone</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;front&quot;</span><span class="p">)</span>
+         
+                        <span class="c1"># Doesnt Work atm - need to keep track of what camera view is currently active</span>
+                        <span class="c1"># So it switches views based on drone selected via teensyjoy</span>
+                        <span class="c1"># elif i == 8:</span>
+                        <span class="c1">#     # Drones is index 1 </span>
+                        <span class="c1">#     if self.last_drone_id + 1 &lt; len(self.drones)+1:</span>
+                        <span class="c1">#         self.last_drone_id += 1</span>
+                        <span class="c1">#     else:</span>
+                        <span class="c1">#         self.last_drone_id = 1</span>
+                        <span class="c1">#     self.camera_component.switch_to_drone_camera(self.last_drone_id, &quot;front&quot;)</span>
+
+                        <span class="c1"># Can add other remote functionality here i.e. waypoint save, +/- vel, drone change notification</span>
+
+                <span class="c1"># Save states for next cycle</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">last_button_states</span><span class="p">[</span><span class="n">topic</span><span class="p">]</span> <span class="o">=</span> <span class="n">button_states</span>
+
+                <span class="c1"># Not sure what this does but will need clarification</span>
+                <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                    <span class="s1">&#39;topic&#39;</span><span class="p">:</span> <span class="n">topic</span><span class="p">,</span>
+                    <span class="s1">&#39;button_states&#39;</span><span class="p">:</span> <span class="n">button_states</span><span class="p">,</span>
+                    <span class="s1">&#39;pressed_buttons&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">state</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">button_states</span><span class="p">)</span> <span class="k">if</span> <span class="n">state</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span>
+                <span class="p">})</span></div>
+
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_sync_drones_from_odom</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_available</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="c1"># Get the list of available odometry topics</span>
+        <span class="n">odom_topics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">get_available_odometry_topics</span><span class="p">()</span>
+        <span class="n">new_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">topic</span> <span class="ow">in</span> <span class="n">odom_topics</span><span class="p">:</span>
+            <span class="c1"># Fetch the latest odometry data for the topic</span>
+            <span class="n">odom</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">get_latest_odometry</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">odom</span><span class="p">:</span>
+                <span class="c1"># Extract drone namespace from the topic name</span>
+                <span class="n">parts</span> <span class="o">=</span> <span class="n">topic</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>  <span class="c1"># &#39;/rs1_drone_X/odom&#39;</span>
+                    <span class="k">continue</span>
+                <span class="n">ns</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+                <span class="c1"># Extract position and orientation data</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">odom</span><span class="p">[</span><span class="s2">&quot;position&quot;</span><span class="p">]</span>
+                <span class="n">q</span> <span class="o">=</span> <span class="n">odom</span><span class="p">[</span><span class="s2">&quot;orientation&quot;</span><span class="p">]</span>
+                <span class="n">yaw</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">atan2</span><span class="p">(</span>
+                    <span class="mf">2.0</span> <span class="o">*</span> <span class="p">(</span><span class="n">q</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">*</span> <span class="n">q</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">q</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">q</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
+                    <span class="mf">1.0</span> <span class="o">-</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="p">(</span><span class="n">q</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">q</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">q</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="n">q</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+                <span class="p">)</span>
+
+                <span class="c1"># Add the drone data to the list</span>
+                <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                    <span class="s1">&#39;ns&#39;</span><span class="p">:</span> <span class="n">ns</span><span class="p">,</span>
+                    <span class="s1">&#39;gps&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="s1">&#39;altitude&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">p</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">m&quot;</span><span class="p">,</span>
+                    <span class="s1">&#39;state&#39;</span><span class="p">:</span> <span class="s1">&#39;Active&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;setPose&#39;</span><span class="p">:</span> <span class="s1">&#39;-&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;nearPose&#39;</span><span class="p">:</span> <span class="s1">&#39;-&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;yaw&#39;</span><span class="p">:</span> <span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">yaw</span><span class="p">)</span> <span class="o">+</span> <span class="mf">360.0</span><span class="p">)</span> <span class="o">%</span> <span class="mf">360.0</span><span class="p">,</span>
+                    <span class="s1">&#39;battery&#39;</span><span class="p">:</span> <span class="mi">100</span>
+                <span class="p">})</span>
+
+        <span class="c1"># Update the drones list</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">drones</span> <span class="o">=</span> <span class="n">new_list</span></div>
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../ui.html#ui.main">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Main entry point&quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">app</span> <span class="o">=</span> <span class="n">RS1GUI</span><span class="p">()</span>
+        <span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Shutdown requested by user&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">traceback</span>
+        <span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">()</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Marcus Frischknecht, Matthew Chua, Jackson Russell, Ace Viray.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

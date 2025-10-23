@@ -1,5 +1,9 @@
 """
 Constants extracted from original ui.py
+
+Defines colors, dimensions, and settings used across the GUI application.
+
+
 """
 
 import pygame

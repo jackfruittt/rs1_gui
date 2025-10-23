@@ -1,0 +1,274 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>camera_ros module &mdash; rs1_gui 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="constants module" href="constants.html" />
+    <link rel="prev" title="rs1_gui" href="modules.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            rs1_gui
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">rs1_gui</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">camera_ros module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#camera_ros.CameraComponent"><code class="docutils literal notranslate"><span class="pre">CameraComponent</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#camera_ros.CameraComponent.cleanup"><code class="docutils literal notranslate"><span class="pre">CameraComponent.cleanup()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#camera_ros.CameraComponent.cycle_drone_camera"><code class="docutils literal notranslate"><span class="pre">CameraComponent.cycle_drone_camera()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#camera_ros.CameraComponent.draw"><code class="docutils literal notranslate"><span class="pre">CameraComponent.draw()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#camera_ros.CameraComponent.get_current_topic"><code class="docutils literal notranslate"><span class="pre">CameraComponent.get_current_topic()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#camera_ros.CameraComponent.get_status_info"><code class="docutils literal notranslate"><span class="pre">CameraComponent.get_status_info()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#camera_ros.CameraComponent.handle_keypress"><code class="docutils literal notranslate"><span class="pre">CameraComponent.handle_keypress()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#camera_ros.CameraComponent.switch_to_drone_camera"><code class="docutils literal notranslate"><span class="pre">CameraComponent.switch_to_drone_camera()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#camera_ros.CameraComponent.switch_to_next_topic"><code class="docutils literal notranslate"><span class="pre">CameraComponent.switch_to_next_topic()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#camera_ros.CameraComponent.switch_to_previous_topic"><code class="docutils literal notranslate"><span class="pre">CameraComponent.switch_to_previous_topic()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#camera_ros.CameraComponent.switch_to_topic"><code class="docutils literal notranslate"><span class="pre">CameraComponent.switch_to_topic()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#camera_ros.CameraComponent.update"><code class="docutils literal notranslate"><span class="pre">CameraComponent.update()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="constants.html">constants module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="drone_control_panel.html">drone_control_panel module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="drones_panel.html">drones_panel module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="incident_detail_panel.html">incident_detail_panel module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="incidents_panel.html">incidents_panel module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="map_panel.html">map_panel module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="popup.html">popup module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ros_handler.html">ros_handler module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="spawn_prompt.html">spawn_prompt module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="telemetry_panel.html">telemetry_panel module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ui.html">ui module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html">utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="video_player.html">video_player module</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">rs1_gui</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">rs1_gui</a></li>
+      <li class="breadcrumb-item active">camera_ros module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/camera_ros.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-camera_ros">
+<span id="camera-ros-module"></span><h1>camera_ros module<a class="headerlink" href="#module-camera_ros" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="camera_ros.CameraComponent">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">camera_ros.</span></span><span class="sig-name descname"><span class="pre">CameraComponent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ros_handler</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="ros_handler.html#ros_handler.RosHandler" title="ros_handler.RosHandler"><span class="pre">RosHandler</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">display_rect</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(20,</span> <span class="pre">20,</span> <span class="pre">640,</span> <span class="pre">360)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">instant_switching</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preload_all</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/camera_ros.html#CameraComponent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#camera_ros.CameraComponent" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Interfaces with the centralised RosHandler to display ROS2 camera feeds from multiple image topics published by the drones.
+Supports instant switching between camera topics using preloading or subscribe-unsubscribe methods.</p>
+<p>Camera feeds is then displayed in a defined rectangle on the Pygame screen GUI.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="camera_ros.CameraComponent.cleanup">
+<span class="sig-name descname"><span class="pre">cleanup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/camera_ros.html#CameraComponent.cleanup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#camera_ros.CameraComponent.cleanup" title="Link to this definition"></a></dt>
+<dd><p>Resource cleanup through unsubscribing from all subscribed camera topics</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="camera_ros.CameraComponent.cycle_drone_camera">
+<span class="sig-name descname"><span class="pre">cycle_drone_camera</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current_drone_index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_drones</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">direction</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/camera_ros.html#CameraComponent.cycle_drone_camera"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#camera_ros.CameraComponent.cycle_drone_camera" title="Link to this definition"></a></dt>
+<dd><p>Cycle through drone front cameras without returning/updating drone selection.</p>
+<p>Used with rs1_teensyjoy controller switch camera buttons.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><ul class="simple">
+<li><p>current_drone_index (int): Current drone index (0-based, -1 if none selected)</p></li>
+<li><p>num_drones (int): Total number of drones</p></li>
+<li><p>direction (int): 1 for next, -1 for previous</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="camera_ros.CameraComponent.draw">
+<span class="sig-name descname"><span class="pre">draw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">screen</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/camera_ros.html#CameraComponent.draw"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#camera_ros.CameraComponent.draw" title="Link to this definition"></a></dt>
+<dd><p>Draws the camera feed onto the given Pygame screen surface within the defined display rectangle</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="camera_ros.CameraComponent.get_current_topic">
+<span class="sig-name descname"><span class="pre">get_current_topic</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="_modules/camera_ros.html#CameraComponent.get_current_topic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#camera_ros.CameraComponent.get_current_topic" title="Link to this definition"></a></dt>
+<dd><p>Gets the name of the currently displayed camera topic if any is presently selected.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><ul class="simple">
+<li><p>str or None: Name of the current camera topic, or None if no topic is selected.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="camera_ros.CameraComponent.get_status_info">
+<span class="sig-name descname"><span class="pre">get_status_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/camera_ros.html#CameraComponent.get_status_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#camera_ros.CameraComponent.get_status_info" title="Link to this definition"></a></dt>
+<dd><p>Outputs the display status info, whether ROS2 is available, if there are camera topics.
+Also checks the camera topic status, i.e. LIVE if topic is active, or STALE if inactive.</p>
+<p>Returns:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>str: Display Status Message depending on status check.</p></li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="camera_ros.CameraComponent.handle_keypress">
+<span class="sig-name descname"><span class="pre">handle_keypress</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/camera_ros.html#CameraComponent.handle_keypress"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#camera_ros.CameraComponent.handle_keypress" title="Link to this definition"></a></dt>
+<dd><p>Handle keypress events for camera switching. 
+When the ‘C’ key is pressed, the camera topic switches to the next available camera topic if any.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="camera_ros.CameraComponent.switch_to_drone_camera">
+<span class="sig-name descname"><span class="pre">switch_to_drone_camera</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">drone_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">camera_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'front'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/camera_ros.html#CameraComponent.switch_to_drone_camera"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#camera_ros.CameraComponent.switch_to_drone_camera" title="Link to this definition"></a></dt>
+<dd><p>Switch to a specific drone’s camera.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><ul class="simple">
+<li><p>drone_id (int): Drone number (1, 2, 3, etc.)</p></li>
+<li><p>camera_type (str): “front” or “bottom”</p></li>
+</ul>
+</dd>
+<dt>Returns:</dt><dd><ul class="simple">
+<li><p>bool: True if switch was successful, False otherwise.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="camera_ros.CameraComponent.switch_to_next_topic">
+<span class="sig-name descname"><span class="pre">switch_to_next_topic</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/camera_ros.html#CameraComponent.switch_to_next_topic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#camera_ros.CameraComponent.switch_to_next_topic" title="Link to this definition"></a></dt>
+<dd><p>Switch to the next camera topic in the available topics list.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><ul class="simple">
+<li><p>bool: True if switch was successful, False otherwise.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="camera_ros.CameraComponent.switch_to_previous_topic">
+<span class="sig-name descname"><span class="pre">switch_to_previous_topic</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/camera_ros.html#CameraComponent.switch_to_previous_topic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#camera_ros.CameraComponent.switch_to_previous_topic" title="Link to this definition"></a></dt>
+<dd><p>Switch to the previous camera topic in the available topics list.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><ul class="simple">
+<li><p>bool: True if switch was successful, False otherwise.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="camera_ros.CameraComponent.switch_to_topic">
+<span class="sig-name descname"><span class="pre">switch_to_topic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">topic_index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/camera_ros.html#CameraComponent.switch_to_topic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#camera_ros.CameraComponent.switch_to_topic" title="Link to this definition"></a></dt>
+<dd><p>Switch to a different camera topic by index.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><ul class="simple">
+<li><p>topic_index (int): Index of the topic in available_topics to switch to.</p></li>
+</ul>
+</dd>
+<dt>Returns:</dt><dd><ul class="simple">
+<li><p>bool: True if switch was successful, False otherwise.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="camera_ros.CameraComponent.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/camera_ros.html#CameraComponent.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#camera_ros.CameraComponent.update" title="Link to this definition"></a></dt>
+<dd><p>Updates the camera feed from the RosHandler, using cv2, the camera image is stored which is then converted to
+a pygame surface using _cv2_to_pygame_surface.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="modules.html" class="btn btn-neutral float-left" title="rs1_gui" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="constants.html" class="btn btn-neutral float-right" title="constants module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Marcus Frischknecht, Matthew Chua, Jackson Russell, Ace Viray.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

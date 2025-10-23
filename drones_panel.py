@@ -3,12 +3,29 @@ from constants import state_colors, WHITE, BLACK, LIGHT_GRAY
 
 class dronesPanel:
     def __init__(self, app, fonts):
+
+        """
+        Initializes the drones panel.
+        
+        Args:
+            - app: The main application instance.
+            - fonts: Dictionary of Pygame font objects.
+
+        """
+
         self.fonts = fonts
         self.drone_card_rects = []
         self.app = app
     
     def render_drones_list(self, drones, screen):
-        """Render the list of drone cards"""
+        """
+        Render the list of drone cards onto the given Pygame screen surface based on the drones data from app.
+        
+        Args:
+            - drones (list): List of drones present in the system.
+            - screen (pygame.Surface): The surface to draw the drones panel onto.
+
+        """
 
         self.drone_card_rects = []  # reset each frame
 
@@ -75,5 +92,9 @@ class dronesPanel:
         screen.blit(panel_surface, (10, 10))
     
     def get_card_rects(self):
-        """Get clickable card rectangles"""
+        """
+        Get clickable card rectangles from the drone list
+        Returns:
+            - list: List of tuples containing card rectangles and their corresponding drone indices.
+        """
         return self.drone_card_rects
