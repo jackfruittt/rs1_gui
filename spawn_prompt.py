@@ -146,7 +146,7 @@ class SpawnPromptPanel:
             subprocess.Popen(command, shell=True)
     
     def simulateEnvSetup(self):
-        time.sleep(5)
+        time.sleep(0.01)
         for _ in range(self.requestCount):
             self.app.drones.append(self.app.generate_drone())
 

@@ -15,6 +15,8 @@ import numpy as np
 import sys
 import random
 import math
+import csv
+from dataclasses import dataclass
 
 
 # Import our components
@@ -29,6 +31,30 @@ from drone_control_panel import DroneControlPanel
 from map_panel import MapPanel
 from incident_detail_panel import IncidentDetailPanel
 from spawn_prompt import SpawnPromptPanel
+
+@dataclass
+class KnownPoses:
+    feature: str
+    x: int
+    y: int
+    z: int
+
+def load_known_poses():
+    features = []
+    with open('knownPoses.csv', newline='') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            try:
+                feature = KnownPoses(
+                feature=row['Feature'],
+                x=int(row['X']),
+                y=int(row['Y']),
+                z=int(row['Z'])
+                )
+                features.append(feature)
+            except (KeyError, ValueError) as e:
+                print(f"Skipping invalid row: {row} ({e})")
+    return features
 
 class RS1GUI:
     """Main GUI application class""" 
@@ -46,7 +72,8 @@ class RS1GUI:
         self._incident_seen = {}          # key: (drone, id) -> index in self.incidents
         self._incident_cleared = set()    # optional: keys you've cleared in UI
 
-        
+        self.known_poses = load_known_poses()
+
         # Load fonts
         self.fonts = self._load_fonts()
 
@@ -290,14 +317,14 @@ class RS1GUI:
             status_text = self.camera_component.get_status_info()
 
         debug_text = self.fonts['small_font'].render(
-            f"RS1 {int(self.clock.get_fps())} | {status_text}", True, WHITE
+            f"{status_text} | RS1 {int(self.clock.get_fps())}", True, WHITE
         )
         debug_text = self.fonts['small_font'].render(
-            f"RS1 {int(self.clock.get_fps())} | {status_text}", 
+            f"{status_text} | RS1 {int(self.clock.get_fps())}", 
             True, WHITE
         )
 
-        self.screen.blit(debug_text, (700, 760))
+        self.screen.blit(debug_text, (700, 825))
         
         # Controls info
         controls_text = self.fonts['small_font'].render(
@@ -369,18 +396,15 @@ class RS1GUI:
                         self.incidents_panel.handle_scroll_click((mx, my))
                     else:
                         # drone control buttons
-                        for rect, label in self.drone_control_panel.get_button_rects():
-                            if rect.collidepoint((mx, my)):
-                                print(f"Drone button clicked: {label}")
-                                if label == "Close":
-                                    self.selected_drone = -1
-                                break
+                        self.drone_control_panel.buttonLogic(mx, my)
+                        
 
                     # drone card clicks -> optional camera jump
                     for rect, idx in self.drones_panel.get_card_rects():
                         if rect.collidepoint((mx, my)):
                             print(f"drone card clicked: #{idx+1}")
                             self.selected_drone = idx
+                            self.drone_control_panel.panelState = -1
                             if self.camera_component:  # ✅ guard
                                 self.camera_component.switch_to_drone_camera(idx + 1, "front")
                             break
@@ -472,7 +496,7 @@ class RS1GUI:
                             self.camera_component.switch_to_next_topic()
                         #elif i == 6: # Waypoint button
                             # Print out Waypoint Data in GUI??
-         
+
                         # Doesnt Work atm - need to keep track of what camera view is currently active
                         # So it switches views based on drone selected via teensyjoy
                         # elif i == 8:

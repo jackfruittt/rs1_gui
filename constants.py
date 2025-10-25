@@ -40,7 +40,7 @@ ANIM_DURATION = 200  # milliseconds
 scroll_speed = 5
 
 # World and map settings
-world_size = (70,70)
+world_size = (100,100)
 
 # Panel dimensions 
 PANEL_WIDTH = 660
