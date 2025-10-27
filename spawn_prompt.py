@@ -192,7 +192,8 @@ class SpawnPromptPanel:
                             'state': 'IDLE',                # DroneController prints IDLE on startup
                             'setPose': '-',
                             'nearPose': '-',
-                            'yaw': 0.0
+                            'yaw': 0.0,
+                            'waypoints': []
                         })
 
                     deadline = time.time() + 10  # wait up to 10s for cameras to appear

@@ -4,48 +4,91 @@ from constants import state_colors, WHITE, BLACK, LIGHT_GRAY
 class dronesPanel:
     def __init__(self, app, fonts):
         self.fonts = fonts
-        self.drone_card_rects = []
         self.app = app
-    
+
+        # geometry (kept consistent with your original)
+        self.PANEL_X, self.PANEL_Y = 10, 10
+        self.PANEL_W, self.PANEL_H = 350, 900
+        self.card_height = 90
+        self.card_width = 300
+        self.margin = 15
+        self.inner_pad_x = 10  # left padding inside the panel for cards
+
+        # scrolling state (mirrors incidents panel behaviour)
+        self.scroll_y = 10     # starting offset inside the panel
+        self.scrolling = False
+        self.scroll_direction = 1   # +1 up area, -1 down area
+        self.SCROLL_SPEED = 8
+
+        # click rects (absolute)
+        self.drone_card_rects = []
+        self.scroll_up_abs = None
+        self.scroll_down_abs = None
+
+    def _clamp_scroll(self, total_content_h):
+        """Keep content within reasonable bounds (no huge blank areas)."""
+        # Max top position (show first row nicely below header area)
+        max_y = 10
+        # Minimum so the last card bottom is visible; if content smaller than panel, just keep at top
+        if total_content_h <= self.PANEL_H:
+            min_y = 10
+        else:
+            min_y = self.PANEL_H - total_content_h - 10
+        if self.scroll_y > max_y:
+            self.scroll_y = max_y
+        if self.scroll_y < min_y:
+            self.scroll_y = min_y
+
     def render_drones_list(self, drones, screen):
-        """Render the list of drone cards"""
-
-        self.drone_card_rects = []  # reset each frame
-
-        panel_width, panel_height = 350, 900
-        card_height = 90
-        card_width = 300
-        margin = 15
-
-        panel_surface = pygame.Surface((panel_width, panel_height)).convert_alpha()
+        """Render the (scrollable) list of drone cards."""
+        panel_surface = pygame.Surface((self.PANEL_W, self.PANEL_H), pygame.SRCALPHA)
         panel_surface.fill((0, 0, 0, 0))  # transparent
 
+        # apply scrolling motion if active
+        if self.scrolling:
+            self.scroll_y += self.scroll_direction * self.SCROLL_SPEED
+
+        # clamp to content
+        total_h = len(drones) * (self.card_height + self.margin)
+        self._clamp_scroll(total_h)
+
+        # reset clickable rects for this frame
+        self.drone_card_rects = []
+
+        # draw cards — only what can be visible
         for i, drone in enumerate(drones):
-            y = i * (card_height + margin)
-            if y + card_height > panel_height:
-                break
+            y = self.scroll_y + i * (self.card_height + self.margin)
 
-            # Card rect (for detecting clicks)
-            card_rect = pygame.Rect(10, 10 + y, card_width, card_height)
-            self.drone_card_rects.append((card_rect, i))
+            if (y + self.card_height) < 0:
+                continue
+            if y > self.PANEL_H:
+                continue
 
-            # Draw card background and border
-            pygame.draw.rect(panel_surface, BLACK, (0, y, card_width, card_height))
-            pygame.draw.rect(panel_surface, WHITE, (0, y, card_width, card_height), 2)
+            # card rect (panel-relative + absolute for clicks)
+            card_x = self.inner_pad_x
+            card_y = y + self.inner_pad_x
+            card_rect_rel = pygame.Rect(card_x, card_y, self.card_width, self.card_height)
+            card_rect_abs = pygame.Rect(self.PANEL_X + card_x, self.PANEL_Y + card_y,
+                                        self.card_width, self.card_height)
+            self.drone_card_rects.append((card_rect_abs, i))
 
-            # drone ID
+            # Background + border
+            pygame.draw.rect(panel_surface, BLACK, card_rect_rel)
+            pygame.draw.rect(panel_surface, WHITE, card_rect_rel, 2)
+
+            # Drone ID
             id_text = self.fonts['inter_bold_large'].render(f"#{i+1}", True, WHITE)
-            panel_surface.blit(id_text, (10, y + 10))
+            panel_surface.blit(id_text, (card_x + 10, card_y + 10))
 
-            # drone State (color-coded)
+            # State (color-coded)
             state = drone["state"]
             state_color = state_colors.get(state, WHITE)
             state_text = self.fonts['inter_bold_medium'].render(state, True, state_color)
-            panel_surface.blit(state_text, (90, y + 10))
+            panel_surface.blit(state_text, (card_x + 90, card_y + 10))
 
             if state == "Offline":
                 last_seen_text = self.fonts['inter_smaller'].render("last seen:", True, WHITE)
-                panel_surface.blit(last_seen_text, (90 + state_text.get_width() + 5, y + 22))
+                panel_surface.blit(last_seen_text, (card_x + 90 + state_text.get_width() + 5, card_y + 22))
 
             # Location or Pose
             if drone.get("nearPose") and drone["nearPose"] != "-":
@@ -53,27 +96,65 @@ class dronesPanel:
             else:
                 loc_str = f"{drone['gps']}, {drone['altitude']}"
             loc_text = self.fonts['inter_small'].render(loc_str, True, WHITE)
-            panel_surface.blit(loc_text, (90, y + 45))
+            panel_surface.blit(loc_text, (card_x + 90, card_y + 45))
 
             # Battery
             batt_text = self.fonts['inter_smaller'].render(f"{drone['battery']}% battery", True, WHITE)
-            panel_surface.blit(batt_text, (90, y + 70))
+            panel_surface.blit(batt_text, (card_x + 90, card_y + 70))
 
             # Selection arrow for currently selected drone
             if self.app.selected_drone == i:
                 arrow_text = self.fonts['inter_bold_large'].render("◀", True, WHITE)
-                arrow_x = card_width - arrow_text.get_width() - 10
-                arrow_y = y + (card_height - arrow_text.get_height()) // 2
+                arrow_x = card_x + self.card_width - arrow_text.get_width() - 10
+                arrow_y = card_y + (self.card_height - arrow_text.get_height()) // 2
                 panel_surface.blit(arrow_text, (arrow_x, arrow_y))
-        
-        #scrolling buttons
-        scroll_up_rel = pygame.Rect(panel_width - 50, 80, 40, 100)
-        scroll_down_rel = pygame.Rect(panel_height - 50, 280, 40, 100)
-        pygame.draw.rect(panel_surface, LIGHT_GRAY, scroll_up_rel)   # Up button
-        pygame.draw.rect(panel_surface, LIGHT_GRAY, scroll_down_rel) # Down button # not showing
 
-        screen.blit(panel_surface, (10, 10))
-    
+        # scrolling bars (panel-relative)
+        scroll_up_rel = pygame.Rect(self.PANEL_W - 35, 50, 40, 300)
+        scroll_down_rel = pygame.Rect(self.PANEL_W - 35, self.PANEL_H - 350, 40, 300)
+        pygame.draw.rect(panel_surface, LIGHT_GRAY, scroll_up_rel)   # Up area
+        pygame.draw.rect(panel_surface, LIGHT_GRAY, scroll_down_rel) # Down area
+
+        # store absolute for click detection
+        self.scroll_up_abs = pygame.Rect(self.PANEL_X + scroll_up_rel.x, self.PANEL_Y + scroll_up_rel.y,
+                                         scroll_up_rel.width, scroll_up_rel.height)
+        self.scroll_down_abs = pygame.Rect(self.PANEL_X + scroll_down_rel.x, self.PANEL_Y + scroll_down_rel.y,
+                                           scroll_down_rel.width, scroll_down_rel.height)
+
+        # final blit
+        screen.blit(panel_surface, (self.PANEL_X, self.PANEL_Y))
+
+    def handle_scroll_click(self, pos):
+        """Begin scrolling if user pressed inside an up/down area (mirrors incidents panel)."""
+        if self.scroll_up_abs and self.scroll_up_abs.collidepoint(pos):
+            self.scrolling = True
+            self.scroll_direction = 1
+            return True
+        if self.scroll_down_abs and self.scroll_down_abs.collidepoint(pos):
+            self.scrolling = True
+            self.scroll_direction = -1
+            return True
+        return False
+
+    def stop_scrolling(self):
+        """Stop scrolling (call on mouse button up)."""
+        self.scrolling = False
+
     def get_card_rects(self):
-        """Get clickable card rectangles"""
+        """Get clickable card rectangles (absolute)."""
         return self.drone_card_rects
+
+    def buttonLogic(self, ui, mx, my):
+        """Click handling: first try scroll bars, else card selection."""
+        if self.handle_scroll_click((mx, my)):
+            return
+
+        for rect, idx in self.drone_card_rects:
+            if rect.collidepoint((mx, my)):
+                print(f"drone card clicked: #{idx+1}")
+                ui.selected_drone = idx
+                ui.drone_control_panel.panelState = -1
+                ui.map_panel.customWaypoints = ui.drones[ui.selected_drone]["waypoints"].copy()
+                if ui.camera_component:  # ✅ guard
+                    ui.camera_component.switch_to_drone_camera(idx + 1, "front")
+                break

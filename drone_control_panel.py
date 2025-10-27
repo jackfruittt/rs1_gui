@@ -30,12 +30,13 @@ class DroneControlPanel:
         # Panel surface
         drone_panel = pygame.Surface((PANEL_WIDTH, PANEL_HEIGHT))
         drone_panel.fill(BLACK)
+        pygame.draw.rect(drone_panel, DARK_GREEN, (0, 0, PANEL_WIDTH, 18))
 
         drone_panel.blit(self.dronePic, (PANEL_WIDTH - 210, PANEL_HEIGHT - 200))
 
         # --- Title (top-right)
         title_surface = self.fonts['large_font'].render(f'Drone #{self.app.selected_drone + 1}', True, WHITE)
-        title_rect = title_surface.get_rect(topright=(PANEL_WIDTH - 10, 10))
+        title_rect = title_surface.get_rect(topright=(PANEL_WIDTH - 10, 19))
         drone_panel.blit(title_surface, title_rect)
 
         drone = self.app.drones[self.app.selected_drone]
@@ -67,6 +68,37 @@ class DroneControlPanel:
                 self.create_back_button(drone_panel)
             case 2:
                 self.create_back_button(drone_panel)
+                cardRect = pygame.Rect(20, 20, BTN_WIDTH*2+20, 60)
+                pygame.draw.rect(drone_panel, PINK, cardRect, 2)
+
+                num_waypoints = len(self.app.map_panel.customWaypoints)
+                if num_waypoints < 1:
+                    msg = self.fonts['inter_small'].render("Click mini map for custom waypoint", True, WHITE)
+                    msg_rect = msg.get_rect(center=cardRect.center)
+                    drone_panel.blit(msg, msg_rect)
+                else:
+                    msg = self.fonts['inter_bold_medium'].render(f"{num_waypoints} waypoints", True, WHITE)
+                    drone_panel.blit(msg, (32, 31))
+
+                    mini_button = pygame.Rect(348, 29, 45, 45)
+                    pygame.draw.rect(drone_panel, DARK_GRAY, mini_button)
+                    pygame.draw.rect(drone_panel, WHITE, mini_button, 2)
+
+                    self.button_rects.append((mini_button, "GO"))
+                    label_surface = self.fonts['inter_small'].render("GO", True, WHITE)
+                    label_rect = label_surface.get_rect(center=mini_button.center)
+                    drone_panel.blit(label_surface, label_rect)
+
+                    mini_button = pygame.Rect(290, 29, 45, 45)
+                    pygame.draw.rect(drone_panel, DARK_GRAY, mini_button)
+                    pygame.draw.rect(drone_panel, WHITE, mini_button, 2)
+
+                    self.button_rects.append((mini_button, "CLR"))
+                    label_surface = self.fonts['inter_small'].render("CLR", True, WHITE)
+                    label_rect = label_surface.get_rect(center=mini_button.center)
+                    drone_panel.blit(label_surface, label_rect)
+                
+
             case _:
 
                 # --- Layout regions
@@ -81,7 +113,7 @@ class DroneControlPanel:
                 col1_x = left_margin + BTN_WIDTH + BTN_SPACING_X
                 row_gap = BTN_SPACING_Y
 
-                labels = ["HOVER", "LAND", "SCOUT", "PILOT", "SEND", "CLOSE"]  # 6 buttons
+                labels = ["HOVER", "LAND", "PILOT", "SEND", "CLOSE"]  # 6 buttons
 
                 # Generate rects row-major: two columns
                 buttons = []
@@ -134,10 +166,19 @@ class DroneControlPanel:
                     case "PILOT":
                         self.panelState = 1
                     case "SEND":
+                        self.app.map_panel.customWaypoints = []
+                        self.app.map_panel.customWaypoints = self.app.drones[self.app.selected_drone]["waypoints"].copy()
                         self.panelState = 2
                     case "CLOSE":
+                        self.app.map_panel.customWaypoints = []
                         self.app.selected_drone = -1
                     case "BACK":
                         self.panelState = -1
+                    case "GO":
+                        self.app.notification_ui.pushNotification("Sent!", f"{len(self.app.map_panel.customWaypoints)} Waypoints sent!")
+                        self.app.drones[self.app.selected_drone]["waypoints"] = self.app.map_panel.customWaypoints.copy()
+                        self.panelState = -1
+                    case "CLR":
+                        self.app.map_panel.customWaypoints = []
                 break
 

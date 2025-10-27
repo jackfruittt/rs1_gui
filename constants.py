@@ -17,6 +17,8 @@ BLUE = (100, 170, 255)
 RED = (255, 100, 100)
 YELLOW = (255, 200, 100)
 GREEN = (100, 255, 100)
+PINK = (255, 36, 123)
+DARK_GREEN = (65, 72, 27)
 
 # State colors mapping
 state_colors = {

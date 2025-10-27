@@ -1,5 +1,5 @@
 import pygame
-from constants import state_colors, severity_colors, world_size
+from constants import state_colors, severity_colors, world_size, PINK
 from utils import mapRange
 
 
@@ -20,6 +20,8 @@ class MapPanel:
         self.warning_icon = pygame.transform.scale(self.warning_icon, (30, 30))
 
         self.icon_buttons = []
+
+        self.customWaypoints = []
     
     def draw_map(self, robots, incidents, screen, selected_incident):
         """Original draw_map function"""
@@ -29,11 +31,49 @@ class MapPanel:
         SCREEN_X = 380
         SCREEN_Y = 20
 
+        CUSTOM_WAYPOINT_RADIUS = 8
+        CUSTOM_PATH_THICKNESS = 4
+
         self.icon_buttons = []
 
         map_panel = pygame.Surface((PANEL_WIDTH, PANEL_HEIGHT)).convert_alpha()
         map_panel.fill((0, 0, 0,0))
         map_panel.blit(self.map_top_view, (0, 0))
+
+        for i in range(len(self.customWaypoints)):
+            wx, wy, wz = self.customWaypoints[i]
+            imgX = mapRange(wx, -(world_size[0]/2), (world_size[0]/2), 0, self.mapImgSize[0])
+            imgY = mapRange(wy, -(world_size[1]/2), (world_size[1]/2), 0, self.mapImgSize[1])
+
+            # draw node
+            pygame.draw.circle(map_panel, PINK, (int(imgX), int(imgY)), CUSTOM_WAYPOINT_RADIUS)
+
+            # connect to previous node
+            if i > 0:
+                prev_wx, prev_wy, prev_wz = self.customWaypoints[i-1]
+                prev_imgX = mapRange(prev_wx, -(world_size[0]/2), (world_size[0]/2), 0, self.mapImgSize[0])
+                prev_imgY = mapRange(prev_wy, -(world_size[1]/2), (world_size[1]/2), 0, self.mapImgSize[1])
+
+                pygame.draw.line(map_panel, PINK,
+                                (int(prev_imgX), int(prev_imgY)),
+                                (int(imgX), int(imgY)),
+                                CUSTOM_PATH_THICKNESS)
+
+        # close the loop: connect last → first
+        if len(self.customWaypoints) > 2:
+            first_wx, first_wy, first_wz = self.customWaypoints[0]
+            last_wx, last_wy, last_wz = self.customWaypoints[-1]
+
+            first_imgX = mapRange(first_wx, -(world_size[0]/2), (world_size[0]/2), 0, self.mapImgSize[0])
+            first_imgY = mapRange(first_wy, -(world_size[1]/2), (world_size[1]/2), 0, self.mapImgSize[1])
+            last_imgX = mapRange(last_wx, -(world_size[0]/2), (world_size[0]/2), 0, self.mapImgSize[0])
+            last_imgY = mapRange(last_wy, -(world_size[1]/2), (world_size[1]/2), 0, self.mapImgSize[1])
+
+            pygame.draw.line(map_panel, PINK,
+                            (int(last_imgX), int(last_imgY)),
+                            (int(first_imgX), int(first_imgY)),
+                            CUSTOM_PATH_THICKNESS)
+
 
         for i, inc in enumerate(incidents):
             colour = severity_colors[inc["severity"] - 1]
@@ -91,3 +131,24 @@ class MapPanel:
 
     def get_icon_buttons(self):
         return self.icon_buttons
+
+    def processClickInMap(self, ui, gmx, gmy):
+        # map incident icons
+
+        if gmx > 380 and gmx < 1180 and gmy > 20 and gmy < 820:
+
+            if ui.selected_drone < 0:
+                for rect, idx in self.icon_buttons:
+                    if rect.collidepoint((gmx, gmy)):
+                        print(f'Icon incident clicked: {ui.incidents[idx]["title"]}')
+                        ui.selected_incident = idx
+                        break
+            else:
+
+                if ui.drone_control_panel.panelState == 2:
+                    lx = gmx - 380
+                    ly = gmy - 20
+                    lx = mapRange(lx, 0, self.mapImgSize[0], -(world_size[0]/2), (world_size[0]/2))
+                    ly = mapRange(ly, 0, self.mapImgSize[1], -(world_size[1]/2), (world_size[1]/2))
+                    self.customWaypoints.append([lx, ly, -999])
+                    print(f'custom waypoint added at {lx}, {ly}')

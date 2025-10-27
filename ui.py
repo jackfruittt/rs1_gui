@@ -31,6 +31,7 @@ from drone_control_panel import DroneControlPanel
 from map_panel import MapPanel
 from incident_detail_panel import IncidentDetailPanel
 from spawn_prompt import SpawnPromptPanel
+from notification import NotificationUI
 
 @dataclass
 class KnownPoses:
@@ -67,12 +68,13 @@ class RS1GUI:
 
         self.simReady = False
         self.ros_available = ros2_available()   # was True
-        self.drones = []
         self.camera_component = None
         self._incident_seen = {}          # key: (drone, id) -> index in self.incidents
         self._incident_cleared = set()    # optional: keys you've cleared in UI
 
         self.known_poses = load_known_poses()
+
+        self.sim_uid = 1
 
         # Load fonts
         self.fonts = self._load_fonts()
@@ -116,9 +118,10 @@ class RS1GUI:
         self.spawn_panel = SpawnPromptPanel(self, self.fonts, ros2_available())
         self.drones_panel = dronesPanel(self, self.fonts)
         self.incidents_panel = IncidentsPanel(self.fonts)
-        self.drone_control_panel = DroneControlPanel(self, self.fonts)
         self.map_panel = MapPanel(self.map_top_view, self.drone_icon)
         self.incident_detail_panel = IncidentDetailPanel(self.fonts)
+        self.drone_control_panel = DroneControlPanel(self, self.fonts)
+        self.notification_ui = NotificationUI(self.fonts)
     
         
         # Initialise data 
@@ -200,7 +203,7 @@ class RS1GUI:
             fonts = {
                 'font': pygame.font.Font("media/fonts/TurretRoad-Bold.otf", 32),
                 'small_font': pygame.font.Font("media/fonts/TurretRoad-Bold.otf", 20),
-                'large_font': pygame.font.Font("media/fonts/TurretRoad-ExtraBold.otf", 48),
+                'large_font': pygame.font.Font("media/fonts/TurretRoad-ExtraBold.otf", 46),
                 'state_font': pygame.font.Font("media/fonts/boston.ttf", 38),
                 'inter_large': pygame.font.Font("media/fonts/Inter-Regular.ttf", 48),
                 'inter_medium': pygame.font.Font("media/fonts/Inter-Regular.ttf", 32),
@@ -240,7 +243,8 @@ class RS1GUI:
             "state": state,
             "setPose": setPose,
             "nearPose": nearPose,
-            "yaw": yaw
+            "yaw": yaw,
+            "waypoints": []
         }
         print(f"New drone generated: {drone}")
         return drone
@@ -254,6 +258,7 @@ class RS1GUI:
         drone_coords = (round(random.uniform(-world_size[0]/2, world_size[0]/2), 3), round(random.uniform(-world_size[0]/2, world_size[0]/2), 3))
         
         incident = {
+            "id": self.sim_uid,
             "title": title,
             "time": "2025-08-01 12:00",
             "severity": severity,
@@ -261,11 +266,12 @@ class RS1GUI:
             "drone_coords": drone_coords
         }
         print(f"New incident generated: {incident}")
+        self.sim_uid += 1
         return incident
     
     def draw_base_ui(self):
         """Original draw_base_ui function with ROS2 camera integration"""
-        self.screen.fill(DARK_GRAY)
+        self.screen.fill(DARK_GREEN)
 
         # Update and draw camera feed if available
         if self.camera_component:
@@ -312,6 +318,7 @@ class RS1GUI:
         elif self.selected_incident >= 0:
             self.incident_detail_panel.draw_incident_detail(self.incidents[self.selected_incident], self.screen)
 
+        """
         # Camera status info (in bottom right)
         if self.camera_component:
             status_text = self.camera_component.get_status_info()
@@ -325,6 +332,13 @@ class RS1GUI:
         )
 
         self.screen.blit(debug_text, (700, 825))
+        """
+
+        frame_rate = self.fonts['small_font'].render(
+            f"{int(self.clock.get_fps())}", True, WHITE
+        )
+
+        self.screen.blit(frame_rate, (340, 20))
         
         # Controls info
         controls_text = self.fonts['small_font'].render(
@@ -332,6 +346,8 @@ class RS1GUI:
             True, (150, 150, 150)
         )
         self.screen.blit(controls_text, (1250, 790))
+
+        self.notification_ui.drawNotifications(self.screen)
     
     def handle_events(self):
         """Handle all input events"""
@@ -377,59 +393,18 @@ class RS1GUI:
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 mx, my = event.pos
 
-                # map incident icons
-                for rect, idx in self.map_panel.get_icon_buttons():
-                    if rect.collidepoint((mx, my)):
-                        print(f'Icon incident clicked: {self.incidents[idx]["title"]}')
-                        self.selected_incident = idx
-                        break
+                self.map_panel.processClickInMap(self, mx, my)
 
                 if self.selected_incident < 0:
+                    self.drones_panel.buttonLogic(self, mx, my)
                     if self.selected_drone < 0:
-                        # incident cards
-                        for rect, idx in self.incidents_panel.get_card_rects():
-                            if rect.collidepoint((mx, my)):
-                                print(f"Incident clicked: #{idx+1} - {self.incidents[idx]['title']}")
-                                self.selected_incident = idx
-                                break
-                        # scroll buttons
-                        self.incidents_panel.handle_scroll_click((mx, my))
+                        self.incidents_panel.selectIncidentButtons(self, mx, my)
                     else:
                         # drone control buttons
                         self.drone_control_panel.buttonLogic(mx, my)
-                        
-
-                    # drone card clicks -> optional camera jump
-                    for rect, idx in self.drones_panel.get_card_rects():
-                        if rect.collidepoint((mx, my)):
-                            print(f"drone card clicked: #{idx+1}")
-                            self.selected_drone = idx
-                            self.drone_control_panel.panelState = -1
-                            if self.camera_component:  # ✅ guard
-                                self.camera_component.switch_to_drone_camera(idx + 1, "front")
-                            break
                 else:
-                    action = self.incident_detail_panel.handle_click((mx, my))
-                    if action == 'close':
-                        self.selected_incident = -1
-                    elif action == 'respond':
-                        print('Respond to incident')
-                    # elif action == 'clear':
-                    #     print(f'clearing {self.selected_incident}')
-                    #     del self.incidents[self.selected_incident]
-                    #     self.selected_incident = -1
-                    #     print('clear incident')
-                    elif action == 'clear':
-                        inc = self.incidents[self.selected_incident]
-                        key = (inc["drone"], inc["id"])
-                        self._incident_cleared.add(key)       # remember it's cleared locally
-                        del self.incidents[self.selected_incident]
-                        # rebuild index map after deletion
-                        self._incident_seen.clear()
-                        for i, it in enumerate(self.incidents):
-                            self._incident_seen[(it["drone"], it["id"])] = i
-                        self.selected_incident = -1
-                        print('clear incident')
+                    self.incident_detail_panel.handle_click(self,(mx, my))
+
 
             elif event.type == pygame.MOUSEBUTTONUP:
                 self.incidents_panel.stop_scrolling()
@@ -555,7 +530,8 @@ class RS1GUI:
                     'setPose': '-',
                     'nearPose': '-',
                     'yaw': (math.degrees(yaw) + 360.0) % 360.0,
-                    'battery': 100
+                    'battery': 100,
+                    'waypoints': []
                 })
 
         # Update the drones list
