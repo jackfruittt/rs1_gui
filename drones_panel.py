@@ -1,5 +1,6 @@
 import pygame
-from constants import state_colors, WHITE, BLACK, LIGHT_GRAY
+from constants import state_colors, WHITE, BLACK, LIGHT_GRAY, DARK_GREEN
+from utils import feather_image
 
 class dronesPanel:
     def __init__(self, app, fonts):
@@ -15,7 +16,7 @@ class dronesPanel:
         self.inner_pad_x = 10  # left padding inside the panel for cards
 
         # scrolling state (mirrors incidents panel behaviour)
-        self.scroll_y = 10     # starting offset inside the panel
+        self.scroll_y = 0     # starting offset inside the panel
         self.scrolling = False
         self.scroll_direction = 1   # +1 up area, -1 down area
         self.SCROLL_SPEED = 8
@@ -25,54 +26,56 @@ class dronesPanel:
         self.scroll_up_abs = None
         self.scroll_down_abs = None
 
-    def _clamp_scroll(self, total_content_h):
-        """Keep content within reasonable bounds (no huge blank areas)."""
-        # Max top position (show first row nicely below header area)
-        max_y = 10
-        # Minimum so the last card bottom is visible; if content smaller than panel, just keep at top
-        if total_content_h <= self.PANEL_H:
-            min_y = 10
-        else:
-            min_y = self.PANEL_H - total_content_h - 10
+        self.topFeather = None
+        self.bottomFeather = None
+
+    def _content_height(self, n):
+        """Exact drawn height including top/bottom padding and gaps between cards."""
+        if n <= 0:
+            return 0
+        return (2 * self.inner_pad_x) + (n * self.card_height) + ((n - 1) * self.margin)
+
+    def _clamp_scroll(self, n):
+        """Clamp so first card can fully reach the top pad and last card can fully reach the bottom pad."""
+        content_h = self._content_height(n)
+        max_y = 0  # fully at top (first card’s top == top pad)
+        # when content is shorter than panel, don't allow negative (no scrolling needed)
+        min_y = min(0, self.PANEL_H - content_h - 50)
         if self.scroll_y > max_y:
             self.scroll_y = max_y
         if self.scroll_y < min_y:
             self.scroll_y = min_y
 
     def render_drones_list(self, drones, screen):
-        """Render the (scrollable) list of drone cards."""
         panel_surface = pygame.Surface((self.PANEL_W, self.PANEL_H), pygame.SRCALPHA)
-        panel_surface.fill((0, 0, 0, 0))  # transparent
+        panel_surface.fill((0, 0, 0, 0))
 
         # apply scrolling motion if active
         if self.scrolling:
             self.scroll_y += self.scroll_direction * self.SCROLL_SPEED
 
-        # clamp to content
-        total_h = len(drones) * (self.card_height + self.margin)
-        self._clamp_scroll(total_h)
+        # clamp to real content height
+        self._clamp_scroll(len(drones))
 
-        # reset clickable rects for this frame
         self.drone_card_rects = []
 
-        # draw cards — only what can be visible
         for i, drone in enumerate(drones):
-            y = self.scroll_y + i * (self.card_height + self.margin)
+            # unified Y used for BOTH culling and drawing
+            card_y = self.inner_pad_x + self.scroll_y + i * (self.card_height + self.margin)
 
-            if (y + self.card_height) < 0:
+            # cull off-screen rows using the same y we draw with
+            if (card_y + self.card_height) < 0:
                 continue
-            if y > self.PANEL_H:
+            if card_y > self.PANEL_H - self.inner_pad_x:
                 continue
 
-            # card rect (panel-relative + absolute for clicks)
             card_x = self.inner_pad_x
-            card_y = y + self.inner_pad_x
             card_rect_rel = pygame.Rect(card_x, card_y, self.card_width, self.card_height)
             card_rect_abs = pygame.Rect(self.PANEL_X + card_x, self.PANEL_Y + card_y,
                                         self.card_width, self.card_height)
             self.drone_card_rects.append((card_rect_abs, i))
 
-            # Background + border
+            # draw card background + border (unchanged)
             pygame.draw.rect(panel_surface, BLACK, card_rect_rel)
             pygame.draw.rect(panel_surface, WHITE, card_rect_rel, 2)
 
@@ -120,7 +123,17 @@ class dronesPanel:
                                          scroll_up_rel.width, scroll_up_rel.height)
         self.scroll_down_abs = pygame.Rect(self.PANEL_X + scroll_down_rel.x, self.PANEL_Y + scroll_down_rel.y,
                                            scroll_down_rel.width, scroll_down_rel.height)
+        
+        if self.bottomFeather is None:
+            self.bottomFeather = pygame.Surface((self.card_width, 50), pygame.SRCALPHA)
+            self.bottomFeather.fill(DARK_GREEN)
+            self.bottomFeather = feather_image(self.bottomFeather, 30, 30, feather_top=True, feather_right=False, feather_bottom=False, feather_left=False)
 
+            self.topFeather = pygame.Surface((self.card_width, 50), pygame.SRCALPHA)
+            self.topFeather.fill(DARK_GREEN)
+            self.topFeather = feather_image(self.topFeather, 30, 30, feather_top=False, feather_right=False, feather_bottom=True, feather_left=False)
+        panel_surface.blit(self.bottomFeather, (self.PANEL_X, self.PANEL_H - 95))
+        panel_surface.blit(self.topFeather, (self.PANEL_X, 0))
         # final blit
         screen.blit(panel_surface, (self.PANEL_X, self.PANEL_Y))
 

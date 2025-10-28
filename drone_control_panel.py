@@ -71,7 +71,7 @@ class DroneControlPanel:
                 cardRect = pygame.Rect(20, 20, BTN_WIDTH*2+20, 60)
                 pygame.draw.rect(drone_panel, PINK, cardRect, 2)
 
-                num_waypoints = len(self.app.map_panel.customWaypoints)
+                num_waypoints = len(self.app.map_panel.highlighted_waypoints)
                 if num_waypoints < 1:
                     msg = self.fonts['inter_small'].render("Click mini map for custom waypoint", True, WHITE)
                     msg_rect = msg.get_rect(center=cardRect.center)
@@ -158,27 +158,27 @@ class DroneControlPanel:
                 print(f"Drone button clicked: {label}")
                 match label:
                     case "HOVER":
-                        pass
+                        self.app.notification_ui.pushNotification("Hovering!", f"Drone set to Hover!")
                     case "LAND":
-                        pass
+                        self.app.notification_ui.pushNotification("Landing!", f"Drone set to Land!")
                     case "SCOUT":
                         self.panelState = 0
                     case "PILOT":
                         self.panelState = 1
                     case "SEND":
-                        self.app.map_panel.customWaypoints = []
-                        self.app.map_panel.customWaypoints = self.app.drones[self.app.selected_drone]["waypoints"].copy()
+                        self.app.map_panel.highlighted_waypoints = []
+                        self.app.map_panel.highlighted_waypoints = self.app.drones[self.app.selected_drone]["waypoints"].copy()
                         self.panelState = 2
                     case "CLOSE":
-                        self.app.map_panel.customWaypoints = []
+                        self.app.map_panel.highlighted_waypoints = []
                         self.app.selected_drone = -1
                     case "BACK":
                         self.panelState = -1
                     case "GO":
-                        self.app.notification_ui.pushNotification("Sent!", f"{len(self.app.map_panel.customWaypoints)} Waypoints sent!")
-                        self.app.drones[self.app.selected_drone]["waypoints"] = self.app.map_panel.customWaypoints.copy()
+                        self.app.notification_ui.pushNotification("Sent!", f"{len(self.app.map_panel.highlighted_waypoints)} Waypoints sent!", bar_color=PINK)
+                        self.app.drones[self.app.selected_drone]["waypoints"] = self.app.map_panel.highlighted_waypoints.copy()
                         self.panelState = -1
                     case "CLR":
-                        self.app.map_panel.customWaypoints = []
+                        self.app.map_panel.highlighted_waypoints = []
                 break
 

@@ -4,7 +4,7 @@ import pygame
 class NotificationUI:
     def __init__(self, fonts, pos=(760, 740), size=(400, 100),
                  image_path="media/images/drone_cp.png", image_size=(80, 80),
-                 bar_color=(255, 60, 120)):
+                 bar_color=BLUE):
         self.fonts = fonts
         self.pos = pos
         self.size = size

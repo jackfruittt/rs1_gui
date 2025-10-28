@@ -74,6 +74,9 @@ class RS1GUI:
 
         self.known_poses = load_known_poses()
 
+        self.drones = []
+        self.incidents = []
+
         self.sim_uid = 1
 
         # Load fonts
@@ -118,16 +121,23 @@ class RS1GUI:
         self.spawn_panel = SpawnPromptPanel(self, self.fonts, ros2_available())
         self.drones_panel = dronesPanel(self, self.fonts)
         self.incidents_panel = IncidentsPanel(self.fonts)
-        self.map_panel = MapPanel(self.map_top_view, self.drone_icon)
+        self.map_panel = MapPanel(self, self.map_top_view, self.drone_icon)
         self.incident_detail_panel = IncidentDetailPanel(self.fonts)
         self.drone_control_panel = DroneControlPanel(self, self.fonts)
         self.notification_ui = NotificationUI(self.fonts)
+
+        # Initialise camera component with instant switching (no delay when changing cameras)
+        self.camera_component = CameraComponent(
+            self.ros_handler, 
+            display_rect=(1240, 460, 640, 360),
+            instant_switching=True,  # Use preload method for comparison
+            preload_all=True        # Preload ALL cameras for zero-delay switching
+        )
     
         
         # Initialise data 
         # self.drones = self._generate_drones()
-        self.drones = []
-        self.incidents = []
+
 
         # To store button state and handling button data
         self.buttons = []
@@ -223,6 +233,16 @@ class RS1GUI:
             ]}
         
         return fonts
+
+    def generate_random_waypoints(self):
+        waypoints = []
+        for _ in range(random.randint(3,7)):
+            wx = round(random.uniform(-world_size[0]/2, world_size[0]/2), 3)
+            wy = round(random.uniform(-world_size[1]/2, world_size[1]/2), 3)
+            wz = -999
+            waypoints.append([wx, wy, wz])
+        
+        return waypoints
     
     def generate_drone(self):
         """Generate a drone odom simuation purposes"""
@@ -244,7 +264,7 @@ class RS1GUI:
             "setPose": setPose,
             "nearPose": nearPose,
             "yaw": yaw,
-            "waypoints": []
+            "waypoints": self.generate_random_waypoints()
         }
         print(f"New drone generated: {drone}")
         return drone
