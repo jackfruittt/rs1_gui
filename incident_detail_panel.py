@@ -3,6 +3,7 @@ import pygame
 from constants import *
 from utils import feather_image
 
+
 class IncidentDetailPanel:
     """
     Detail view for a single incident. Intended to replace the incidents list panel
@@ -146,6 +147,7 @@ class IncidentDetailPanel:
                 ui._incident_seen[(it["drone"], it["id"])] = i
             ui.selected_incident = -1
             print('clear incident')
+            ui.notification_ui.pushNotification("Cleared!", "Incident cleared!")
             return
 
 

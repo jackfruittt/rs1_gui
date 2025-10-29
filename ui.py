@@ -77,6 +77,8 @@ class RS1GUI:
         self.drones = []
         self.incidents = []
 
+        self.lastIncidentCount = 0
+
         self.default_waypoints = load_waypoints_yaml("waypoints.yaml")
 
         self.sim_uid = 1
@@ -311,6 +313,10 @@ class RS1GUI:
                     d['gps']      = f"{x:.3f}, {y:.3f}"
                     d['altitude'] = f"{z:.2f}m"
                     d['yaw']      = (math.degrees(yaw) + 360.0) % 360.0
+
+        if self.lastIncidentCount != len(self.incidents) and self.ros_available:
+            self.lastIncidentCount = len(self.incidents)
+            self.notification_ui.pushNotification("New Incident!", f"{self.incidents[-1]['title']}", bar_color=severity_colors[self.incidents[-1]["severity"] - 1])
 
         # Map
         self.map_panel.draw_map(self.drones, self.incidents, self.screen, self.selected_incident)
