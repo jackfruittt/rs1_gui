@@ -149,6 +149,9 @@ class SpawnPromptPanel:
         time.sleep(0.01)
         for _ in range(self.requestCount):
             self.app.drones.append(self.app.generate_drone())
+            if _ <= len(self.app.default_waypoints)-1:
+                self.app.drones[-1]['waypoints'] = self.app.default_waypoints[_]
+
 
         for _ in range(random.randint(3,10)):
             self.app.incidents.append(self.app.generate_random_incident())
@@ -167,6 +170,8 @@ class SpawnPromptPanel:
                     # Fallback: Generate fake data like simulateEnvSetup
                     for _ in range(self.requestCount):
                         self.app.drones.append(self.app.generate_drone())
+                        if _ <= len(self.app.default_waypoints)-1:
+                            self.app.drones[-1]['waypoints'] = self.app.default_waypoints[_]
                     for _ in range(random.randint(3, 10)):
                         self.app.incidents.append(self.app.generate_random_incident())
                     self.app.simReady = True
@@ -251,6 +256,8 @@ class SpawnPromptPanel:
             # Fallback on error too
             for _ in range(self.requestCount):
                 self.app.drones.append(self.app.generate_drone())
+                if _ <= len(self.app.default_waypoints)-1:
+                    self.app.drones[-1]['waypoints'] = self.app.default_waypoints[_]
             for _ in range(random.randint(3, 10)):
                 self.app.incidents.append(self.app.generate_random_incident())
             self.app.simReady = True

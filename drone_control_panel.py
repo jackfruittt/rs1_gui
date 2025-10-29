@@ -210,9 +210,12 @@ class DroneControlPanel:
                         self.app.map_panel.highlighted_waypoints = []
                     
                     case "DEF":
+                        self.app.drones[self.app.selected_drone]["waypoints"] = self.app.default_waypoints[self.app.selected_drone].copy()
+                        self.app.map_panel.highlighted_waypoints = self.app.drones[self.app.selected_drone]["waypoints"].copy()
                         self.app.notification_ui.pushNotification(f"Defaulting Drone {self.app.selected_drone+1}!", "Default waypoints sent!", bar_color=YELLOW)
                         sld = self.app.selected_drone+1
                         cmd = f'ros2 service call /rs1_drone_{sld}/start_mission std_srvs/srv/Trigger {{}}"'
                         spawn_cmd_safe(cmd)
+                        self.panelState = -1
                 break
 

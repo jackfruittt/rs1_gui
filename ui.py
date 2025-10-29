@@ -21,7 +21,7 @@ from dataclasses import dataclass
 
 # Import our components
 from constants import *
-from utils import feather_image
+from utils import feather_image, load_waypoints_yaml
 from ros_handler import RosHandler
 from ros_handler import ros2_available
 from camera_ros import CameraComponent  # Replaced VideoPlayer
@@ -76,6 +76,8 @@ class RS1GUI:
 
         self.drones = []
         self.incidents = []
+
+        self.default_waypoints = load_waypoints_yaml("waypoints.yaml")
 
         self.sim_uid = 1
 
@@ -264,7 +266,7 @@ class RS1GUI:
             "setPose": setPose,
             "nearPose": nearPose,
             "yaw": yaw,
-            "waypoints": self.generate_random_waypoints()
+            "waypoints": []
         }
         print(f"New drone generated: {drone}")
         return drone
