@@ -1,6 +1,9 @@
 import pygame
 from constants import *
 
+import subprocess, os
+from utils import spawn_cmd_safe
+
 
 class DroneControlPanel:
     def __init__(self, app, fonts):
@@ -89,12 +92,21 @@ class DroneControlPanel:
                     label_rect = label_surface.get_rect(center=mini_button.center)
                     drone_panel.blit(label_surface, label_rect)
 
-                    mini_button = pygame.Rect(290, 29, 45, 45)
+                    mini_button = pygame.Rect(297, 29, 45, 45)
                     pygame.draw.rect(drone_panel, DARK_GRAY, mini_button)
                     pygame.draw.rect(drone_panel, WHITE, mini_button, 2)
 
                     self.button_rects.append((mini_button, "CLR"))
                     label_surface = self.fonts['inter_small'].render("CLR", True, WHITE)
+                    label_rect = label_surface.get_rect(center=mini_button.center)
+                    drone_panel.blit(label_surface, label_rect)
+
+                    mini_button = pygame.Rect(245, 29, 45, 45)
+                    pygame.draw.rect(drone_panel, DARK_GRAY, mini_button)
+                    pygame.draw.rect(drone_panel, WHITE, mini_button, 2)
+
+                    self.button_rects.append((mini_button, "DEF"))
+                    label_surface = self.fonts['inter_small'].render("DEF", True, WHITE)
                     label_rect = label_surface.get_rect(center=mini_button.center)
                     drone_panel.blit(label_surface, label_rect)
                 
@@ -149,6 +161,21 @@ class DroneControlPanel:
 
         # Blit panel to screen
         screen.blit(drone_panel, (PANEL_X, PANEL_Y))
+    
+    def gen_wp_msg(self, selectedDrone):
+        waypoints = ""
+
+        for i, wp in enumerate(self.app.drones[selectedDrone]["waypoints"]):
+            if i > 0:
+                waypoints += f",{wp[0]},{wp[1]},-999"
+            else:
+                waypoints += f"{wp[0]},{wp[1]},-999"
+
+        sld = selectedDrone+1
+        publish_command = f'ros2 topic pub --once /rs1_drone_{sld}/mission_assignment std_msgs/msg/String "data: \'ASSIGN,ROUTE,{waypoints}\'"'
+        # print(publish_command)
+        return publish_command
+
 
     def buttonLogic(self, gmx, gmy):
         mx = gmx - PANEL_X
@@ -175,10 +202,17 @@ class DroneControlPanel:
                     case "BACK":
                         self.panelState = -1
                     case "GO":
-                        self.app.notification_ui.pushNotification("Sent!", f"{len(self.app.map_panel.highlighted_waypoints)} Waypoints sent!", bar_color=PINK)
+                        self.app.notification_ui.pushNotification(f"Sent Drone {self.app.selected_drone+1}!", f"{len(self.app.map_panel.highlighted_waypoints)} Waypoints sent!", bar_color=PINK)
                         self.app.drones[self.app.selected_drone]["waypoints"] = self.app.map_panel.highlighted_waypoints.copy()
+                        spawn_cmd_safe(self.gen_wp_msg(self.app.selected_drone))
                         self.panelState = -1
                     case "CLR":
                         self.app.map_panel.highlighted_waypoints = []
+                    
+                    case "DEF":
+                        self.app.notification_ui.pushNotification(f"Defaulting Drone {self.app.selected_drone+1}!", "Default waypoints sent!", bar_color=YELLOW)
+                        sld = self.app.selected_drone+1
+                        cmd = f'ros2 service call /rs1_drone_{sld}/start_mission std_srvs/srv/Trigger {{}}"'
+                        spawn_cmd_safe(cmd)
                 break
 

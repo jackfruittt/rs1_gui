@@ -2,6 +2,9 @@ import pygame
 import numpy as np
 from constants import pretty
 
+import subprocess, os
+from subprocess import DEVNULL
+
 
 def feather_image(surface, feather_size_x, feather_size_y,
                   feather_top=False, feather_right=True,
@@ -73,3 +76,21 @@ def draw_left_fade(screen):
     l_fade_surface = pygame.Surface((670, 395), pygame.SRCALPHA)
     l_fade_surface.fill((225, 255, 255, 108))  # Transparent background
     screen.blit(l_fade_surface, (0, 0))
+
+def spawn_cmd_safe(cmd): # genAI function
+    print(f"SENDING CMD: {cmd}")
+    try:
+        shell = isinstance(cmd, str)
+        kwargs = dict(stdout=DEVNULL, stderr=DEVNULL, stdin=DEVNULL, shell=shell)
+        # Detach so it won’t block/kill your process if it errors.
+        if os.name == "posix":
+            kwargs["start_new_session"] = True
+        else:  # Windows
+            kwargs["creationflags"] = (
+                subprocess.CREATE_NEW_PROCESS_GROUP |
+                subprocess.DETACHED_PROCESS |
+                subprocess.CREATE_NO_WINDOW
+            )
+        subprocess.Popen(cmd, **kwargs)
+    except (FileNotFoundError, OSError):
+        pass
