@@ -1,6 +1,6 @@
 
 import pygame
-from constants import state_colors, severity_colors, world_size, RED
+from constants import state_colors, severity_colors, world_size, PINK
 from utils import mapRange
 
 
@@ -86,16 +86,16 @@ class MapPanel:
         # Draw using local coords (crop offset)
         for i, (x, y) in enumerate(pts):
             lx, ly = x - tlx, y - tly
-            pygame.draw.circle(surf, RED, (lx, ly), R)
+            pygame.draw.circle(surf, PINK, (lx, ly), R)
             if i > 0:
                 px, py = pts[i - 1]
-                pygame.draw.line(surf, RED, (px - tlx, py - tly), (lx, ly), TH)
+                pygame.draw.line(surf, PINK, (px - tlx, py - tly), (lx, ly), TH)
 
         # Close loop if more than 2 points
         if len(pts) > 2:
             (x0, y0) = pts[0]
             (xn, yn) = pts[-1]
-            pygame.draw.line(surf, RED, (xn - tlx, yn - tly), (x0 - tlx, y0 - tly), TH)
+            pygame.draw.line(surf, PINK, (xn - tlx, yn - tly), (x0 - tlx, y0 - tly), TH)
 
         return {"surf": surf, "pos": (tlx, tly)}
 
@@ -177,6 +177,50 @@ class MapPanel:
         del px
         self._drone_icon_tinted[state] = colored
         return colored
+
+    # --------------------------------------------------------------------------------------
+    # (Legacy) draw_waypoints - kept for compatibility; cache builder uses a faster, cropped version
+    # --------------------------------------------------------------------------------------
+    def draw_waypoints(self, waypoints, opacity=255):
+        CUSTOM_WAYPOINT_RADIUS = 8
+        CUSTOM_PATH_THICKNESS = 4
+        wp_surface = pygame.Surface((self.mapImgSize[0], self.mapImgSize[1]), pygame.SRCALPHA)
+
+        for i in range(len(waypoints)):
+            wx, wy, wz = waypoints[i]
+            imgX = mapRange(wx, -(world_size[0]/2), (world_size[0]/2), 0, self.mapImgSize[0])
+            imgY = mapRange(wy, -(world_size[1]/2), (world_size[1]/2), 0, self.mapImgSize[1])
+
+            # draw node
+            pygame.draw.circle(wp_surface, PINK, (int(imgX), int(imgY)), CUSTOM_WAYPOINT_RADIUS)
+
+            # connect to previous node
+            if i > 0:
+                prev_wx, prev_wy, prev_wz = waypoints[i-1]
+                prev_imgX = mapRange(prev_wx, -(world_size[0]/2), (world_size[0]/2), 0, self.mapImgSize[0])
+                prev_imgY = mapRange(prev_wy, -(world_size[1]/2), (world_size[1]/2), 0, self.mapImgSize[1])
+
+                pygame.draw.line(wp_surface, PINK,
+                                (int(prev_imgX), int(prev_imgY)),
+                                (int(imgX), int(imgY)),
+                                CUSTOM_PATH_THICKNESS)
+
+        # close the loop: connect last → first
+        if len(waypoints) > 2:
+            first_wx, first_wy, first_wz = waypoints[0]
+            last_wx, last_wy, last_wz = waypoints[-1]
+
+            first_imgX = mapRange(first_wx, -(world_size[0]/2), (world_size[0]/2), 0, self.mapImgSize[0])
+            first_imgY = mapRange(first_wy, -(world_size[1]/2), (world_size[1]/2), 0, self.mapImgSize[1])
+            last_imgX = mapRange(last_wx, -(world_size[0]/2), (world_size[0]/2), 0, self.mapImgSize[0])
+            last_imgY = mapRange(last_wy, -(world_size[1]/2), (world_size[1]/2), 0, self.mapImgSize[1])
+
+            pygame.draw.line(wp_surface, PINK,
+                            (int(last_imgX), int(last_imgY)),
+                            (int(first_imgX), int(first_imgY)),
+                            CUSTOM_PATH_THICKNESS)
+        wp_surface.set_alpha(opacity)
+        return wp_surface
 
     # --------------------------------------------------------------------------------------
     # MAIN DRAW
