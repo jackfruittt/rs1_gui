@@ -136,23 +136,11 @@ class RS1GUI:
             preload_all=True        # Preload ALL cameras for zero-delay switching
         )
     
-        
-        # Initialise data 
-        # self.drones = self._generate_drones()
-
-
         # To store button state and handling button data
         self.buttons = []
         self.last_button_states = {}
         self.last_drone_id = 0
 
-        # if ros2_available:
-        #     for _ in range(4):
-        #         self.drones.append(self.generate_drone())
-
-        #     for _ in range(random.randint(3,10)):
-        #         self.incidents.append(self.generate_random_incident())
-        
         # Fade state
         self.show_left_fade = False
         self.left_fade_start = 0
@@ -414,6 +402,10 @@ class RS1GUI:
             # -------------------------
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 mx, my = event.pos
+
+                if not self.simReady:
+                    self.spawn_panel.buttonLogic(mx, my)
+                    continue
 
                 self.map_panel.processClickInMap(self, mx, my)
 

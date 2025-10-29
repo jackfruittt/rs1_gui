@@ -81,6 +81,16 @@ class SpawnPromptPanel:
         # Final blit
         screen.blit(panel, (0, 0))
 
+    def startSim(self):
+        self.runningScript = True
+        self.requestCount = int(self.user_input)
+        if self.rosAvailable is True:
+            print("ROS found")
+            self.runScript(self.user_input)
+        else:
+            print("ROS NOT FOUND")
+            self.simulateThread.start()
+
     def handle_key(self, event):
         """Restrict input to digits only"""
         if self.runningScript is not True:
@@ -89,14 +99,7 @@ class SpawnPromptPanel:
                     self.user_input = self.user_input[:-1]
                 elif event.key == pygame.K_RETURN:
                     if self.user_input != "":
-                        self.runningScript = True
-                        self.requestCount = int(self.user_input)
-                        if self.rosAvailable is True:
-                            print("ROS found")
-                            self.runScript(self.user_input)
-                        else:
-                            print("ROS NOT FOUND")
-                            self.simulateThread.start()
+                        self.startSim()
                     return
                 elif event.unicode.isdigit():
                     if int(self.user_input + event.unicode) < 11:
@@ -264,7 +267,12 @@ class SpawnPromptPanel:
         
         print("Sim ready!")
 
-    def get_button_rects(self):
-        return self.button_rects
+    def buttonLogic(self, gmx, gmy):
+        if self.runningScript is not True:
+            for rect, action in self.button_rects:
+                if rect.collidepoint(gmx, gmy):
+                    if action == "submit":
+                        if self.user_input != "":
+                            self.startSim()
     
 

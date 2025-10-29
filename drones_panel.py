@@ -29,6 +29,9 @@ class dronesPanel:
         self.topFeather = None
         self.bottomFeather = None
 
+        self.max_y = 0
+        self.min_y = 0
+
     def _content_height(self, n):
         """Exact drawn height including top/bottom padding and gaps between cards."""
         if n <= 0:
@@ -38,13 +41,13 @@ class dronesPanel:
     def _clamp_scroll(self, n):
         """Clamp so first card can fully reach the top pad and last card can fully reach the bottom pad."""
         content_h = self._content_height(n)
-        max_y = 0  # fully at top (first card’s top == top pad)
+        self.max_y = 0  # fully at top (first card’s top == top pad)
         # when content is shorter than panel, don't allow negative (no scrolling needed)
-        min_y = min(0, self.PANEL_H - content_h - 50)
-        if self.scroll_y > max_y:
-            self.scroll_y = max_y
-        if self.scroll_y < min_y:
-            self.scroll_y = min_y
+        self.min_y = min(0, self.PANEL_H - content_h - 50)
+        if self.scroll_y > self.max_y:
+            self.scroll_y = self.max_y
+        if self.scroll_y < self.min_y:
+            self.scroll_y = self.min_y
 
     def render_drones_list(self, drones, screen):
         panel_surface = pygame.Surface((self.PANEL_W, self.PANEL_H), pygame.SRCALPHA)
@@ -132,8 +135,11 @@ class dronesPanel:
             self.topFeather = pygame.Surface((self.card_width, 50), pygame.SRCALPHA)
             self.topFeather.fill(DARK_GREEN)
             self.topFeather = feather_image(self.topFeather, 30, 30, feather_top=False, feather_right=False, feather_bottom=True, feather_left=False)
-        panel_surface.blit(self.bottomFeather, (self.PANEL_X, self.PANEL_H - 95))
-        panel_surface.blit(self.topFeather, (self.PANEL_X, 0))
+        
+        if self.scroll_y < self.max_y:
+            panel_surface.blit(self.topFeather, (self.PANEL_X, 0))
+        else:
+            panel_surface.blit(self.bottomFeather, (self.PANEL_X, self.PANEL_H - 95))
         # final blit
         screen.blit(panel_surface, (self.PANEL_X, self.PANEL_Y))
 
