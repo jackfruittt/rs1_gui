@@ -1,6 +1,6 @@
 
 import pygame
-from constants import state_colors, severity_colors, world_size, RED
+from constants import state_colors, severity_colors, world_size, PINK
 from utils import mapRange
 
 
@@ -86,16 +86,16 @@ class MapPanel:
         # Draw using local coords (crop offset)
         for i, (x, y) in enumerate(pts):
             lx, ly = x - tlx, y - tly
-            pygame.draw.circle(surf, RED, (lx, ly), R)
+            pygame.draw.circle(surf, PINK, (lx, ly), R)
             if i > 0:
                 px, py = pts[i - 1]
-                pygame.draw.line(surf, RED, (px - tlx, py - tly), (lx, ly), TH)
+                pygame.draw.line(surf, PINK, (px - tlx, py - tly), (lx, ly), TH)
 
         # Close loop if more than 2 points
         if len(pts) > 2:
             (x0, y0) = pts[0]
             (xn, yn) = pts[-1]
-            pygame.draw.line(surf, RED, (xn - tlx, yn - tly), (x0 - tlx, y0 - tly), TH)
+            pygame.draw.line(surf, PINK, (xn - tlx, yn - tly), (x0 - tlx, y0 - tly), TH)
 
         return {"surf": surf, "pos": (tlx, tly)}
 
@@ -179,7 +179,7 @@ class MapPanel:
         return colored
 
     # --------------------------------------------------------------------------------------
-    # draw_waypoints - used within 'send' control panel; cache builder uses a faster, cropped version for fading previews
+    # (Legacy) draw_waypoints - kept for compatibility; cache builder uses a faster, cropped version
     # --------------------------------------------------------------------------------------
     def draw_waypoints(self, waypoints, opacity=255):
         CUSTOM_WAYPOINT_RADIUS = 8
@@ -192,7 +192,7 @@ class MapPanel:
             imgY = mapRange(wy, -(world_size[1]/2), (world_size[1]/2), 0, self.mapImgSize[1])
 
             # draw node
-            pygame.draw.circle(wp_surface, RED, (int(imgX), int(imgY)), CUSTOM_WAYPOINT_RADIUS)
+            pygame.draw.circle(wp_surface, PINK, (int(imgX), int(imgY)), CUSTOM_WAYPOINT_RADIUS)
 
             # connect to previous node
             if i > 0:
@@ -200,7 +200,7 @@ class MapPanel:
                 prev_imgX = mapRange(prev_wx, -(world_size[0]/2), (world_size[0]/2), 0, self.mapImgSize[0])
                 prev_imgY = mapRange(prev_wy, -(world_size[1]/2), (world_size[1]/2), 0, self.mapImgSize[1])
 
-                pygame.draw.line(wp_surface, RED,
+                pygame.draw.line(wp_surface, PINK,
                                 (int(prev_imgX), int(prev_imgY)),
                                 (int(imgX), int(imgY)),
                                 CUSTOM_PATH_THICKNESS)
@@ -215,7 +215,7 @@ class MapPanel:
             last_imgX = mapRange(last_wx, -(world_size[0]/2), (world_size[0]/2), 0, self.mapImgSize[0])
             last_imgY = mapRange(last_wy, -(world_size[1]/2), (world_size[1]/2), 0, self.mapImgSize[1])
 
-            pygame.draw.line(wp_surface, RED,
+            pygame.draw.line(wp_surface, PINK,
                             (int(last_imgX), int(last_imgY)),
                             (int(first_imgX), int(first_imgY)),
                             CUSTOM_PATH_THICKNESS)
@@ -241,70 +241,53 @@ class MapPanel:
         # Ensure waypoint cache is up to date (rebuild changed entries only)
         self._ensure_waypoint_cache()
 
-        if self.app.selected_drone < 0:
+        # ------------------------------------------------------------------
+        # Triple-overlap waypoint rendering with T/3 staggering (no flash)
+        # Opacity follows 0 -> max -> 0 triangular envelope over [0..1].
+        # ------------------------------------------------------------------
+        num_drones = len(self.app.drones) if hasattr(self.app, 'drones') else 0
+        if num_drones > 0:
+            now_ms = pygame.time.get_ticks()
+            T = float(self.waypoint_cycle_duration)
+            one_third = T / 3.0
 
-            # ------------------------------------------------------------------
-            # Triple-overlap waypoint rendering with T/3 staggering (no flash)
-            # Opacity follows 0 -> max -> 0 triangular envelope over [0..1].
-            # ------------------------------------------------------------------
-            num_drones = len(self.app.drones) if hasattr(self.app, 'drones') else 0
-            if num_drones > 0:
-                now_ms = pygame.time.get_ticks()
-                T = float(self.waypoint_cycle_duration)
-                one_third = T / 3.0
+            if self.waypoint_cycle_start == 0:
+                self.waypoint_cycle_start = now_ms
 
-                if self.waypoint_cycle_start == 0:
-                    self.waypoint_cycle_start = now_ms
+            elapsed = now_ms - self.waypoint_cycle_start
 
+            # When a full fade finishes, promote current -> next and
+            # move the start forward by T/3 to preserve next's phase.
+            if elapsed >= T:
+                steps = int(elapsed // T)
+                self.waypoint_cycle_idx = (self.waypoint_cycle_idx + steps) % num_drones
+                self.waypoint_cycle_start += int(steps * one_third)
                 elapsed = now_ms - self.waypoint_cycle_start
 
-                # When a full fade finishes, promote current -> next and
-                # move the start forward by T/3 to preserve next's phase.
-                if elapsed >= T:
-                    steps = int(elapsed // T)
-                    self.waypoint_cycle_idx = (self.waypoint_cycle_idx + steps) % num_drones
-                    self.waypoint_cycle_start += int(steps * one_third)
-                    elapsed = now_ms - self.waypoint_cycle_start
+            def clamp01(x: float) -> float:
+                return 0.0 if x < 0.0 else (1.0 if x > 1.0 else x)
 
-                def clamp01(x: float) -> float:
-                    return 0.0 if x < 0.0 else (1.0 if x > 1.0 else x)
+            # Fade mapping (0 -> max -> 0): triangular envelope across [0..1].
+            # tri(frac) = 1 - |2*frac - 1|  -> 0 at 0 & 1, 1 at 0.5
+            def fade_value(frac: float) -> int:
+                f = clamp01(frac)
+                tri = 1.0 - abs(2.0 * f - 1.0)
+                return int(self.waypoint_initial_opacity * tri)
 
-                # Fade mapping (0 -> max -> 0): triangular envelope across [0..1].
-                # tri(frac) = 1 - |2*frac - 1|  -> 0 at 0 & 1, 1 at 0.5
-                def fade_value(frac: float) -> int:
-                    f = clamp01(frac)
-                    tri = 1.0 - abs(2.0 * f - 1.0)
-                    return int(self.waypoint_initial_opacity * tri)
+            cur_idx = self.waypoint_cycle_idx
 
-                cur_idx = self.waypoint_cycle_idx
+            def draw_phase(idx_offset: int, delay_ms: float):
+                e = elapsed - delay_ms
+                if e < 0 or e > T:
+                    return
+                frac = e / T
+                idx = (cur_idx + idx_offset) % num_drones
+                self._blit_cached_wp(map_panel, idx, fade_value(frac))
 
-                def draw_phase(idx_offset: int, delay_ms: float):
-                    e = elapsed - delay_ms
-                    if e < 0 or e > T:
-                        return
-                    frac = e / T
-                    idx = (cur_idx + idx_offset) % num_drones
-                    self._blit_cached_wp(map_panel, idx, fade_value(frac))
-
-                # Draw three overlapping phases (0, T/3, 2T/3)
-                draw_phase(0, 0.0)
-                draw_phase(1, one_third)
-                draw_phase(2, 2.0 * one_third)
-        elif self.app.drone_control_panel.panelState ==2:
-            map_panel.blit(self.draw_waypoints(self.highlighted_waypoints), (0,0))
-
-            for i in self.app.drones:
-                sel_idx = self.app.drones.index(i)
-                if sel_idx != self.app.selected_drone:
-                    wps = i.get("waypoints", [])
-                    self._blit_cached_wp(map_panel, sel_idx, 70)
-
-        else:
-            # ------------------------------------------------------------------
-            # Selected drone waypoint rendering (no fade)
-            # ------------------------------------------------------------------
-            sel_idx = self.app.selected_drone
-            self._blit_cached_wp(map_panel, sel_idx, 255)
+            # Draw three overlapping phases (0, T/3, 2T/3)
+            draw_phase(0, 0.0)
+            draw_phase(1, one_third)
+            draw_phase(2, 2.0 * one_third)
 
         # ------------------------------------------------------------------
         # Incidents (use pre-tinted icons; no per-frame recolor)
@@ -356,9 +339,6 @@ class MapPanel:
         screen.blit(map_panel, (SCREEN_X, SCREEN_Y))
 
     def get_icon_buttons(self):
-        """
-        This function returns the list of icon buttons for incidents on the map.
-        """
         return self.icon_buttons
 
     def processClickInMap(self, ui, gmx, gmy):

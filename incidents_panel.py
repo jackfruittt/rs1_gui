@@ -109,3 +109,14 @@ class IncidentsPanel:
     def get_card_rects(self):
         """Get incident card rectangles for click detection"""
         return self.incident_card_rects
+    
+    def selectIncidentButtons(self, ui, gmx, gmy):
+        # incident cards
+        for rect, idx in ui.incidents_panel.get_card_rects():
+            if rect.collidepoint((gmx, gmy)):
+                print(f"Incident clicked: #{idx+1} - {ui.incidents[idx]['title']}")
+                ui.selected_incident = idx
+                break
+        # scroll buttons
+        ui.incidents_panel.handle_scroll_click((gmx, gmy))
+

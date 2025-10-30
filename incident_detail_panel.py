@@ -3,6 +3,7 @@ import pygame
 from constants import *
 from utils import feather_image
 
+
 class IncidentDetailPanel:
     """    
     This class represents the Incident Detail view for a single incident.
@@ -46,7 +47,7 @@ class IncidentDetailPanel:
 
         # ===== Top bars (match list panel) =====
         pygame.draw.rect(panel, GRAY, (0, 0, PANEL_WIDTH, 77))
-        pygame.draw.rect(panel, DARK_GRAY, (0, 0, PANEL_WIDTH, 20))
+        pygame.draw.rect(panel, DARK_GREEN, (0, 0, PANEL_WIDTH, 20))
 
         # Title
         title_text = self.fonts['font'].render("Incident Detail", True, WHITE)
@@ -125,14 +126,6 @@ class IncidentDetailPanel:
             panel.blit(txt, (r.x + (r.w - txt.get_width()) // 2,
                              r.y + (r.h - txt.get_height()) // 2))
 
-        # Feathered bottom strip (same visual motif as list panel)
-        bottom_rect = pygame.Surface((PANEL_WIDTH, 30), pygame.SRCALPHA)
-        bottom_rect.fill(DARK_GRAY)
-        bottom_feathered = feather_image(bottom_rect, 25, 25,
-                                         feather_top=True, feather_right=False,
-                                         feather_bottom=False, feather_left=False)
-        panel.blit(bottom_feathered, (0, PANEL_HEIGHT - 30))
-
         # Store absolute rects for click handling
         self._respond_rect_abs = pygame.Rect(PANEL_X + respond_rel.x, PANEL_Y + respond_rel.y,
                                              respond_rel.w, respond_rel.h)
@@ -142,7 +135,7 @@ class IncidentDetailPanel:
         # Final blit
         screen.blit(panel, (PANEL_X, PANEL_Y))
 
-    def handle_click(self, pos):
+    def handle_click(self, ui, pos):
         """
         This function handles click detection for the incident detail panel controls.
 
@@ -153,12 +146,24 @@ class IncidentDetailPanel:
 
         """
         if self._close_rect_abs and self._close_rect_abs.collidepoint(pos):
-            return 'close'
+            ui.selected_incident = -1
+            return
         if self._respond_rect_abs and self._respond_rect_abs.collidepoint(pos):
-            return 'respond'
+            print('Respond to incident')
+            return
         if self._clear_rect_abs and self._clear_rect_abs.collidepoint(pos):
-            return 'clear'
-        return None
+            inc = ui.incidents[ui.selected_incident]
+            key = (inc["drone"], inc["id"])
+            ui._incident_cleared.add(key)       # remember it's cleared locally
+            del ui.incidents[ui.selected_incident]
+            # rebuild index map after deletion
+            ui._incident_seen.clear()
+            for i, it in enumerate(ui.incidents):
+                ui._incident_seen[(it["drone"], it["id"])] = i
+            ui.selected_incident = -1
+            print('clear incident')
+            ui.notification_ui.pushNotification("Cleared!", "Incident cleared!")
+            return
 
 
 def incidents_severity_index(incident):

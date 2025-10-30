@@ -50,11 +50,11 @@ class RosHandler:
 
         # Button-specific components
         self.button_data = {} # Testing Remote Control
-        self.available_button_topics = []         
+        self.available_button_topics = []      
 
         # For syncing GUI drone selection with controller
         self.current_gui_drone_id = 1
-
+        
         # Camera-specific components
         self.bridge = CvBridge() if ROS2_AVAILABLE else None
         self.available_camera_topics = []
@@ -206,7 +206,8 @@ class RosHandler:
         except Exception as e:
             print(f"Failed to subscribe to {topic_name}: {e}")
             return False
-        
+
+
     # Controller related functions
     def call_teensy_connect(self, connect: bool):
         # True - connect, False - disconnect
@@ -233,7 +234,8 @@ class RosHandler:
     def get_current_gui_drone_id(self) -> int:
         with self.data_lock:
             return self.current_gui_drone_id
-        
+
+
     # Button related functions based off the camera and odometry ones
     # Some may be redundant
     def subscribe_to_button_topic(self, topic_name: str) -> bool:
@@ -250,6 +252,19 @@ class RosHandler:
     def get_available_button_topics(self) -> list:
         with self.data_lock:
             return self.available_button_topics.copy()
+
+    def _handle_controller_message(self, topic_name: str, msg):
+        try:
+            with self.data_lock:
+                self.controller_data[topic_name] = {
+                    "axes": msg.axes,
+                    "buttons": msg.buttons,
+                    "timestamp": time.time()
+                }
+            if topic_name in self.topic_callbacks:
+                self.topic_callbacks[topic_name](topic_name, msg.data)
+        except Exception as e:
+            print(f"Error processing controller message from {topic_name}: {e}")
     
     def get_latest_button(self, topic_name: str): 
         with self.data_lock:
@@ -595,6 +610,8 @@ if ROS2_AVAILABLE:
             self.button_subscriptions = {}      # For buttons
             self.controller_subscription = {}   # For controller
 
+            self.controller_subscription = {}   # For controller
+
             # For connecting to the controller 
             self.teensy_connect_client = self.create_client(SetBool, '/rs1_teensyjoy/connect')
 
@@ -624,6 +641,37 @@ if ROS2_AVAILABLE:
             
             self.camera_subscriptions[topic_name] = subscription
             self.get_logger().info(f'Subscribed to camera topic: {topic_name}')
+
+
+        def call_connect_service(self, connect: bool) -> bool:
+            if not self.teensy_connect_client.wait_for_service(timeout_sec=1.0):
+                self.get_logger().warn('Teensy connect service not available')
+                return False
+            
+            request = SetBool.Request()
+            request.data = connect
+            
+            try:
+                future = self.teensy_connect_client.call_async(request)
+                # We're in the ROS thread, so we can wait briefly
+                rclpy.spin_until_future_complete(self, future, timeout_sec=1.0)
+                
+                if future.done():
+                    response = future.result()
+                    if response.success:
+                        self.get_logger().info(f'Teensy connect service: {response.message}')
+                        return True
+                    else:
+                        self.get_logger().warn(f'Teensy connect failed: {response.message}')
+                        return False
+                else:
+                    self.get_logger().warn('Service call timed out')
+                    return False
+                    
+            except Exception as e:
+                self.get_logger().error(f'Service call failed: {e}')
+                return False
+
         
         def unsubscribe_from_camera(self, topic_name: str):
             if topic_name in self.camera_subscriptions:

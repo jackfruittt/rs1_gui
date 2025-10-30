@@ -345,17 +345,14 @@ class CameraComponent:
             print(f"Topic {topic_name} not available in {self.available_topics}")
             return False
 
+
     def cycle_drone_camera(self, current_drone_index: int, num_drones: int, direction: int):
         """
-        This function enables cycling through drone front cameras without returning/updating drone selection.
-        
-        It is used with rs1_teensyjoy controller switch camera buttons.
-
+        Cycle through drone front cameras without returning/updating drone selection.
         Args:
-            - current_drone_index (int): Current drone index (0-based, -1 if none selected)
-            - num_drones (int): Total number of drones
-            - direction (int): 1 for next, -1 for previous
-    
+            current_drone_index: Current drone index (0-based, -1 if none selected)
+            num_drones: Total number of drones
+            direction: 1 for next, -1 for previous
         """
         drone_id = current_drone_index
         
@@ -372,7 +369,8 @@ class CameraComponent:
         
         # Switch to front camera (drone_id is 1-based for topic names, so add 1)
         self.switch_to_drone_camera(drone_id + 1, "front")
-    
+
+
     def get_current_topic(self) -> Optional[str]:
         """
         This function gets the name of the currently displayed camera topic if any is presently selected.
