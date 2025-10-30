@@ -68,6 +68,13 @@ class DroneControlPanel:
             case 0:
                 self.create_back_button(drone_panel)
             case 1:
+                if self.app.controller_connected:
+                    controller_status = self.fonts['inter_small'].render(f'Controller Connected: Yes', True, WHITE)
+                elif not self.app.controller_connected:
+                    controller_status = self.fonts['inter_small'].render(f'Controller Connected: No', True, WHITE)
+
+                controller_rect = controller_status.get_rect(topright=(PANEL_WIDTH - 350, 50))
+                drone_panel.blit(controller_status, controller_rect)
                 self.create_back_button(drone_panel)
             case 2:
                 self.create_back_button(drone_panel)
@@ -192,6 +199,15 @@ class DroneControlPanel:
                         self.panelState = 0
                     case "PILOT":
                         self.panelState = 1
+                        if self.app.ros_available:
+                            if self.app.selected_drone >= 0:
+                                self.app.ros_handler.publish_current_drone_id(self.app.selected_drone + 1)
+                            success = self.app.ros_handler.call_teensy_connect(True)
+                            if success:
+                                print("Connected to teensy joystick")
+                                self.app.controller_connected = 1
+                            else:
+                                print("Failed to connect to teensy joystick")
                     case "SEND":
                         self.app.map_panel.highlighted_waypoints = []
                         self.app.map_panel.highlighted_waypoints = self.app.drones[self.app.selected_drone]["waypoints"].copy()
@@ -201,6 +217,13 @@ class DroneControlPanel:
                         self.app.selected_drone = -1
                     case "BACK":
                         self.panelState = -1
+                        if self.app.ros_available:
+                            success = self.app.ros_handler.call_teensy_connect(False)
+                            if success:
+                                print("Disconnected from teensy joystick")
+                                self.app.controller_connected = 0
+                            else:
+                                print("Failed to disconnect from teensy joystick")
                     case "GO":
                         self.app.notification_ui.pushNotification(f"Sent Drone {self.app.selected_drone+1}!", f"{len(self.app.map_panel.highlighted_waypoints)} Waypoints sent!", bar_color=PINK)
                         self.app.drones[self.app.selected_drone]["waypoints"] = self.app.map_panel.highlighted_waypoints.copy()

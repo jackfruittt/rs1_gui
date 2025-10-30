@@ -81,6 +81,9 @@ class RS1GUI:
 
         self.default_waypoints = load_waypoints_yaml("waypoints.yaml")
 
+        # Controller Checking, 0 - no controller found, 1 - controller connected 
+        self.controller_connected = 0 
+
         self.sim_uid = 1
 
         # Load fonts

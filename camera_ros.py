@@ -244,7 +244,33 @@ class CameraComponent:
         else:
             print(f"Topic {topic_name} not available in {self.available_topics}")
             return False
-    
+
+
+    def cycle_drone_camera(self, current_drone_index: int, num_drones: int, direction: int):
+        """
+        Cycle through drone front cameras without returning/updating drone selection.
+        Args:
+            current_drone_index: Current drone index (0-based, -1 if none selected)
+            num_drones: Total number of drones
+            direction: 1 for next, -1 for previous
+        """
+        drone_id = current_drone_index
+        
+        if drone_id == -1:
+            drone_id = 0
+        else:
+            drone_id = drone_id + direction
+            
+            # Wrap around
+            if drone_id < 0:
+                drone_id = num_drones - 1
+            elif drone_id >= num_drones:
+                drone_id = 0
+        
+        # Switch to front camera (drone_id is 1-based for topic names, so add 1)
+        self.switch_to_drone_camera(drone_id + 1, "front")
+
+
     def get_current_topic(self) -> Optional[str]:
         return self.current_topic
     
