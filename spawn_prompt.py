@@ -120,7 +120,7 @@ class SpawnPromptPanel:
             env.pop("QT_PLUGIN_PATH", None)   # remove OpenCV's Qt plugin path
             env["QT_QPA_PLATFORM"] = "xcb"    # force xcb even if on Wayland
             # -----------------------------
-            argv = ["./comp_drone_spawner.sh", str(count), "gazebo:=true", "rviz:=false"]
+            argv = ["./comp_drone_spawner.sh", str(count), "gazebo:=false", "rviz:=false"]
             proc = subprocess.Popen(
                 argv,
                 stdout=subprocess.PIPE,
@@ -163,6 +163,15 @@ class SpawnPromptPanel:
 
     def waitForSim(self):
         print("Waiting for Sim...")
+        
+        # Give shell script time to actually spawn the drones
+        print("Giving shell script 10 seconds to spawn drones...")
+        time.sleep(10)  # Wait for script to spawn drones before checking
+        
+        # Additional delay for parameter bridges to establish all topic connections
+        print("Giving parameter bridges 15 more seconds to establish all topic connections...")
+        time.sleep(15)  # Wait for parameter bridges to create all camera/sensor topics
+        
         start_time = time.time()
         max_wait = 60  # 60s timeout; adjust based on spawn time (Gazebo can take 30s+ for 10 drones)
         
@@ -204,16 +213,30 @@ class SpawnPromptPanel:
                             'waypoints': []
                         })
 
-                    deadline = time.time() + 10  # wait up to 10s for cameras to appear
+                    deadline = time.time() + 20  # wait up to 20s for cameras to appear
                     cams = []
+                    expected_cameras = drone_amount * 2  # Each drone should have front + bottom cameras
                     while time.time() < deadline:
                         try:
                             self.app.ros_handler.discover_topics()     # refresh
                             cams = self.app.ros_handler.get_available_camera_topics()
-                            if cams:
+                            
+                            # Check if we have cameras from all drones, not just any cameras
+                            drone_cameras_found = set()
+                            for cam_topic in cams:
+                                # Extract drone ID from topic like "/rs1_drone_1/front/image"
+                                if '/rs1_drone_' in cam_topic:
+                                    drone_id = cam_topic.split('/rs1_drone_')[1].split('/')[0]
+                                    drone_cameras_found.add(drone_id)
+                            
+                            print(f"Camera discovery: found {len(cams)} topics from {len(drone_cameras_found)} drones (expecting {drone_amount} drones)")
+                            
+                            # Break if we have cameras from all drones OR reasonable timeout
+                            if len(drone_cameras_found) >= drone_amount or (len(cams) > 0 and time.time() - deadline + 20 > 15):
                                 break
-                        except Exception:
-                            pass
+                                
+                        except Exception as e:
+                            print(f"Camera discovery error: {e}")
                         time.sleep(0.5)
 
                     print(f"UI sees {len(cams)} camera topics: {cams}")
