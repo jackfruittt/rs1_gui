@@ -4,6 +4,12 @@ from utils import feather_image
 
 class dronesPanel:
     def __init__(self, app, fonts):
+        """
+        Initializes the drones panel.
+        Args:
+            - app: The main application instance.
+            - fonts: Dictionary of Pygame font objects.
+        """
         self.fonts = fonts
         self.app = app
 
@@ -50,6 +56,12 @@ class dronesPanel:
             self.scroll_y = self.min_y
 
     def render_drones_list(self, drones, screen):
+        """
+        Render the list of drone cards onto the given Pygame screen surface based on the drones data from app.
+        Args:
+            - drones (list): List of drones present in the system.
+            - screen (pygame.Surface): The surface to draw the drones panel onto.
+        """
         panel_surface = pygame.Surface((self.PANEL_W, self.PANEL_H), pygame.SRCALPHA)
         panel_surface.fill((0, 0, 0, 0))
 

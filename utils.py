@@ -17,16 +17,16 @@ def feather_image(surface, feather_size_x, feather_size_y,
     Feathers selected edges of a Pygame surface, if global `pretty` is True.
 
     Args:
-        surface (pygame.Surface): The image surface to feather.
-        feather_size_x (int): The width of the feathering effect (used for left/right).
-        feather_size_y (int): The height of the feathering effect (used for top/bottom).
-        feather_top (bool): Feather the top edge.
-        feather_right (bool): Feather the right edge.
-        feather_bottom (bool): Feather the bottom edge.
-        feather_left (bool): Feather the left edge.
+        - surface (pygame.Surface): The image surface to feather.
+        - feather_size_x (int): The width of the feathering effect (used for left/right).
+        - feather_size_y (int): The height of the feathering effect (used for top/bottom).
+        - feather_top (bool): Feather the top edge.
+        - feather_right (bool): Feather the right edge.
+        - feather_bottom (bool): Feather the bottom edge.
+        - feather_left (bool): Feather the left edge.
 
     Returns:
-        pygame.Surface: A new surface with the feathered effect (or original if pretty is False).
+        - pygame.Surface: A new surface with the feathered effect (or original if pretty is False).
     """
     if not pretty:
         return surface
@@ -71,12 +71,29 @@ def feather_image(surface, feather_size_x, feather_size_y,
 
 
 def mapRange(value, inMin, inMax, outMin, outMax):
-    """Map a value from one range to another"""
+    """
+    Map a value from one range to another
+
+    Args:
+        - value (float): The input value to map.
+        - inMin (float): The minimum of the input range.
+        - inMax (float): The maximum of the input range.
+        - outMin (float): The minimum of the output range.
+        - outMax (float): The maximum of the output range.
+
+    Returns:
+        - float: The mapped value in the output range.
+    
+    """
     return outMin + (((value - inMin) / (inMax - inMin)) * (outMax - outMin))
 
 
 def draw_left_fade(screen):
-    """Draw left fade overlay"""
+    """
+    Draw left fade overlay
+    Args:
+        - screen (pygame.Surface): The main screen surface to draw the fade on.
+    """
     l_fade_surface = pygame.Surface((670, 395), pygame.SRCALPHA)
     l_fade_surface.fill((225, 255, 255, 108))  # Transparent background
     screen.blit(l_fade_surface, (0, 0))
