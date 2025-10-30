@@ -205,6 +205,11 @@ class DroneControlPanel:
                         self.app.notification_ui.pushNotification(f"Sent Drone {self.app.selected_drone+1}!", f"{len(self.app.map_panel.highlighted_waypoints)} Waypoints sent!", bar_color=PINK)
                         self.app.drones[self.app.selected_drone]["waypoints"] = self.app.map_panel.highlighted_waypoints.copy()
                         spawn_cmd_safe(self.gen_wp_msg(self.app.selected_drone))
+
+                        # send blank trigger
+                        sld = self.app.selected_drone+1
+                        cmd = f'ros2 service call /rs1_drone_{sld}/start_mission std_srvs/srv/Trigger {{}}"'
+                        spawn_cmd_safe(cmd)
                         self.panelState = -1
                     case "CLR":
                         self.app.map_panel.highlighted_waypoints = []
