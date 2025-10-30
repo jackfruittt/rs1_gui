@@ -167,9 +167,9 @@ class DroneControlPanel:
 
         for i, wp in enumerate(self.app.drones[selectedDrone]["waypoints"]):
             if i > 0:
-                waypoints += f",{wp[0]},{wp[1]},-999"
+                waypoints += f",{wp[0]},{wp[1]},18.8"
             else:
-                waypoints += f"{wp[0]},{wp[1]},-999"
+                waypoints += f"{wp[0]},{wp[1]},18.8"
 
         sld = selectedDrone+1
         publish_command = f'ros2 topic pub --once /rs1_drone_{sld}/mission_assignment std_msgs/msg/String "data: \'ASSIGN,ROUTE,{waypoints}\'"'
