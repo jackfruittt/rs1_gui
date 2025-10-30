@@ -212,6 +212,10 @@ class SpawnPromptPanel:
                             'yaw': 0.0,
                             'waypoints': []
                         })
+                        
+                        if (i - 1) < len(self.app.default_waypoints):
+                            import copy
+                            self.app.drones[-1]['waypoints'] = copy.deepcopy(self.app.default_waypoints[i - 1])
 
                     deadline = time.time() + 20  # wait up to 20s for cameras to appear
                     cams = []

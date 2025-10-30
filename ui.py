@@ -519,42 +519,55 @@ class RS1GUI:
         if not self.ros_available:
             return
 
-        # Get the list of available odometry topics
+        # Cache previous drones by namespace to preserve fields like waypoints
+        prev_by_ns = {d.get('ns'): d for d in self.drones if d.get('ns')}
+
         odom_topics = self.ros_handler.get_available_odometry_topics()
         new_list = []
 
         for topic in odom_topics:
-            # Fetch the latest odometry data for the topic
             odom = self.ros_handler.get_latest_odometry(topic)
-            if odom:
-                # Extract drone namespace from the topic name
-                parts = topic.split('/')
-                if len(parts) < 3:  # '/rs1_drone_X/odom'
-                    continue
-                ns = parts[1]
+            if not odom:
+                continue
 
-                # Extract position and orientation data
-                p = odom["position"]
-                q = odom["orientation"]
-                yaw = math.atan2(
-                    2.0 * (q[3] * q[2] + q[0] * q[1]),
-                    1.0 - 2.0 * (q[1] * q[1] + q[2] * q[2])
-                )
+            parts = topic.split('/')
+            if len(parts) < 3:  # '/rs1_drone_X/odom'
+                continue
+            ns = parts[1]
 
-                # Add the drone data to the list
-                new_list.append({
-                    'ns': ns,
-                    'gps': f"{p[0]:.3f}, {p[1]:.3f}",
-                    'altitude': f"{p[2]:.1f}m",
-                    'state': 'Active',
-                    'setPose': '-',
-                    'nearPose': '-',
-                    'yaw': (math.degrees(yaw) + 360.0) % 360.0,
-                    'battery': 100,
-                    'waypoints': []
-                })
+            # Extract pose
+            p = odom["position"]
+            q = odom["orientation"]
+            yaw = math.atan2(
+                2.0 * (q[3] * q[2] + q[0] * q[1]),
+                1.0 - 2.0 * (q[1] * q[1] + q[2] * q[2])
+            )
 
-        # Update the drones list
+            # ✅ preserve existing waypoints (or seed from defaults if none exist)
+            prev = prev_by_ns.get(ns)
+            waypoints = (prev.get('waypoints') if prev else [])
+            if not waypoints:
+                # Try to seed from default_waypoints using the numeric suffix in ns
+                try:
+                    idx = int(ns.rsplit('_', 1)[1]) - 1
+                    if 0 <= idx < len(self.default_waypoints):
+                        import copy
+                        waypoints = copy.deepcopy(self.default_waypoints[idx])
+                except Exception:
+                    pass
+
+            new_list.append({
+                'ns': ns,
+                'gps': f"{p[0]:.3f}, {p[1]:.3f}",
+                'altitude': f"{p[2]:.1f}m",
+                'state': 'Active',
+                'setPose': '-',
+                'nearPose': '-',
+                'yaw': (math.degrees(yaw) + 360.0) % 360.0,
+                'battery': (prev.get('battery') if prev else 100),
+                'waypoints': waypoints,  # ✅ keep/seed waypoints
+            })
+
         self.drones = new_list
 
 def main():
