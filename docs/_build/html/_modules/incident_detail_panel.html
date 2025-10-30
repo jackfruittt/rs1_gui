@@ -77,9 +77,9 @@
 <div class="viewcode-block" id="IncidentDetailPanel">
 <a class="viewcode-back" href="../incident_detail_panel.html#incident_detail_panel.IncidentDetailPanel">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">IncidentDetailPanel</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Detail view for a single incident. Intended to replace the incidents list panel</span>
-<span class="sd">    when the user clicks on an incident card.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;    </span>
+<span class="sd">    This class represents the Incident Detail view for a single incident.</span>
+<span class="sd">    Intended to replace the incidents list panel when the user clicks on an incident card.</span>
 
 <span class="sd">    Style and sizing follow the same conventions as IncidentsPanel.</span>
 
@@ -101,10 +101,9 @@
 <a class="viewcode-back" href="../incident_detail_panel.html#incident_detail_panel.IncidentDetailPanel.draw_incident_detail">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">draw_incident_detail</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">incident</span><span class="p">,</span> <span class="n">screen</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Render the incident detail panel.</span>
+<span class="sd">        This function renders the incident detail panel.</span>
 
 <span class="sd">        The User is notified in the main screen of the GUI of the detected incident details if any.</span>
-
 <span class="sd">        The included details of the incident can be seen below</span>
 
 <span class="sd">        NOTE: Update this param incident if the csv structure changes</span>
@@ -223,8 +222,7 @@
 <a class="viewcode-back" href="../incident_detail_panel.html#incident_detail_panel.IncidentDetailPanel.handle_click">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">handle_click</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pos</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Translate a mouse position (screen coords) into a semantic action.</span>
-<span class="sd">        Returns one of: &#39;close&#39;, &#39;respond&#39;, &#39;clear&#39;, or None if no control was hit.</span>
+<span class="sd">        This function handles click detection for the incident detail panel controls.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            - pos (tuple): (x, y) mouse position in screen coordinates.</span>
@@ -247,14 +245,14 @@
 <a class="viewcode-back" href="../incident_detail_panel.html#incident_detail_panel.incidents_severity_index">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">incidents_severity_index</span><span class="p">(</span><span class="n">incident</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Helper to convert incident[&#39;severity&#39;] to index for severity_colors,</span>
-<span class="sd">    clamping to valid range (0-based).</span>
+<span class="sd">    This is a helper function to convert incident[&#39;severity&#39;] to index for severity_colors, clamping to valid range (0-based).</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        - incident (dict): Incident data dictionary.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        - int: Severity index (0-based).</span>
+<span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">sev</span> <span class="o">=</span> <span class="n">incident</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;severity&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>

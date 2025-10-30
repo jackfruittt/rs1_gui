@@ -77,7 +77,21 @@
 <div class="viewcode-block" id="MapPanel">
 <a class="viewcode-back" href="../map_panel.html#map_panel.MapPanel">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">MapPanel</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    MapPanel class to handle map rendering and icon management for incidents and drones. </span>
+
+<span class="sd">    This panel displays a top-down view of the map, plotting incidents and drones with appropriate icons and colors based on their states and severities.</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">map_top_view</span><span class="p">,</span> <span class="n">drone_icon</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialises the MapPanel with map image and drone icon.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            map_top_view (pygame.Surface): The top-down view of the map of the environment.</span>
+<span class="sd">            drone_icon (pygame.Surface): The icon representing drones on the map.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">map_top_view</span> <span class="o">=</span> <span class="n">map_top_view</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">drone_icon</span> <span class="o">=</span> <span class="n">drone_icon</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mapImgSize</span> <span class="o">=</span> <span class="n">map_top_view</span><span class="o">.</span><span class="n">get_size</span><span class="p">()</span>
@@ -97,7 +111,21 @@
 <div class="viewcode-block" id="MapPanel.draw_map">
 <a class="viewcode-back" href="../map_panel.html#map_panel.MapPanel.draw_map">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">draw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">robots</span><span class="p">,</span> <span class="n">incidents</span><span class="p">,</span> <span class="n">screen</span><span class="p">,</span> <span class="n">selected_incident</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Original draw_map function&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Original draw_map function</span>
+<span class="sd">        This function draws the map panel, it displays the current location of incidents and drones on the map.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            - robots (list): List of robot dictionaries containing their states and coordinates.</span>
+<span class="sd">            - incidents (list): List of incident dictionaries containing their details and coordinates.</span>
+<span class="sd">            - screen (pygame.Surface): The surface to draw the map panel on.</span>
+<span class="sd">            - selected_incident (dict): The currently selected incident.</span>
+<span class="sd">        </span>
+<span class="sd">        Note:</span>
+<span class="sd">        The drone icon is overlaid on the map at the corresponding coordinates, with color coding based on their states.</span>
+<span class="sd">        When an incident is detected, its icon is displayed on the map with color coding based on severity.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">PANEL_WIDTH</span> <span class="o">=</span> <span class="mi">800</span>
         <span class="n">PANEL_HEIGHT</span> <span class="o">=</span> <span class="mi">800</span>
 
@@ -168,6 +196,9 @@
 <div class="viewcode-block" id="MapPanel.get_icon_buttons">
 <a class="viewcode-back" href="../map_panel.html#map_panel.MapPanel.get_icon_buttons">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_icon_buttons</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function returns the list of icon buttons for incidents on the map.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">icon_buttons</span></div>
 </div>
 

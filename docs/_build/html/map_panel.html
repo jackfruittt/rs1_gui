@@ -101,16 +101,32 @@
 <dt class="sig sig-object py" id="map_panel.MapPanel">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">map_panel.</span></span><span class="sig-name descname"><span class="pre">MapPanel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">map_top_view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drone_icon</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_panel.html#MapPanel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_panel.MapPanel" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>MapPanel class to handle map rendering and icon management for incidents and drones.</p>
+<p>This panel displays a top-down view of the map, plotting incidents and drones with appropriate icons and colors based on their states and severities.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="map_panel.MapPanel.draw_map">
 <span class="sig-name descname"><span class="pre">draw_map</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">robots</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">incidents</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">screen</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">selected_incident</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_panel.html#MapPanel.draw_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_panel.MapPanel.draw_map" title="Link to this definition"></a></dt>
-<dd><p>Original draw_map function</p>
+<dd><p>Original draw_map function
+This function draws the map panel, it displays the current location of incidents and drones on the map.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><ul class="simple">
+<li><p>robots (list): List of robot dictionaries containing their states and coordinates.</p></li>
+<li><p>incidents (list): List of incident dictionaries containing their details and coordinates.</p></li>
+<li><p>screen (pygame.Surface): The surface to draw the map panel on.</p></li>
+<li><p>selected_incident (dict): The currently selected incident.</p></li>
+</ul>
+</dd>
+</dl>
+<p>Note:
+The drone icon is overlaid on the map at the corresponding coordinates, with color coding based on their states.
+When an incident is detected, its icon is displayed on the map with color coding based on severity.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="map_panel.MapPanel.get_icon_buttons">
 <span class="sig-name descname"><span class="pre">get_icon_buttons</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_panel.html#MapPanel.get_icon_buttons"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_panel.MapPanel.get_icon_buttons" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>This function returns the list of icon buttons for incidents on the map.</p>
+</dd></dl>
 
 </dd></dl>
 

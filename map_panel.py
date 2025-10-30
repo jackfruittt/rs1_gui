@@ -4,7 +4,21 @@ from utils import mapRange
 
 
 class MapPanel:
+    """
+    MapPanel class to handle map rendering and icon management for incidents and drones. 
+
+    This panel displays a top-down view of the map, plotting incidents and drones with appropriate icons and colors based on their states and severities.
+    
+    """
+
     def __init__(self, map_top_view, drone_icon):
+        """
+        Initialises the MapPanel with map image and drone icon.
+
+        Args:
+            map_top_view (pygame.Surface): The top-down view of the map of the environment.
+            drone_icon (pygame.Surface): The icon representing drones on the map.
+        """
         self.map_top_view = map_top_view
         self.drone_icon = drone_icon
         self.mapImgSize = map_top_view.get_size()
@@ -22,7 +36,21 @@ class MapPanel:
         self.icon_buttons = []
     
     def draw_map(self, robots, incidents, screen, selected_incident):
-        """Original draw_map function"""
+        """
+        Original draw_map function
+        This function draws the map panel, it displays the current location of incidents and drones on the map.
+
+        Args:
+            - robots (list): List of robot dictionaries containing their states and coordinates.
+            - incidents (list): List of incident dictionaries containing their details and coordinates.
+            - screen (pygame.Surface): The surface to draw the map panel on.
+            - selected_incident (dict): The currently selected incident.
+        
+        Note:
+        The drone icon is overlaid on the map at the corresponding coordinates, with color coding based on their states.
+        When an incident is detected, its icon is displayed on the map with color coding based on severity.
+
+        """
         PANEL_WIDTH = 800
         PANEL_HEIGHT = 800
 
@@ -90,4 +118,7 @@ class MapPanel:
         screen.blit(map_panel, (SCREEN_X, SCREEN_Y))
 
     def get_icon_buttons(self):
+        """
+        This function returns the list of icon buttons for incidents on the map.
+        """
         return self.icon_buttons

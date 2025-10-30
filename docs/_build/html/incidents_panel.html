@@ -103,12 +103,13 @@
 <dt class="sig sig-object py" id="incidents_panel.IncidentsPanel">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">incidents_panel.</span></span><span class="sig-name descname"><span class="pre">IncidentsPanel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fonts</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/incidents_panel.html#IncidentsPanel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#incidents_panel.IncidentsPanel" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Incident panel overlaid onto main GUI home screen to visualise identified incidents in the environment.</p>
+<p>This class manages the incident panel overlaid onto main GUI home screen.
+Through this, it displays identified incidents in the environment.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="incidents_panel.IncidentsPanel.draw_incidents_panel">
 <span class="sig-name descname"><span class="pre">draw_incidents_panel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">incidents</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">screen</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/incidents_panel.html#IncidentsPanel.draw_incidents_panel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#incidents_panel.IncidentsPanel.draw_incidents_panel" title="Link to this definition"></a></dt>
-<dd><p>Original draw_incidents_panel function, with scrolling functionality.</p>
-<p>Displays a panel showing a list of detected incidents with severity indicators.</p>
+<dd><p>Original draw_incidents_panel function, with scrolling functionality.
+This function displays a panel showing a list of detected incidents with severity indicators.</p>
 <dl class="simple">
 <dt>Args:</dt><dd><ul class="simple">
 <li><p>incidents (list): List of incident data dictionaries.</p></li>
@@ -127,7 +128,17 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="incidents_panel.IncidentsPanel.handle_scroll_click">
 <span class="sig-name descname"><span class="pre">handle_scroll_click</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pos</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/incidents_panel.html#IncidentsPanel.handle_scroll_click"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#incidents_panel.IncidentsPanel.handle_scroll_click" title="Link to this definition"></a></dt>
-<dd><p>Handle scroll button clicks</p>
+<dd><p>This function handles scroll button clicks</p>
+<dl class="simple">
+<dt>Args:</dt><dd><ul class="simple">
+<li><p>pos (tuple): (x, y) position of mouse click.</p></li>
+</ul>
+</dd>
+<dt>Returns:</dt><dd><ul class="simple">
+<li><p>bool: True if a scroll button was clicked, else False.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">

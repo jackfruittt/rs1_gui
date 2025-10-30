@@ -122,8 +122,8 @@ Supports instant switching between camera topics using preloading or subscribe-u
 <dl class="py method">
 <dt class="sig sig-object py" id="camera_ros.CameraComponent.cycle_drone_camera">
 <span class="sig-name descname"><span class="pre">cycle_drone_camera</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current_drone_index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_drones</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">direction</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/camera_ros.html#CameraComponent.cycle_drone_camera"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#camera_ros.CameraComponent.cycle_drone_camera" title="Link to this definition"></a></dt>
-<dd><p>Cycle through drone front cameras without returning/updating drone selection.</p>
-<p>Used with rs1_teensyjoy controller switch camera buttons.</p>
+<dd><p>This function enables cycling through drone front cameras without returning/updating drone selection.</p>
+<p>It is used with rs1_teensyjoy controller switch camera buttons.</p>
 <dl class="simple">
 <dt>Args:</dt><dd><ul class="simple">
 <li><p>current_drone_index (int): Current drone index (0-based, -1 if none selected)</p></li>
@@ -137,13 +137,13 @@ Supports instant switching between camera topics using preloading or subscribe-u
 <dl class="py method">
 <dt class="sig sig-object py" id="camera_ros.CameraComponent.draw">
 <span class="sig-name descname"><span class="pre">draw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">screen</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/camera_ros.html#CameraComponent.draw"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#camera_ros.CameraComponent.draw" title="Link to this definition"></a></dt>
-<dd><p>Draws the camera feed onto the given Pygame screen surface within the defined display rectangle</p>
+<dd><p>This function draws the camera feed onto the given Pygame screen surface within the defined display rectangle</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="camera_ros.CameraComponent.get_current_topic">
 <span class="sig-name descname"><span class="pre">get_current_topic</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="_modules/camera_ros.html#CameraComponent.get_current_topic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#camera_ros.CameraComponent.get_current_topic" title="Link to this definition"></a></dt>
-<dd><p>Gets the name of the currently displayed camera topic if any is presently selected.</p>
+<dd><p>This function gets the name of the currently displayed camera topic if any is presently selected.</p>
 <dl class="simple">
 <dt>Returns:</dt><dd><ul class="simple">
 <li><p>str or None: Name of the current camera topic, or None if no topic is selected.</p></li>
@@ -155,27 +155,27 @@ Supports instant switching between camera topics using preloading or subscribe-u
 <dl class="py method">
 <dt class="sig sig-object py" id="camera_ros.CameraComponent.get_status_info">
 <span class="sig-name descname"><span class="pre">get_status_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/camera_ros.html#CameraComponent.get_status_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#camera_ros.CameraComponent.get_status_info" title="Link to this definition"></a></dt>
-<dd><p>Outputs the display status info, whether ROS2 is available, if there are camera topics.
-Also checks the camera topic status, i.e. LIVE if topic is active, or STALE if inactive.</p>
-<p>Returns:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>This function outputs the display status info, whether ROS2 is available, if there are camera topics.
+It also checks the camera topic status, i.e. LIVE if topic is active, or STALE if inactive.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><ul class="simple">
 <li><p>str: Display Status Message depending on status check.</p></li>
 </ul>
-</div></blockquote>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="camera_ros.CameraComponent.handle_keypress">
 <span class="sig-name descname"><span class="pre">handle_keypress</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/camera_ros.html#CameraComponent.handle_keypress"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#camera_ros.CameraComponent.handle_keypress" title="Link to this definition"></a></dt>
-<dd><p>Handle keypress events for camera switching. 
+<dd><p>This function handles keypress events for camera switching. 
 When the ‘C’ key is pressed, the camera topic switches to the next available camera topic if any.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="camera_ros.CameraComponent.switch_to_drone_camera">
 <span class="sig-name descname"><span class="pre">switch_to_drone_camera</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">drone_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">camera_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'front'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/camera_ros.html#CameraComponent.switch_to_drone_camera"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#camera_ros.CameraComponent.switch_to_drone_camera" title="Link to this definition"></a></dt>
-<dd><p>Switch to a specific drone’s camera.</p>
+<dd><p>This function enables switching to a specific drone’s camera.</p>
 <dl class="simple">
 <dt>Args:</dt><dd><ul class="simple">
 <li><p>drone_id (int): Drone number (1, 2, 3, etc.)</p></li>
@@ -192,7 +192,7 @@ When the ‘C’ key is pressed, the camera topic switches to the next available
 <dl class="py method">
 <dt class="sig sig-object py" id="camera_ros.CameraComponent.switch_to_next_topic">
 <span class="sig-name descname"><span class="pre">switch_to_next_topic</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/camera_ros.html#CameraComponent.switch_to_next_topic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#camera_ros.CameraComponent.switch_to_next_topic" title="Link to this definition"></a></dt>
-<dd><p>Switch to the next camera topic in the available topics list.</p>
+<dd><p>This function enables switching to the next camera topic in the available topics list.</p>
 <dl class="simple">
 <dt>Returns:</dt><dd><ul class="simple">
 <li><p>bool: True if switch was successful, False otherwise.</p></li>
@@ -204,7 +204,7 @@ When the ‘C’ key is pressed, the camera topic switches to the next available
 <dl class="py method">
 <dt class="sig sig-object py" id="camera_ros.CameraComponent.switch_to_previous_topic">
 <span class="sig-name descname"><span class="pre">switch_to_previous_topic</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/camera_ros.html#CameraComponent.switch_to_previous_topic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#camera_ros.CameraComponent.switch_to_previous_topic" title="Link to this definition"></a></dt>
-<dd><p>Switch to the previous camera topic in the available topics list.</p>
+<dd><p>This function enables switching to the previous camera topic in the available topics list.</p>
 <dl class="simple">
 <dt>Returns:</dt><dd><ul class="simple">
 <li><p>bool: True if switch was successful, False otherwise.</p></li>
@@ -216,7 +216,7 @@ When the ‘C’ key is pressed, the camera topic switches to the next available
 <dl class="py method">
 <dt class="sig sig-object py" id="camera_ros.CameraComponent.switch_to_topic">
 <span class="sig-name descname"><span class="pre">switch_to_topic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">topic_index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/camera_ros.html#CameraComponent.switch_to_topic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#camera_ros.CameraComponent.switch_to_topic" title="Link to this definition"></a></dt>
-<dd><p>Switch to a different camera topic by index.</p>
+<dd><p>This function switches to a different camera topic by index.</p>
 <dl class="simple">
 <dt>Args:</dt><dd><ul class="simple">
 <li><p>topic_index (int): Index of the topic in available_topics to switch to.</p></li>
@@ -232,7 +232,7 @@ When the ‘C’ key is pressed, the camera topic switches to the next available
 <dl class="py method">
 <dt class="sig sig-object py" id="camera_ros.CameraComponent.update">
 <span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/camera_ros.html#CameraComponent.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#camera_ros.CameraComponent.update" title="Link to this definition"></a></dt>
-<dd><p>Updates the camera feed from the RosHandler, using cv2, the camera image is stored which is then converted to
+<dd><p>This function updates the camera feed from the RosHandler, using cv2, the camera image is stored which is then converted to
 a pygame surface using _cv2_to_pygame_surface.</p>
 </dd></dl>
 

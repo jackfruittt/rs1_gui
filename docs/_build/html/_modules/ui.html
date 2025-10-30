@@ -72,7 +72,23 @@
 <span></span><span class="ch">#!/usr/bin/env python3</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">RS1 Drone Swarm Control GUI - Main UI File (Refactored)</span>
-<span class="sd">This is the main file that integrates all components together.</span>
+<span class="sd">____________________________________________________________</span>
+
+<span class="sd">This is the main file provides a user interface for the RS1 drone swarm control system.</span>
+<span class="sd">It integrates components of pygame and ros2 together while managing the application&#39;s state.</span>
+
+<span class="sd">The GUI provides the user with real-time monitoring and control of drones in the swarm.</span>
+<span class="sd">These include key features such as:</span>
+<span class="sd">    - Live camera feeds from drones,</span>
+<span class="sd">    - Map visualisation with drone position and incident markers,</span>
+<span class="sd">    - Incident detection panel to view reported incidents,  </span>
+<span class="sd">    - Telemetry data display for individual drones,</span>
+<span class="sd">    - Controller integration for manual drone piloting</span>
+
+<span class="sd">Refer to project README for package installation, setup instructions, arcitecture overview, and usage guidelines.</span>
+<span class="sd">____________________________________________________________</span>
+
+
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
@@ -107,6 +123,7 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Main GUI application class&quot;&quot;&quot;</span> 
     
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise the GUI application&quot;&quot;&quot;</span>
         <span class="n">pygame</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">screen</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">display</span><span class="o">.</span><span class="n">set_mode</span><span class="p">((</span><span class="mi">1900</span><span class="p">,</span> <span class="mi">860</span><span class="p">))</span>
         <span class="n">pygame</span><span class="o">.</span><span class="n">display</span><span class="o">.</span><span class="n">set_caption</span><span class="p">(</span><span class="s2">&quot;RS1 GUI&quot;</span><span class="p">)</span>
@@ -153,9 +170,9 @@
             <span class="n">feather_top</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">feather_right</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">feather_bottom</span><span class="o">=</span><span class="kc">True</span>
         <span class="p">)</span>
         
-        <span class="c1"># Initialize centralized ROS handler</span>
+        <span class="c1"># Initialise centralized ROS handler</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span> <span class="o">=</span> <span class="n">RosHandler</span><span class="p">(</span><span class="s1">&#39;rs1_gui_main&#39;</span><span class="p">)</span>
-        <span class="c1"># Initialize camera component as None initially</span>
+        <span class="c1"># Initialise camera component as None initially</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">camera_component</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="c1"># Initialise panels</span>
@@ -195,14 +212,27 @@
 <div class="viewcode-block" id="RS1GUI.apply_odometry_to_robot">
 <a class="viewcode-back" href="../ui.html#ui.RS1GUI.apply_odometry_to_robot">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">apply_odometry_to_robot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">robot</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">odom</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">odom</span><span class="p">[</span><span class="s2">&quot;position&quot;</span><span class="p">]</span>
-            <span class="n">yaw_deg</span> <span class="o">=</span> <span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">odom</span><span class="p">[</span><span class="s2">&quot;rpy&quot;</span><span class="p">][</span><span class="mi">2</span><span class="p">])</span> <span class="o">+</span> <span class="mf">360.0</span><span class="p">)</span> <span class="o">%</span> <span class="mf">360.0</span>
-            <span class="n">robot</span><span class="p">[</span><span class="s2">&quot;gps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">x</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">y</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="n">robot</span><span class="p">[</span><span class="s2">&quot;altitude&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">z</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">m&quot;</span>
-            <span class="n">robot</span><span class="p">[</span><span class="s2">&quot;yaw&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">yaw_deg</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span></div>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Apply odometry data to the given robot dictionary.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            - robot (dict): The robot data dictionary to update.</span>
+<span class="sd">            - odom (dict): The odometry data containing position and orientation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">odom</span><span class="p">[</span><span class="s2">&quot;position&quot;</span><span class="p">]</span>
+        <span class="n">yaw_deg</span> <span class="o">=</span> <span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">odom</span><span class="p">[</span><span class="s2">&quot;rpy&quot;</span><span class="p">][</span><span class="mi">2</span><span class="p">])</span> <span class="o">+</span> <span class="mf">360.0</span><span class="p">)</span> <span class="o">%</span> <span class="mf">360.0</span>
+        <span class="n">robot</span><span class="p">[</span><span class="s2">&quot;gps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">x</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">y</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">robot</span><span class="p">[</span><span class="s2">&quot;altitude&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">z</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">m&quot;</span>
+        <span class="n">robot</span><span class="p">[</span><span class="s2">&quot;yaw&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">yaw_deg</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span></div>
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_update_drones_from_odometry</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Update the drones list with the latest odometry data from ROS2.</span>
+<span class="sd">        This function fetches odometry information for each drone and applies it</span>
+<span class="sd">        to the corresponding robot dictionary in the drones list.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">robot</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">drones</span><span class="p">):</span>
             <span class="n">topic</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;/rs1_drone_</span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">/odom&quot;</span>
             <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">get_latest_odometry</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span>
@@ -210,6 +240,13 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">apply_odometry_to_robot</span><span class="p">(</span><span class="n">robot</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_sync_incidents_from_ros</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sync incidents from ROS2 topics into the local incidents list.</span>
+<span class="sd">        This function fetches the latest incident for each available incident topic</span>
+<span class="sd">        and updates the local incidents list accordingly, avoiding duplicates and</span>
+<span class="sd">        respecting locally cleared incidents.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Ask the handler which incident topics exist</span>
         <span class="n">topics</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;incident_topics&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> \
                 <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">get_available_incident_topics</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_available</span> <span class="k">else</span> <span class="p">[])</span>
@@ -247,7 +284,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_incident_cleared</span><span class="o">.</span><span class="n">difference_update</span><span class="p">(</span><span class="n">dropped</span><span class="p">)</span>
     
     <span class="k">def</span><span class="w"> </span><span class="nf">_load_fonts</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load all fonts&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;This function loads all required fonts for the GUI&quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">fonts</span> <span class="o">=</span> <span class="p">{</span>
                 <span class="s1">&#39;font&#39;</span><span class="p">:</span> <span class="n">pygame</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">Font</span><span class="p">(</span><span class="s2">&quot;media/fonts/TurretRoad-Bold.otf&quot;</span><span class="p">,</span> <span class="mi">32</span><span class="p">),</span>
@@ -276,7 +313,19 @@
 <div class="viewcode-block" id="RS1GUI.generate_drone">
 <a class="viewcode-back" href="../ui.html#ui.RS1GUI.generate_drone">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_drone</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate a drone odom simuation purposes&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function generates a drone odom simuation purposes incase ROS2 isnt available after spawn prompt.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            - dict: A dictionary representing the drone with keys:</span>
+<span class="sd">                - &quot;battery&quot;: str - Battery percentage</span>
+<span class="sd">                - &quot;gps&quot;: str - GPS coordinates as &quot;x, y&quot;</span>
+<span class="sd">                - &quot;altitude&quot;: str - Altitude in meters</span>
+<span class="sd">                - &quot;state&quot;: str - Current state of the drone</span>
+<span class="sd">                - &quot;setPose&quot;: str - Current set pose</span>
+<span class="sd">                - &quot;nearPose&quot;: str - Nearest known pose  </span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">states</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Scouting&quot;</span><span class="p">,</span> <span class="s2">&quot;Idle&quot;</span><span class="p">,</span> <span class="s2">&quot;Piloting&quot;</span><span class="p">,</span> <span class="s2">&quot;Responding&quot;</span><span class="p">,</span> <span class="s2">&quot;Offline&quot;</span><span class="p">]</span>
         <span class="n">knownPoses</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Home&quot;</span><span class="p">,</span> <span class="s2">&quot;Parking&quot;</span><span class="p">,</span> <span class="s2">&quot;Shed&quot;</span><span class="p">,</span> <span class="s2">&quot;Gate&quot;</span><span class="p">,</span> <span class="s2">&quot;Table&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">]</span>
         <span class="n">state</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">states</span><span class="p">)</span>
@@ -303,7 +352,18 @@
 <div class="viewcode-block" id="RS1GUI.generate_random_incident">
 <a class="viewcode-back" href="../ui.html#ui.RS1GUI.generate_random_incident">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_random_incident</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate a random incident for simulation purposes&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function generate a random incident for simulation purposes incase ROS2 isnt available after spawn prompt.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            - dict: A dictionary representing the incident with keys:</span>
+<span class="sd">                - &quot;title&quot;: str - The title of the incident</span>
+<span class="sd">                - &quot;time&quot;: str - The time the incident was reported</span>
+<span class="sd">                - &quot;severity&quot;: int - The severity level of the incident</span>
+<span class="sd">                - &quot;drone&quot;: int - The ID of the drone that reported the incident</span>
+<span class="sd">                - &quot;drone_coords&quot;: tuple - The GPS coordinates of the reporting drone</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">titles</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Fire&quot;</span><span class="p">,</span> <span class="s2">&quot;Stranded Person&quot;</span><span class="p">,</span> <span class="s2">&quot;Debris&quot;</span><span class="p">,</span> <span class="s2">&quot;Other&quot;</span><span class="p">]</span>
         <span class="n">title</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">titles</span><span class="p">)</span>
         <span class="n">severity</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
@@ -324,7 +384,17 @@
 <div class="viewcode-block" id="RS1GUI.draw_base_ui">
 <a class="viewcode-back" href="../ui.html#ui.RS1GUI.draw_base_ui">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">draw_base_ui</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Original draw_base_ui function with ROS2 camera integration&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Original draw_base_ui function with ROS2 camera integration</span>
+<span class="sd">        </span>
+<span class="sd">        This function draws the main UI components on the screen.</span>
+<span class="sd">        It displays the map, drones list, incidents panel by default.</span>
+<span class="sd">        It also updates and displays the camera feed if available.</span>
+<span class="sd">        </span>
+<span class="sd">        It will initially sync drones, incidents, topic from ROS2 topics.</span>
+<span class="sd">        Then attempt to display the relevant panels based on user selection/interaction.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">screen</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">DARK_GRAY</span><span class="p">)</span>
 
         <span class="c1"># Update and draw camera feed if available</span>
@@ -397,7 +467,33 @@
 <div class="viewcode-block" id="RS1GUI.handle_events">
 <a class="viewcode-back" href="../ui.html#ui.RS1GUI.handle_events">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">handle_events</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handle all input events&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function handles all user input events such as keyboard and mouse events.</span>
+<span class="sd">        </span>
+<span class="sd">        It processes events like window close, keyboard shortcuts, mouse clicks on various UI components.</span>
+<span class="sd">        Depending on the event, it updates the application state accordingly.</span>
+
+<span class="sd">        Keyboard Shortcuts:</span>
+<span class="sd">            - ESC: Exit the application</span>
+<span class="sd">            - 1-6: Select corresponding drone or switch camera view if Shift is held</span>
+<span class="sd">            - Shift + Number: Switch camera to that drone</span>
+<span class="sd">            - Number keys (1-6): Select drone in the UI</span>
+<span class="sd">            - C : Switch camera view (when camera component is available)</span>
+
+<span class="sd">        Mouse Clicks:</span>
+<span class="sd">        The mouse click handling is context-sensitive based on current panel state.</span>
+<span class="sd">            - Click on the buttons/icons in the map panel to select incidents</span>
+<span class="sd">            - Click on incident cards in the incidents panel to view details</span>
+<span class="sd">            - Click on drone card to open drone control panel</span>
+<span class="sd">        </span>
+<span class="sd">        Notes:</span>
+<span class="sd">        When the simulation is not ready, only the spawn panel processes keyboard events.</span>
+<span class="sd">        Controller connection/disconnection via ROS2 through the RosHandler interface is handled in the drone control panel.</span>
+<span class="sd">        </span>
+<span class="sd">        EDIT THIS DEPENDING ON CHANGES:</span>
+<span class="sd">        When a drone is selected, it can be controlled manually (PILOT) or set back to auto-pilot (SCOUT) via a service call.</span>
+<span class="sd">            </span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">pygame</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">():</span>
 
             <span class="c1"># Window close</span>
@@ -497,7 +593,7 @@
                                 
                                 
 
-                    <span class="c1"># drone card clicks -&gt; optional camera jump</span>
+                    <span class="c1"># Handle camera transition when drone card is clicked</span>
                     <span class="k">for</span> <span class="n">rect</span><span class="p">,</span> <span class="n">idx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">drones_panel</span><span class="o">.</span><span class="n">get_card_rects</span><span class="p">():</span>
                         <span class="k">if</span> <span class="n">rect</span><span class="o">.</span><span class="n">collidepoint</span><span class="p">((</span><span class="n">mx</span><span class="p">,</span> <span class="n">my</span><span class="p">)):</span>
                             <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;drone card clicked: #</span><span class="si">{</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -505,7 +601,7 @@
                             <span class="c1"># Edited to publish current drone id to ROS handler</span>
                             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_available</span><span class="p">:</span>
                                 <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">publish_current_drone_id</span><span class="p">(</span><span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-                            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera_component</span><span class="p">:</span>  <span class="c1"># ✅ guard</span>
+                            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera_component</span><span class="p">:</span>  <span class="c1"># guard</span>
                                 <span class="bp">self</span><span class="o">.</span><span class="n">camera_component</span><span class="o">.</span><span class="n">switch_to_drone_camera</span><span class="p">(</span><span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;front&quot;</span><span class="p">)</span>
                             <span class="k">break</span>
                 <span class="k">else</span><span class="p">:</span>
@@ -539,6 +635,14 @@
 <div class="viewcode-block" id="RS1GUI.run">
 <a class="viewcode-back" href="../ui.html#ui.RS1GUI.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Main application loop</span>
+<span class="sd">        This function runs the main loop of the GUI application.</span>
+<span class="sd">        It handles events, updates the UI, and manages the application state at each iteration.</span>
+
+<span class="sd">        It exits when the self.running flag is set to False, either by user action or programmatically.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Starting RS1 Drone Control GUI...&quot;</span><span class="p">)</span>
         <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">running</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">handle_events</span><span class="p">()</span>
@@ -557,6 +661,8 @@
 <div class="viewcode-block" id="RS1GUI.cleanup">
 <a class="viewcode-back" href="../ui.html#ui.RS1GUI.cleanup">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Cleanup resources on exit&quot;&quot;&quot;</span>
+
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Starting GUI cleanup...&quot;</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span>
@@ -577,19 +683,35 @@
 <div class="viewcode-block" id="RS1GUI.update_controller_buttons">
 <a class="viewcode-back" href="../ui.html#ui.RS1GUI.update_controller_buttons">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">update_controller_buttons</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">        This function checks for button presses from the teensyjoy controller via ROS2 topics.</span>
+<span class="sd">        </span>
+<span class="sd">        It detects rising edges of button presses to trigger actions such as:</span>
+<span class="sd">            - Cycle camera views (previous/next)</span>
+<span class="sd">            - Switch to the next drone</span>
+<span class="sd">        </span>
+<span class="sd">        The function maintains the last known button states to implement debouncing.</span>
+
+<span class="sd">        Buttons Mapping (Left Hand Side of Controller, bottom button is not used - Button 6):</span>
+<span class="sd">            - Button 5: Cycle camera to previous view</span>
+<span class="sd">            - Button 7: Cycle camera to next view</span>
+<span class="sd">            - Button 8: Switch to the next drone in the list</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_available</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">controller_connected</span><span class="p">:</span>
             <span class="k">return</span>
         <span class="c1"># Technically only &quot;one&quot; button topic (string type topic)</span>
-        <span class="n">butt_topics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">get_available_button_topics</span><span class="p">()</span>
+        <span class="n">button_topics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">get_available_button_topics</span><span class="p">()</span>
         <span class="n">new_list</span> <span class="o">=</span> <span class="p">[]</span>
 
         <span class="c1"># Loop redundant i think cause only one button topic anyways</span>
-        <span class="k">for</span> <span class="n">topic</span> <span class="ow">in</span> <span class="n">butt_topics</span><span class="p">:</span>
-            <span class="n">butt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">get_latest_button</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">topic</span> <span class="ow">in</span> <span class="n">button_topics</span><span class="p">:</span>
+            <span class="n">button</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">get_latest_button</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span>
 
             <span class="c1"># Check if there is data</span>
-            <span class="k">if</span> <span class="n">butt</span><span class="p">:</span>
-                <span class="n">data</span> <span class="o">=</span> <span class="n">butt</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">button</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">button</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
                 <span class="n">button_states</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)]</span>
 
                 <span class="c1"># Compare with previous states for debounce</span>
@@ -621,18 +743,6 @@
                             
                             <span class="c1"># +1 extra cause camera indexing </span>
                             <span class="bp">self</span><span class="o">.</span><span class="n">camera_component</span><span class="o">.</span><span class="n">switch_to_drone_camera</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selected_drone</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;front&quot;</span><span class="p">)</span>
-         
-                        <span class="c1"># Doesnt Work atm - need to keep track of what camera view is currently active</span>
-                        <span class="c1"># So it switches views based on drone selected via teensyjoy</span>
-                        <span class="c1"># elif i == 8:</span>
-                        <span class="c1">#     # Drones is index 1 </span>
-                        <span class="c1">#     if self.last_drone_id + 1 &lt; len(self.drones)+1:</span>
-                        <span class="c1">#         self.last_drone_id += 1</span>
-                        <span class="c1">#     else:</span>
-                        <span class="c1">#         self.last_drone_id = 1</span>
-                        <span class="c1">#     self.camera_component.switch_to_drone_camera(self.last_drone_id, &quot;front&quot;)</span>
-
-                        <span class="c1"># Can add other remote functionality here i.e. waypoint save, +/- vel, drone change notification</span>
 
                 <span class="c1"># Save states for next cycle</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">last_button_states</span><span class="p">[</span><span class="n">topic</span><span class="p">]</span> <span class="o">=</span> <span class="n">button_states</span>
@@ -647,6 +757,11 @@
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_sync_drones_from_odom</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sync the drones list with the latest odometry data from ROS2 topics.</span>
+<span class="sd">        This function fetches odometry information for each available odometry topic and updates the local drones list accordingly.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_available</span><span class="p">:</span>
             <span class="k">return</span>
 
@@ -691,7 +806,10 @@
 <div class="viewcode-block" id="main">
 <a class="viewcode-back" href="../ui.html#ui.main">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Main entry point&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Main entry point for the RS1 GUI application</span>
+<span class="sd">    This function initialises and runs the RS1GUI application.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">app</span> <span class="o">=</span> <span class="n">RS1GUI</span><span class="p">()</span>
         <span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>

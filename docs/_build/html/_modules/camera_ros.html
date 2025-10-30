@@ -90,7 +90,6 @@
 
     
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ros_handler</span><span class="p">:</span> <span class="n">RosHandler</span><span class="p">,</span> <span class="n">display_rect</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">640</span><span class="p">,</span> <span class="mi">360</span><span class="p">),</span> <span class="n">instant_switching</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">preload_all</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initializes the CameraComponent.</span>
 <span class="sd">        </span>
@@ -138,9 +137,11 @@
     
     <span class="c1"># Place holder when there is no camera feed</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_create_placeholder</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Create a placeholder surface to display when no camera feed is available.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            - pygame.Surface: Placeholder surface with text indicating no camera feed. In this case, it displays either &quot;ROS2 Not Available&quot; or &quot;No Camera Feed - Waiting for topics...&quot;</span>
 <span class="sd">        </span>
 <span class="sd">        &quot;&quot;&quot;</span>
         
@@ -171,7 +172,8 @@
     <span class="c1"># Initialise a list of camera topics </span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_initialise_topics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Initialise available camera topics from RosHandler.</span>
+<span class="sd">        This function initialises available camera topics from RosHandler.</span>
+<span class="sd">        Populates self.available_topics with camera topics, filtering for drone-specific topics.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -190,7 +192,7 @@
     <span class="c1"># Subscribe to all for instant switching</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_setup_all_cameras_preload</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Subscribes to all camera topics available to enable instant switching from one camera view to another.</span>
+<span class="sd">        This function subscribes to all camera topics available to enable instant switching from one camera view to another.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">topic</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_topics</span><span class="p">:</span>
@@ -202,9 +204,11 @@
     <span class="c1"># Preload 5 (always be subscribed to 5 and unsubscribe the rest)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_setup_preload_switching</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Subscribes to n camera topics and unsubscribes the rest. Enables fast switching between cameras with minimal delay.</span>
+<span class="sd">        This function subscribes to &#39;n&#39; camera topics and unsubscribes the rest. </span>
+<span class="sd">        Doing so enables fast switching between cameras with minimal delay.</span>
 
 <span class="sd">        Where n is defined by self.preload_count. By default it is 5.</span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1"># Subscribe to first few cameras for instant switching</span>
@@ -218,7 +222,7 @@
     
     <span class="k">def</span><span class="w"> </span><span class="nf">_setup_single_subscription</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Subscribes to the first camera topic available.</span>
+<span class="sd">        This function subscribes to the first camera topic available.</span>
 <span class="sd">        </span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Only subscribe to the first camera initially</span>
@@ -231,9 +235,8 @@
 <div class="viewcode-block" id="CameraComponent.switch_to_topic">
 <a class="viewcode-back" href="../camera_ros.html#camera_ros.CameraComponent.switch_to_topic">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">switch_to_topic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Switch to a different camera topic by index.</span>
+<span class="sd">        This function switches to a different camera topic by index.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            - topic_index (int): Index of the topic in available_topics to switch to.</span>
@@ -280,9 +283,8 @@
 
     
     <span class="k">def</span><span class="w"> </span><span class="nf">_ensure_topic_preloaded</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Ensure the specified topic is preloaded by subscribing to it, unsubscribing the furthest topic if at limit.</span>
+<span class="sd">        This function ensures the specified topic is preloaded by subscribing to it, unsubscribing the furthest topic if at limit.</span>
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
 <span class="sd">            - topic_name (str): Name of the topic to ensure is preloaded.</span>
@@ -325,9 +327,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_preload_adjacent_topics</span><span class="p">()</span>
     
     <span class="k">def</span><span class="w"> </span><span class="nf">_preload_adjacent_topics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Preloads camera topics that are adjacent (next and previous if available) to the current topic to enable smooth switching.</span>
+<span class="sd">        This function preloads camera topics that are adjacent (next and previous if available) to the current topic to enable smooth switching.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -353,9 +354,8 @@
                     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Pre-preloaded prev: </span><span class="si">{</span><span class="n">prev_topic</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     
     <span class="k">def</span><span class="w"> </span><span class="nf">_switch_subscription</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_topic</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Allows for switching camera subscription from current camera topic to the new camera topic passed.</span>
+<span class="sd">        This function allows for switching camera subscription from current camera topic to the new camera topic passed.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            - new_topic (str): Name of topic you want to swap to.</span>
@@ -374,9 +374,8 @@
 <div class="viewcode-block" id="CameraComponent.switch_to_next_topic">
 <a class="viewcode-back" href="../camera_ros.html#camera_ros.CameraComponent.switch_to_next_topic">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">switch_to_next_topic</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Switch to the next camera topic in the available topics list.</span>
+<span class="sd">        This function enables switching to the next camera topic in the available topics list.</span>
 <span class="sd">        </span>
 <span class="sd">        Returns:</span>
 <span class="sd">            - bool: True if switch was successful, False otherwise.</span>
@@ -393,9 +392,8 @@
 <div class="viewcode-block" id="CameraComponent.switch_to_previous_topic">
 <a class="viewcode-back" href="../camera_ros.html#camera_ros.CameraComponent.switch_to_previous_topic">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">switch_to_previous_topic</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Switch to the previous camera topic in the available topics list.</span>
+<span class="sd">        This function enables switching to the previous camera topic in the available topics list.</span>
 <span class="sd">        </span>
 <span class="sd">        Returns:</span>
 <span class="sd">            - bool: True if switch was successful, False otherwise.</span>
@@ -412,7 +410,7 @@
 <a class="viewcode-back" href="../camera_ros.html#camera_ros.CameraComponent.switch_to_drone_camera">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">switch_to_drone_camera</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">drone_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">camera_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;front&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Switch to a specific drone&#39;s camera.</span>
+<span class="sd">        This function enables switching to a specific drone&#39;s camera.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            - drone_id (int): Drone number (1, 2, 3, etc.)</span>
@@ -436,14 +434,15 @@
 <a class="viewcode-back" href="../camera_ros.html#camera_ros.CameraComponent.cycle_drone_camera">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">cycle_drone_camera</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">current_drone_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">num_drones</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">direction</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Cycle through drone front cameras without returning/updating drone selection.</span>
+<span class="sd">        This function enables cycling through drone front cameras without returning/updating drone selection.</span>
 <span class="sd">        </span>
-<span class="sd">        Used with rs1_teensyjoy controller switch camera buttons.</span>
+<span class="sd">        It is used with rs1_teensyjoy controller switch camera buttons.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            - current_drone_index (int): Current drone index (0-based, -1 if none selected)</span>
 <span class="sd">            - num_drones (int): Total number of drones</span>
 <span class="sd">            - direction (int): 1 for next, -1 for previous</span>
+<span class="sd">    </span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">drone_id</span> <span class="o">=</span> <span class="n">current_drone_index</span>
         
@@ -466,7 +465,7 @@
 <a class="viewcode-back" href="../camera_ros.html#camera_ros.CameraComponent.get_current_topic">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_current_topic</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Gets the name of the currently displayed camera topic if any is presently selected.</span>
+<span class="sd">        This function gets the name of the currently displayed camera topic if any is presently selected.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            - str or None: Name of the current camera topic, or None if no topic is selected.</span>
@@ -477,8 +476,7 @@
     
     <span class="k">def</span><span class="w"> </span><span class="nf">_cv2_to_pygame_surface</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cv_image</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Converts cv image (BGR numpy array) to Pygame surface.</span>
-
+<span class="sd">        This function converts cv image (BGR numpy array) to Pygame surface.</span>
 <span class="sd">        The converted image is resized to then fit the display area.</span>
 
 <span class="sd">        Args:</span>
@@ -486,6 +484,7 @@
 
 <span class="sd">        Returns:</span>
 <span class="sd">            - pygame.surfarray.make_surface(rgb_image): The converted cv image into a pygame surface to be displayed </span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1"># Convert BGR to RGB (OpenCV uses BGR)</span>
@@ -505,7 +504,7 @@
 <a class="viewcode-back" href="../camera_ros.html#camera_ros.CameraComponent.update">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Updates the camera feed from the RosHandler, using cv2, the camera image is stored which is then converted to</span>
+<span class="sd">        This function updates the camera feed from the RosHandler, using cv2, the camera image is stored which is then converted to</span>
 <span class="sd">        a pygame surface using _cv2_to_pygame_surface.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -524,7 +523,7 @@
 <a class="viewcode-back" href="../camera_ros.html#camera_ros.CameraComponent.draw">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">draw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">screen</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Draws the camera feed onto the given Pygame screen surface within the defined display rectangle</span>
+<span class="sd">        This function draws the camera feed onto the given Pygame screen surface within the defined display rectangle</span>
 <span class="sd">        </span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -556,7 +555,7 @@
 <a class="viewcode-back" href="../camera_ros.html#camera_ros.CameraComponent.handle_keypress">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">handle_keypress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Handle keypress events for camera switching. </span>
+<span class="sd">        This function handles keypress events for camera switching. </span>
 <span class="sd">        When the &#39;C&#39; key is pressed, the camera topic switches to the next available camera topic if any.</span>
 <span class="sd">        </span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -569,13 +568,11 @@
 <div class="viewcode-block" id="CameraComponent.get_status_info">
 <a class="viewcode-back" href="../camera_ros.html#camera_ros.CameraComponent.get_status_info">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_status_info</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Outputs the display status info, whether ROS2 is available, if there are camera topics.</span>
-<span class="sd">        Also checks the camera topic status, i.e. LIVE if topic is active, or STALE if inactive.</span>
+<span class="sd">        This function outputs the display status info, whether ROS2 is available, if there are camera topics.</span>
+<span class="sd">        It also checks the camera topic status, i.e. LIVE if topic is active, or STALE if inactive.</span>
 
 <span class="sd">        Returns:</span>
-
 <span class="sd">            - str: Display Status Message depending on status check. </span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -598,7 +595,6 @@
 <div class="viewcode-block" id="CameraComponent.cleanup">
 <a class="viewcode-back" href="../camera_ros.html#camera_ros.CameraComponent.cleanup">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Resource cleanup through unsubscribing from all subscribed camera topics</span>
 <span class="sd">        </span>

@@ -77,7 +77,21 @@
 <div class="viewcode-block" id="SpawnPromptPanel">
 <a class="viewcode-back" href="../spawn_prompt.html#spawn_prompt.SpawnPromptPanel">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">SpawnPromptPanel</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Spawn Prompt Class, this brings up the spawn window to enable the User to input their desired drone count.</span>
+<span class="sd">    When drone count entered, it runs the comp_drone_spawner.sh to start gazebo simulator and spawn drones in the environment.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app</span><span class="p">,</span> <span class="n">fonts</span><span class="p">,</span> <span class="n">rosAvailable</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialises the spawn prompt panel variables.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            - app: The main application instance.</span>
+<span class="sd">            - fonts: Dictionary of Pygame font objects.</span>
+<span class="sd">            - rosAvailable: Boolean indicating if ROS2 is available on the system.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">app</span> <span class="o">=</span> <span class="n">app</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fonts</span> <span class="o">=</span> <span class="n">fonts</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">button_rects</span> <span class="o">=</span> <span class="p">[]</span>
@@ -96,7 +110,16 @@
 <div class="viewcode-block" id="SpawnPromptPanel.draw_prompt">
 <a class="viewcode-back" href="../spawn_prompt.html#spawn_prompt.SpawnPromptPanel.draw_prompt">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">draw_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">screen</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw the full-screen spawn prompt interface&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Draw the full-screen spawn prompt interface.</span>
+<span class="sd">        Here the user can input the number of drones to spawn (1-6) and submit the request.</span>
+
+<span class="sd">        Once the request is submitted, a loading animation is shown until the simulator is ready.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            - screen: The Pygame surface to draw on.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">button_rects</span> <span class="o">=</span> <span class="p">[]</span>
 
         <span class="n">panel</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">Surface</span><span class="p">((</span><span class="mi">1900</span><span class="p">,</span> <span class="mi">860</span><span class="p">))</span>
@@ -160,7 +183,16 @@
 <div class="viewcode-block" id="SpawnPromptPanel.handle_key">
 <a class="viewcode-back" href="../spawn_prompt.html#spawn_prompt.SpawnPromptPanel.handle_key">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">handle_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Restrict input to digits only&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Restrict input to digits only</span>
+<span class="sd">        </span>
+<span class="sd">        This function handles key events for the spawn prompt. It allows only digit inputs (0-9) and handles backspace and enter keys.</span>
+<span class="sd">        On enter, if the input is valid, it starts the drone spawning process.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            - event: The Pygame event to handle.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">runningScript</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">True</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">pygame</span><span class="o">.</span><span class="n">KEYDOWN</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="n">pygame</span><span class="o">.</span><span class="n">K_BACKSPACE</span><span class="p">:</span>
@@ -185,7 +217,20 @@
 <div class="viewcode-block" id="SpawnPromptPanel.runScript">
 <a class="viewcode-back" href="../spawn_prompt.html#spawn_prompt.SpawnPromptPanel.runScript">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">runScript</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">numDrones</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run the script to start the simulator and spawn drones&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Run the script to start the simulator and spawn drones</span>
+
+<span class="sd">        This function executes the drone spawner script comp_drone_spawner.sh with the specified number of drones requested by the user.</span>
+<span class="sd">        It sets up the necessary environment variables for ROS2 and starts a thread to wait for the simulator to be ready.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            - numDrones: The number of drones to spawn as a string.</span>
+<span class="sd">        </span>
+<span class="sd">        Notes:</span>
+<span class="sd">            - The function handles environment setup for Qt/Wayland compatibility.</span>
+<span class="sd">            - It ensures both GUI and spawner run on the same ROS domain.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="kn">import</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="w"> </span><span class="nn">subprocess</span><span class="o">,</span><span class="w"> </span><span class="nn">threading</span>
 
         <span class="n">count</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">numDrones</span><span class="p">)</span>
@@ -224,7 +269,12 @@
 <div class="viewcode-block" id="SpawnPromptPanel.killSim">
 <a class="viewcode-back" href="../spawn_prompt.html#spawn_prompt.SpawnPromptPanel.killSim">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">killSim</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Kill the simulator processes&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Kill the simulator processes</span>
+
+<span class="sd">        This function terminates all relevant simulator processes to ensure a clean shutdown.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">commands</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;pkill -f &quot;ign gazebo&quot;&#39;</span><span class="p">,</span> <span class="s1">&#39;pkill -f &quot;parameter_bridge&quot;&#39;</span><span class="p">,</span> <span class="s1">&#39;pkill -f &quot;robot_state_publisher&quot;&#39;</span><span class="p">,</span> <span class="s1">&#39;pkill -f &quot;multi_drone_composition_controller&quot;&#39;</span><span class="p">,</span> <span class="s1">&#39;pkill -f &quot;controller_node&quot;&#39;</span><span class="p">]</span>
         <span class="k">for</span> <span class="n">command</span> <span class="ow">in</span> <span class="n">commands</span><span class="p">:</span>
             <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
@@ -233,6 +283,13 @@
 <div class="viewcode-block" id="SpawnPromptPanel.simulateEnvSetup">
 <a class="viewcode-back" href="../spawn_prompt.html#spawn_prompt.SpawnPromptPanel.simulateEnvSetup">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">simulateEnvSetup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Simulate environment setup without ROS2</span>
+<span class="sd">        </span>
+<span class="sd">        This function simulates the environment setup by generating fake drone and incident data.</span>
+<span class="sd">        It is used when ROS2 is not available, allowing the application to function in a simulated mode.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">requestCount</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">drones</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">generate_drone</span><span class="p">())</span>
@@ -246,6 +303,15 @@
 <div class="viewcode-block" id="SpawnPromptPanel.waitForSim">
 <a class="viewcode-back" href="../spawn_prompt.html#spawn_prompt.SpawnPromptPanel.waitForSim">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">waitForSim</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function waits for the simulator to be ready by checking for the expected number of drones.</span>
+<span class="sd">        It periodically checks the available drone topics and initialises the camera component and subscriptions once all drones are detected.</span>
+
+<span class="sd">        If the expected number of drones is not detected within a timeout period, it falls back to generating fake data.</span>
+
+<span class="sd">        The timeout is increased by 10 to wait for the cameras to appear after starting ROS2, enabling the GUI to subscribe to them.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Waiting for Sim...&quot;</span><span class="p">)</span>
         <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
         <span class="n">max_wait</span> <span class="o">=</span> <span class="mi">60</span>  <span class="c1"># 60s timeout; adjust based on spawn time (Gazebo can take 30s+ for 10 drones)</span>
@@ -350,6 +416,14 @@
 <div class="viewcode-block" id="SpawnPromptPanel.get_button_rects">
 <a class="viewcode-back" href="../spawn_prompt.html#spawn_prompt.SpawnPromptPanel.get_button_rects">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_button_rects</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the button rectangles for interaction handling.</span>
+<span class="sd">        This function returns the list of button rectangles for the spawn prompt.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            - list: List of tuples containing button rectangles and their identifiers.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">button_rects</span></div>
 </div>
 

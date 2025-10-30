@@ -80,7 +80,7 @@
                   <span class="n">feather_top</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">feather_right</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                   <span class="n">feather_bottom</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">feather_left</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Feathers selected edges of a Pygame surface, if global `pretty` is True.</span>
+<span class="sd">    This function feathers selected edges of a Pygame surface, if global `pretty` is True.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        - surface (pygame.Surface): The image surface to feather.</span>
@@ -93,6 +93,7 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        - pygame.Surface: A new surface with the feathered effect (or original if pretty is False).</span>
+<span class="sd">        </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">pretty</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">surface</span>
@@ -141,7 +142,7 @@
 <a class="viewcode-back" href="../utils.html#utils.mapRange">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">mapRange</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">inMin</span><span class="p">,</span> <span class="n">inMax</span><span class="p">,</span> <span class="n">outMin</span><span class="p">,</span> <span class="n">outMax</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Map a value from one range to another</span>
+<span class="sd">    This function maps a value from one range to another</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        - value (float): The input value to map.</span>
@@ -162,9 +163,10 @@
 <a class="viewcode-back" href="../utils.html#utils.draw_left_fade">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">draw_left_fade</span><span class="p">(</span><span class="n">screen</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Draw left fade overlay</span>
+<span class="sd">    This function draws the left fade overlay</span>
 <span class="sd">    Args:</span>
 <span class="sd">        - screen (pygame.Surface): The main screen surface to draw the fade on.</span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">l_fade_surface</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">Surface</span><span class="p">((</span><span class="mi">670</span><span class="p">,</span> <span class="mi">395</span><span class="p">),</span> <span class="n">pygame</span><span class="o">.</span><span class="n">SRCALPHA</span><span class="p">)</span>
     <span class="n">l_fade_surface</span><span class="o">.</span><span class="n">fill</span><span class="p">((</span><span class="mi">225</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">108</span><span class="p">))</span>  <span class="c1"># Transparent background</span>
