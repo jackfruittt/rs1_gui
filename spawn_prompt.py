@@ -104,6 +104,16 @@ class SpawnPromptPanel:
         # Final blit
         screen.blit(panel, (0, 0))
 
+    def startSim(self):
+        self.runningScript = True
+        self.requestCount = int(self.user_input)
+        if self.rosAvailable is True:
+            print("ROS found")
+            self.runScript(self.user_input)
+        else:
+            print("ROS NOT FOUND")
+            self.simulateThread.start()
+
     def handle_key(self, event):
         """
         Restrict input to digits only
@@ -121,14 +131,7 @@ class SpawnPromptPanel:
                     self.user_input = self.user_input[:-1]
                 elif event.key == pygame.K_RETURN:
                     if self.user_input != "":
-                        self.runningScript = True
-                        self.requestCount = int(self.user_input)
-                        if self.rosAvailable is True:
-                            print("ROS found")
-                            self.runScript(self.user_input)
-                        else:
-                            print("ROS NOT FOUND")
-                            self.simulateThread.start()
+                        self.startSim()
                     return
                 elif event.unicode.isdigit():
                     if int(self.user_input + event.unicode) < 11:
@@ -162,7 +165,7 @@ class SpawnPromptPanel:
             env.pop("QT_PLUGIN_PATH", None)   # remove OpenCV's Qt plugin path
             env["QT_QPA_PLATFORM"] = "xcb"    # force xcb even if on Wayland
             # -----------------------------
-            argv = ["./comp_drone_spawner.sh", str(count), "gazebo:=true", "rviz:=false"]
+            argv = ["./comp_drone_spawner.sh", str(count), "gazebo:=false", "rviz:=false"]
             proc = subprocess.Popen(
                 argv,
                 stdout=subprocess.PIPE,
@@ -196,16 +199,12 @@ class SpawnPromptPanel:
             subprocess.Popen(command, shell=True)
     
     def simulateEnvSetup(self):
-        """
-        Simulate environment setup without ROS2
-        
-        This function simulates the environment setup by generating fake drone and incident data.
-        It is used when ROS2 is not available, allowing the application to function in a simulated mode.
-
-        """
-        time.sleep(5)
+        time.sleep(0.01)
         for _ in range(self.requestCount):
             self.app.drones.append(self.app.generate_drone())
+            if _ <= len(self.app.default_waypoints)-1:
+                self.app.drones[-1]['waypoints'] = self.app.default_waypoints[_]
+
 
         for _ in range(random.randint(3,10)):
             self.app.incidents.append(self.app.generate_random_incident())
@@ -223,6 +222,15 @@ class SpawnPromptPanel:
 
         """
         print("Waiting for Sim...")
+        
+        # Give shell script time to actually spawn the drones
+        print("Giving shell script 10 seconds to spawn drones...")
+        time.sleep(10)  # Wait for script to spawn drones before checking
+        
+        # Additional delay for parameter bridges to establish all topic connections
+        print("Giving parameter bridges 15 more seconds to establish all topic connections...")
+        time.sleep(15)  # Wait for parameter bridges to create all camera/sensor topics
+        
         start_time = time.time()
         max_wait = 60  # 60s timeout; adjust based on spawn time (Gazebo can take 30s+ for 10 drones)
         
@@ -233,6 +241,8 @@ class SpawnPromptPanel:
                     # Fallback: Generate fake data like simulateEnvSetup
                     for _ in range(self.requestCount):
                         self.app.drones.append(self.app.generate_drone())
+                        if _ <= len(self.app.default_waypoints)-1:
+                            self.app.drones[-1]['waypoints'] = self.app.default_waypoints[_]
                     for _ in range(random.randint(3, 10)):
                         self.app.incidents.append(self.app.generate_random_incident())
                     self.app.simReady = True
@@ -258,19 +268,38 @@ class SpawnPromptPanel:
                             'state': 'IDLE',                # DroneController prints IDLE on startup
                             'setPose': '-',
                             'nearPose': '-',
-                            'yaw': 0.0
+                            'yaw': 0.0,
+                            'waypoints': []
                         })
+                        
+                        if (i - 1) < len(self.app.default_waypoints):
+                            import copy
+                            self.app.drones[-1]['waypoints'] = copy.deepcopy(self.app.default_waypoints[i - 1])
 
-                    deadline = time.time() + 10  # wait up to 10s for cameras to appear
+                    deadline = time.time() + 20  # wait up to 20s for cameras to appear
                     cams = []
+                    expected_cameras = drone_amount * 2  # Each drone should have front + bottom cameras
                     while time.time() < deadline:
                         try:
                             self.app.ros_handler.discover_topics()     # refresh
                             cams = self.app.ros_handler.get_available_camera_topics()
-                            if cams:
+                            
+                            # Check if we have cameras from all drones, not just any cameras
+                            drone_cameras_found = set()
+                            for cam_topic in cams:
+                                # Extract drone ID from topic like "/rs1_drone_1/front/image"
+                                if '/rs1_drone_' in cam_topic:
+                                    drone_id = cam_topic.split('/rs1_drone_')[1].split('/')[0]
+                                    drone_cameras_found.add(drone_id)
+                            
+                            print(f"Camera discovery: found {len(cams)} topics from {len(drone_cameras_found)} drones (expecting {drone_amount} drones)")
+                            
+                            # Break if we have cameras from all drones OR reasonable timeout
+                            if len(drone_cameras_found) >= drone_amount or (len(cams) > 0 and time.time() - deadline + 20 > 15):
                                 break
-                        except Exception:
-                            pass
+                                
+                        except Exception as e:
+                            print(f"Camera discovery error: {e}")
                         time.sleep(0.5)
 
                     print(f"UI sees {len(cams)} camera topics: {cams}")
@@ -316,21 +345,20 @@ class SpawnPromptPanel:
             # Fallback on error too
             for _ in range(self.requestCount):
                 self.app.drones.append(self.app.generate_drone())
+                if _ <= len(self.app.default_waypoints)-1:
+                    self.app.drones[-1]['waypoints'] = self.app.default_waypoints[_]
             for _ in range(random.randint(3, 10)):
                 self.app.incidents.append(self.app.generate_random_incident())
             self.app.simReady = True
         
         print("Sim ready!")
 
-    def get_button_rects(self):
-        """
-        Get the button rectangles for interaction handling.
-        This function returns the list of button rectangles for the spawn prompt.
-        
-        Returns:
-            - list: List of tuples containing button rectangles and their identifiers.
-
-        """
-        return self.button_rects
+    def buttonLogic(self, gmx, gmy):
+        if self.runningScript is not True:
+            for rect, action in self.button_rects:
+                if rect.collidepoint(gmx, gmy):
+                    if action == "submit":
+                        if self.user_input != "":
+                            self.startSim()
     
 

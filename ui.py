@@ -31,11 +31,13 @@ import numpy as np
 import sys
 import random
 import math
+import csv
+from dataclasses import dataclass
 
 
 # Import our components
 from constants import *
-from utils import feather_image
+from utils import feather_image, load_waypoints_yaml
 from ros_handler import RosHandler
 from ros_handler import ros2_available
 from camera_ros import CameraComponent  # Replaced VideoPlayer
@@ -45,6 +47,31 @@ from drone_control_panel import DroneControlPanel
 from map_panel import MapPanel
 from incident_detail_panel import IncidentDetailPanel
 from spawn_prompt import SpawnPromptPanel
+from notification import NotificationUI
+
+@dataclass
+class KnownPoses:
+    feature: str
+    x: int
+    y: int
+    z: int
+
+def load_known_poses():
+    features = []
+    with open('knownPoses.csv', newline='') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            try:
+                feature = KnownPoses(
+                feature=row['Feature'],
+                x=int(row['X']),
+                y=int(row['Y']),
+                z=int(row['Z'])
+                )
+                features.append(feature)
+            except (KeyError, ValueError) as e:
+                print(f"Skipping invalid row: {row} ({e})")
+    return features
 
 class RS1GUI:
     """Main GUI application class""" 
@@ -58,12 +85,24 @@ class RS1GUI:
 
         self.simReady = False
         self.ros_available = ros2_available()   # was True
-        self.drones = []
         self.camera_component = None
         self._incident_seen = {}          # key: (drone, id) -> index in self.incidents
         self._incident_cleared = set()    # optional: keys you've cleared in UI
 
-        
+        self.known_poses = load_known_poses()
+
+        self.drones = []
+        self.incidents = []
+
+        self.lastIncidentCount = 0
+
+        self.default_waypoints = load_waypoints_yaml("waypoints.yaml")
+
+        # Controller Checking, 0 - no controller found, 1 - controller connected 
+        self.controller_connected = 0 
+
+        self.sim_uid = 1
+
         # Load fonts
         self.fonts = self._load_fonts()
 
@@ -106,31 +145,24 @@ class RS1GUI:
         self.spawn_panel = SpawnPromptPanel(self, self.fonts, ros2_available())
         self.drones_panel = dronesPanel(self, self.fonts)
         self.incidents_panel = IncidentsPanel(self.fonts)
-        self.drone_control_panel = DroneControlPanel(self, self.fonts)
-        self.map_panel = MapPanel(self.map_top_view, self.drone_icon)
+        self.map_panel = MapPanel(self, self.map_top_view, self.drone_icon)
         self.incident_detail_panel = IncidentDetailPanel(self.fonts)
+        self.drone_control_panel = DroneControlPanel(self, self.fonts)
+        self.notification_ui = NotificationUI(self.fonts)
+
+        # Initialise camera component with instant switching (no delay when changing cameras)
+        self.camera_component = CameraComponent(
+            self.ros_handler, 
+            display_rect=(1240, 460, 640, 360),
+            instant_switching=True,  # Use preload method for comparison
+            preload_all=True        # Preload ALL cameras for zero-delay switching
+        )
     
-        
-        # Initialise data 
-        # self.drones = self._generate_drones()
-        self.drones = []
-        self.incidents = []
-
-        # Controller Checking, 0 - no controller found, 1 - controller connected 
-        self.controller_connected = 0 
-
         # To store button state and handling button data
         self.buttons = []
         self.last_button_states = {}
         self.last_drone_id = 0
 
-        # if ros2_available:
-        #     for _ in range(4):
-        #         self.drones.append(self.generate_drone())
-
-        #     for _ in range(random.randint(3,10)):
-        #         self.incidents.append(self.generate_random_incident())
-        
         # Fade state
         self.show_left_fade = False
         self.left_fade_start = 0
@@ -213,7 +245,7 @@ class RS1GUI:
             fonts = {
                 'font': pygame.font.Font("media/fonts/TurretRoad-Bold.otf", 32),
                 'small_font': pygame.font.Font("media/fonts/TurretRoad-Bold.otf", 20),
-                'large_font': pygame.font.Font("media/fonts/TurretRoad-ExtraBold.otf", 48),
+                'large_font': pygame.font.Font("media/fonts/TurretRoad-ExtraBold.otf", 46),
                 'state_font': pygame.font.Font("media/fonts/boston.ttf", 38),
                 'inter_large': pygame.font.Font("media/fonts/Inter-Regular.ttf", 48),
                 'inter_medium': pygame.font.Font("media/fonts/Inter-Regular.ttf", 32),
@@ -233,6 +265,16 @@ class RS1GUI:
             ]}
         
         return fonts
+
+    def generate_random_waypoints(self):
+        waypoints = []
+        for _ in range(random.randint(3,7)):
+            wx = round(random.uniform(-world_size[0]/2, world_size[0]/2), 3)
+            wy = round(random.uniform(-world_size[1]/2, world_size[1]/2), 3)
+            wz = -999
+            waypoints.append([wx, wy, wz])
+        
+        return waypoints
     
     def generate_drone(self):
         """
@@ -265,7 +307,8 @@ class RS1GUI:
             "state": state,
             "setPose": setPose,
             "nearPose": nearPose,
-            "yaw": yaw
+            "yaw": yaw,
+            "waypoints": []
         }
         print(f"New drone generated: {drone}")
         return drone
@@ -290,6 +333,7 @@ class RS1GUI:
         drone_coords = (round(random.uniform(-world_size[0]/2, world_size[0]/2), 3), round(random.uniform(-world_size[0]/2, world_size[0]/2), 3))
         
         incident = {
+            "id": self.sim_uid,
             "title": title,
             "time": "2025-08-01 12:00",
             "severity": severity,
@@ -297,21 +341,12 @@ class RS1GUI:
             "drone_coords": drone_coords
         }
         print(f"New incident generated: {incident}")
+        self.sim_uid += 1
         return incident
     
     def draw_base_ui(self):
-        """
-        Original draw_base_ui function with ROS2 camera integration
-        
-        This function draws the main UI components on the screen.
-        It displays the map, drones list, incidents panel by default.
-        It also updates and displays the camera feed if available.
-        
-        It will initially sync drones, incidents, topic from ROS2 topics.
-        Then attempt to display the relevant panels based on user selection/interaction.
-
-        """
-        self.screen.fill(DARK_GRAY)
+        """Original draw_base_ui function with ROS2 camera integration"""
+        self.screen.fill(DARK_GREEN)
 
         # Update and draw camera feed if available
         if self.camera_component:
@@ -342,6 +377,10 @@ class RS1GUI:
                     d['altitude'] = f"{z:.2f}m"
                     d['yaw']      = (math.degrees(yaw) + 360.0) % 360.0
 
+        if self.lastIncidentCount != len(self.incidents) and self.ros_available:
+            self.lastIncidentCount = len(self.incidents)
+            self.notification_ui.pushNotification("New Incident!", f"{self.incidents[-1]['title']}", bar_color=severity_colors[self.incidents[-1]["severity"] - 1])
+
         # Map
         self.map_panel.draw_map(self.drones, self.incidents, self.screen, self.selected_incident)
         
@@ -358,19 +397,27 @@ class RS1GUI:
         elif self.selected_incident >= 0:
             self.incident_detail_panel.draw_incident_detail(self.incidents[self.selected_incident], self.screen)
 
+        """
         # Camera status info (in bottom right)
         if self.camera_component:
             status_text = self.camera_component.get_status_info()
 
         debug_text = self.fonts['small_font'].render(
-            f"RS1 {int(self.clock.get_fps())} | {status_text}", True, WHITE
+            f"{status_text} | RS1 {int(self.clock.get_fps())}", True, WHITE
         )
         debug_text = self.fonts['small_font'].render(
-            f"RS1 {int(self.clock.get_fps())} | {status_text}", 
+            f"{status_text} | RS1 {int(self.clock.get_fps())}", 
             True, WHITE
         )
 
-        self.screen.blit(debug_text, (700, 760))
+        self.screen.blit(debug_text, (700, 825))
+        """
+
+        frame_rate = self.fonts['small_font'].render(
+            f"{int(self.clock.get_fps())}", True, WHITE
+        )
+
+        self.screen.blit(frame_rate, (340, 20))
         
         # Controls info
         controls_text = self.fonts['small_font'].render(
@@ -378,6 +425,8 @@ class RS1GUI:
             True, (150, 150, 150)
         )
         self.screen.blit(controls_text, (1250, 790))
+
+        self.notification_ui.drawNotifications(self.screen)
     
     def handle_events(self):
         """
@@ -449,96 +498,22 @@ class RS1GUI:
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 mx, my = event.pos
 
-                # map incident icons
-                for rect, idx in self.map_panel.get_icon_buttons():
-                    if rect.collidepoint((mx, my)):
-                        print(f'Icon incident clicked: {self.incidents[idx]["title"]}')
-                        self.selected_incident = idx
-                        break
+                if not self.simReady:
+                    self.spawn_panel.buttonLogic(mx, my)
+                    continue
+
+                self.map_panel.processClickInMap(self, mx, my)
 
                 if self.selected_incident < 0:
+                    self.drones_panel.buttonLogic(self, mx, my)
                     if self.selected_drone < 0:
-                        # incident cards
-                        for rect, idx in self.incidents_panel.get_card_rects():
-                            if rect.collidepoint((mx, my)):
-                                print(f"Incident clicked: #{idx+1} - {self.incidents[idx]['title']}")
-                                self.selected_incident = idx
-                                break
-                        # scroll buttons
-                        self.incidents_panel.handle_scroll_click((mx, my))
+                        self.incidents_panel.selectIncidentButtons(self, mx, my)
                     else:
                         # drone control buttons
-                        for rect, label in self.drone_control_panel.get_button_rects():
-                            if rect.collidepoint((mx, my)):
-                                print(f"Drone button clicked: {label}")
-                                if label == "Close":
-                                    self.selected_drone = -1
-                                    if self.ros_available:
-                                        success = self.ros_handler.call_teensy_connect(False)
-                                        if success:
-                                            print("Disconnected from teensy joystick")
-                                            self.controller_connected = 0
-                                        else:
-                                            print("Failed to disconnect from teensy joystick")
-
-                                    # Manually Pilot
-                                elif label == "PILOT":
-                                    if self.ros_available:
-                                        if self.selected_drone >= 0:
-                                            self.ros_handler.publish_current_drone_id(self.selected_drone + 1)
-                                        success = self.ros_handler.call_teensy_connect(True)
-                                        if success:
-                                            print("Connected to teensy joystick")
-                                            self.controller_connected = 1
-                                        else:
-                                            print("Failed to connect to teensy joystick")
-
-                                    # Return to Auto-pilot
-                                elif label == "SCOUT":
-                                    if self.ros_available:
-                                        success = self.ros_handler.call_teensy_connect(False)
-                                        if success:
-                                            print("Disconnected from teensy joystick")
-                                            self.controller_connected = 0
-                                        else:
-                                            print("Failed to disconnect from teensy joystick")
-                                break
-                                
-                                
-
-                    # Handle camera transition when drone card is clicked
-                    for rect, idx in self.drones_panel.get_card_rects():
-                        if rect.collidepoint((mx, my)):
-                            print(f"drone card clicked: #{idx+1}")
-                            self.selected_drone = idx
-                            # Edited to publish current drone id to ROS handler
-                            if self.ros_available:
-                                self.ros_handler.publish_current_drone_id(idx + 1)
-                            if self.camera_component:  # guard
-                                self.camera_component.switch_to_drone_camera(idx + 1, "front")
-                            break
+                        self.drone_control_panel.buttonLogic(mx, my)
                 else:
-                    action = self.incident_detail_panel.handle_click((mx, my))
-                    if action == 'close':
-                        self.selected_incident = -1
-                    elif action == 'respond':
-                        print('Respond to incident')
-                    # elif action == 'clear':
-                    #     print(f'clearing {self.selected_incident}')
-                    #     del self.incidents[self.selected_incident]
-                    #     self.selected_incident = -1
-                    #     print('clear incident')
-                    elif action == 'clear':
-                        inc = self.incidents[self.selected_incident]
-                        key = (inc["drone"], inc["id"])
-                        self._incident_cleared.add(key)       # remember it's cleared locally
-                        del self.incidents[self.selected_incident]
-                        # rebuild index map after deletion
-                        self._incident_seen.clear()
-                        for i, it in enumerate(self.incidents):
-                            self._incident_seen[(it["drone"], it["id"])] = i
-                        self.selected_incident = -1
-                        print('clear incident')
+                    self.incident_detail_panel.handle_click(self,(mx, my))
+
 
             elif event.type == pygame.MOUSEBUTTONUP:
                 self.incidents_panel.stop_scrolling()
@@ -634,6 +609,16 @@ class RS1GUI:
                         #elif i == 6: # Waypoint button
                             # Print out Waypoint Data in GUI??
 
+                        # Doesnt Work atm - need to keep track of what camera view is currently active
+                        # So it switches views based on drone selected via teensyjoy
+                        # elif i == 8:
+                        #     # Drones is index 1 
+                        #     if self.last_drone_id + 1 < len(self.drones)+1:
+                        #         self.last_drone_id += 1
+                        #     else:
+                        #         self.last_drone_id = 1
+                        #     self.camera_component.switch_to_drone_camera(self.last_drone_id, "front")
+
                         elif i == 8:
                             if self.selected_drone == -1:
                                 self.selected_drone = 0
@@ -668,41 +653,55 @@ class RS1GUI:
         if not self.ros_available:
             return
 
-        # Get the list of available odometry topics
+        # Cache previous drones by namespace to preserve fields like waypoints
+        prev_by_ns = {d.get('ns'): d for d in self.drones if d.get('ns')}
+
         odom_topics = self.ros_handler.get_available_odometry_topics()
         new_list = []
 
         for topic in odom_topics:
-            # Fetch the latest odometry data for the topic
             odom = self.ros_handler.get_latest_odometry(topic)
-            if odom:
-                # Extract drone namespace from the topic name
-                parts = topic.split('/')
-                if len(parts) < 3:  # '/rs1_drone_X/odom'
-                    continue
-                ns = parts[1]
+            if not odom:
+                continue
 
-                # Extract position and orientation data
-                p = odom["position"]
-                q = odom["orientation"]
-                yaw = math.atan2(
-                    2.0 * (q[3] * q[2] + q[0] * q[1]),
-                    1.0 - 2.0 * (q[1] * q[1] + q[2] * q[2])
-                )
+            parts = topic.split('/')
+            if len(parts) < 3:  # '/rs1_drone_X/odom'
+                continue
+            ns = parts[1]
 
-                # Add the drone data to the list
-                new_list.append({
-                    'ns': ns,
-                    'gps': f"{p[0]:.3f}, {p[1]:.3f}",
-                    'altitude': f"{p[2]:.1f}m",
-                    'state': 'Active',
-                    'setPose': '-',
-                    'nearPose': '-',
-                    'yaw': (math.degrees(yaw) + 360.0) % 360.0,
-                    'battery': 100
-                })
+            # Extract pose
+            p = odom["position"]
+            q = odom["orientation"]
+            yaw = math.atan2(
+                2.0 * (q[3] * q[2] + q[0] * q[1]),
+                1.0 - 2.0 * (q[1] * q[1] + q[2] * q[2])
+            )
 
-        # Update the drones list
+            # ✅ preserve existing waypoints (or seed from defaults if none exist)
+            prev = prev_by_ns.get(ns)
+            waypoints = (prev.get('waypoints') if prev else [])
+            if not waypoints:
+                # Try to seed from default_waypoints using the numeric suffix in ns
+                try:
+                    idx = int(ns.rsplit('_', 1)[1]) - 1
+                    if 0 <= idx < len(self.default_waypoints):
+                        import copy
+                        waypoints = copy.deepcopy(self.default_waypoints[idx])
+                except Exception:
+                    pass
+
+            new_list.append({
+                'ns': ns,
+                'gps': f"{p[0]:.3f}, {p[1]:.3f}",
+                'altitude': f"{p[2]:.1f}m",
+                'state': 'Active',
+                'setPose': '-',
+                'nearPose': '-',
+                'yaw': (math.degrees(yaw) + 360.0) % 360.0,
+                'battery': (prev.get('battery') if prev else 100),
+                'waypoints': waypoints,  # ✅ keep/seed waypoints
+            })
+
         self.drones = new_list
 
 def main():
