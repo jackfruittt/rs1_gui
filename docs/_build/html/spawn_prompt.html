@@ -106,44 +106,91 @@
 <dt class="sig sig-object py" id="spawn_prompt.SpawnPromptPanel">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">spawn_prompt.</span></span><span class="sig-name descname"><span class="pre">SpawnPromptPanel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">app</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fonts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rosAvailable</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spawn_prompt.html#SpawnPromptPanel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spawn_prompt.SpawnPromptPanel" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Spawn Prompt Class, this brings up the spawn window to enable the User to input their desired drone count.
+When drone count entered, it runs the comp_drone_spawner.sh to start gazebo simulator and spawn drones in the environment.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="spawn_prompt.SpawnPromptPanel.draw_prompt">
 <span class="sig-name descname"><span class="pre">draw_prompt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">screen</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spawn_prompt.html#SpawnPromptPanel.draw_prompt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spawn_prompt.SpawnPromptPanel.draw_prompt" title="Link to this definition"></a></dt>
-<dd><p>Draw the full-screen spawn prompt interface</p>
+<dd><p>Draw the full-screen spawn prompt interface.
+Here the user can input the number of drones to spawn (1-6) and submit the request.</p>
+<p>Once the request is submitted, a loading animation is shown until the simulator is ready.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><ul class="simple">
+<li><p>screen: The Pygame surface to draw on.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="spawn_prompt.SpawnPromptPanel.get_button_rects">
 <span class="sig-name descname"><span class="pre">get_button_rects</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/spawn_prompt.html#SpawnPromptPanel.get_button_rects"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spawn_prompt.SpawnPromptPanel.get_button_rects" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>Get the button rectangles for interaction handling.
+This function returns the list of button rectangles for the spawn prompt.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><ul class="simple">
+<li><p>list: List of tuples containing button rectangles and their identifiers.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="spawn_prompt.SpawnPromptPanel.handle_key">
 <span class="sig-name descname"><span class="pre">handle_key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spawn_prompt.html#SpawnPromptPanel.handle_key"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spawn_prompt.SpawnPromptPanel.handle_key" title="Link to this definition"></a></dt>
 <dd><p>Restrict input to digits only</p>
+<p>This function handles key events for the spawn prompt. It allows only digit inputs (0-9) and handles backspace and enter keys.
+On enter, if the input is valid, it starts the drone spawning process.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><ul class="simple">
+<li><p>event: The Pygame event to handle.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="spawn_prompt.SpawnPromptPanel.killSim">
 <span class="sig-name descname"><span class="pre">killSim</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/spawn_prompt.html#SpawnPromptPanel.killSim"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spawn_prompt.SpawnPromptPanel.killSim" title="Link to this definition"></a></dt>
 <dd><p>Kill the simulator processes</p>
+<p>This function terminates all relevant simulator processes to ensure a clean shutdown.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="spawn_prompt.SpawnPromptPanel.runScript">
 <span class="sig-name descname"><span class="pre">runScript</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">numDrones</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spawn_prompt.html#SpawnPromptPanel.runScript"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spawn_prompt.SpawnPromptPanel.runScript" title="Link to this definition"></a></dt>
 <dd><p>Run the script to start the simulator and spawn drones</p>
+<p>This function executes the drone spawner script comp_drone_spawner.sh with the specified number of drones requested by the user.
+It sets up the necessary environment variables for ROS2 and starts a thread to wait for the simulator to be ready.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><ul class="simple">
+<li><p>numDrones: The number of drones to spawn as a string.</p></li>
+</ul>
+</dd>
+<dt>Notes:</dt><dd><ul class="simple">
+<li><p>The function handles environment setup for Qt/Wayland compatibility.</p></li>
+<li><p>It ensures both GUI and spawner run on the same ROS domain.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="spawn_prompt.SpawnPromptPanel.simulateEnvSetup">
 <span class="sig-name descname"><span class="pre">simulateEnvSetup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/spawn_prompt.html#SpawnPromptPanel.simulateEnvSetup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spawn_prompt.SpawnPromptPanel.simulateEnvSetup" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>Simulate environment setup without ROS2</p>
+<p>This function simulates the environment setup by generating fake drone and incident data.
+It is used when ROS2 is not available, allowing the application to function in a simulated mode.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="spawn_prompt.SpawnPromptPanel.waitForSim">
 <span class="sig-name descname"><span class="pre">waitForSim</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/spawn_prompt.html#SpawnPromptPanel.waitForSim"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spawn_prompt.SpawnPromptPanel.waitForSim" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>This function waits for the simulator to be ready by checking for the expected number of drones.
+It periodically checks the available drone topics and initialises the camera component and subscriptions once all drones are detected.</p>
+<p>If the expected number of drones is not detected within a timeout period, it falls back to generating fake data.</p>
+<p>The timeout is increased by 10 to wait for the cameras to appear after starting ROS2, enabling the GUI to subscribe to them.</p>
+</dd></dl>
 
 </dd></dl>
 

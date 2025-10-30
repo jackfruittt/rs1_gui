@@ -17,7 +17,6 @@ class CameraComponent:
 
     
     def __init__(self, ros_handler: RosHandler, display_rect=(20, 20, 640, 360), instant_switching=True, preload_all=False):
-
         """
         Initializes the CameraComponent.
         
@@ -65,9 +64,11 @@ class CameraComponent:
     
     # Place holder when there is no camera feed
     def _create_placeholder(self):
-
         """
         Create a placeholder surface to display when no camera feed is available.
+
+        Returns:
+            - pygame.Surface: Placeholder surface with text indicating no camera feed. In this case, it displays either "ROS2 Not Available" or "No Camera Feed - Waiting for topics..."
         
         """
         
@@ -98,7 +99,8 @@ class CameraComponent:
     # Initialise a list of camera topics 
     def _initialise_topics(self):
         """
-        Initialise available camera topics from RosHandler.
+        This function initialises available camera topics from RosHandler.
+        Populates self.available_topics with camera topics, filtering for drone-specific topics.
 
         """
 
@@ -117,7 +119,7 @@ class CameraComponent:
     # Subscribe to all for instant switching
     def _setup_all_cameras_preload(self):
         """
-        Subscribes to all camera topics available to enable instant switching from one camera view to another.
+        This function subscribes to all camera topics available to enable instant switching from one camera view to another.
 
         """
         for topic in self.available_topics:
@@ -129,9 +131,11 @@ class CameraComponent:
     # Preload 5 (always be subscribed to 5 and unsubscribe the rest)
     def _setup_preload_switching(self):
         """
-        Subscribes to n camera topics and unsubscribes the rest. Enables fast switching between cameras with minimal delay.
+        This function subscribes to 'n' camera topics and unsubscribes the rest. 
+        Doing so enables fast switching between cameras with minimal delay.
 
         Where n is defined by self.preload_count. By default it is 5.
+
         """
 
         # Subscribe to first few cameras for instant switching
@@ -145,7 +149,7 @@ class CameraComponent:
     
     def _setup_single_subscription(self):
         """
-        Subscribes to the first camera topic available.
+        This function subscribes to the first camera topic available.
         
         """
         # Only subscribe to the first camera initially
@@ -156,9 +160,8 @@ class CameraComponent:
             print(f"Single subscription mode: subscribed to {first_topic}")
     
     def switch_to_topic(self, topic_index: int) -> bool:
-
         """
-        Switch to a different camera topic by index.
+        This function switches to a different camera topic by index.
 
         Args:
             - topic_index (int): Index of the topic in available_topics to switch to.
@@ -204,9 +207,8 @@ class CameraComponent:
         return False
     
     def _ensure_topic_preloaded(self, topic_name: str):
-
         """
-        Ensure the specified topic is preloaded by subscribing to it, unsubscribing the furthest topic if at limit.
+        This function ensures the specified topic is preloaded by subscribing to it, unsubscribing the furthest topic if at limit.
         
         Args:
             - topic_name (str): Name of the topic to ensure is preloaded.
@@ -249,9 +251,8 @@ class CameraComponent:
         self._preload_adjacent_topics()
     
     def _preload_adjacent_topics(self):
-
         """
-        Preloads camera topics that are adjacent (next and previous if available) to the current topic to enable smooth switching.
+        This function preloads camera topics that are adjacent (next and previous if available) to the current topic to enable smooth switching.
 
         """
 
@@ -277,9 +278,8 @@ class CameraComponent:
                     print(f"Pre-preloaded prev: {prev_topic}")
     
     def _switch_subscription(self, new_topic: str):
-
         """
-        Allows for switching camera subscription from current camera topic to the new camera topic passed.
+        This function allows for switching camera subscription from current camera topic to the new camera topic passed.
 
         Args:
             - new_topic (str): Name of topic you want to swap to.
@@ -296,9 +296,8 @@ class CameraComponent:
         self.subscribed_topics.add(new_topic)
     
     def switch_to_next_topic(self) -> bool:
-
         """
-        Switch to the next camera topic in the available topics list.
+        This function enables switching to the next camera topic in the available topics list.
         
         Returns:
             - bool: True if switch was successful, False otherwise.
@@ -312,9 +311,8 @@ class CameraComponent:
         return self.switch_to_topic(next_index)
      
     def switch_to_previous_topic(self) -> bool:
-
         """
-        Switch to the previous camera topic in the available topics list.
+        This function enables switching to the previous camera topic in the available topics list.
         
         Returns:
             - bool: True if switch was successful, False otherwise.
@@ -328,7 +326,7 @@ class CameraComponent:
     
     def switch_to_drone_camera(self, drone_id: int, camera_type: str = "front") -> bool:
         """
-        Switch to a specific drone's camera.
+        This function enables switching to a specific drone's camera.
 
         Args:
             - drone_id (int): Drone number (1, 2, 3, etc.)
@@ -349,14 +347,15 @@ class CameraComponent:
 
     def cycle_drone_camera(self, current_drone_index: int, num_drones: int, direction: int):
         """
-        Cycle through drone front cameras without returning/updating drone selection.
+        This function enables cycling through drone front cameras without returning/updating drone selection.
         
-        Used with rs1_teensyjoy controller switch camera buttons.
+        It is used with rs1_teensyjoy controller switch camera buttons.
 
         Args:
             - current_drone_index (int): Current drone index (0-based, -1 if none selected)
             - num_drones (int): Total number of drones
             - direction (int): 1 for next, -1 for previous
+    
         """
         drone_id = current_drone_index
         
@@ -376,7 +375,7 @@ class CameraComponent:
     
     def get_current_topic(self) -> Optional[str]:
         """
-        Gets the name of the currently displayed camera topic if any is presently selected.
+        This function gets the name of the currently displayed camera topic if any is presently selected.
 
         Returns:
             - str or None: Name of the current camera topic, or None if no topic is selected.
@@ -386,8 +385,7 @@ class CameraComponent:
     
     def _cv2_to_pygame_surface(self, cv_image):
         """
-        Converts cv image (BGR numpy array) to Pygame surface.
-
+        This function converts cv image (BGR numpy array) to Pygame surface.
         The converted image is resized to then fit the display area.
 
         Args:
@@ -395,6 +393,7 @@ class CameraComponent:
 
         Returns:
             - pygame.surfarray.make_surface(rgb_image): The converted cv image into a pygame surface to be displayed 
+
         """
 
         # Convert BGR to RGB (OpenCV uses BGR)
@@ -412,7 +411,7 @@ class CameraComponent:
     
     def update(self):
         """
-        Updates the camera feed from the RosHandler, using cv2, the camera image is stored which is then converted to
+        This function updates the camera feed from the RosHandler, using cv2, the camera image is stored which is then converted to
         a pygame surface using _cv2_to_pygame_surface.
 
         """
@@ -428,7 +427,7 @@ class CameraComponent:
     
     def draw(self, screen):
         """
-        Draws the camera feed onto the given Pygame screen surface within the defined display rectangle
+        This function draws the camera feed onto the given Pygame screen surface within the defined display rectangle
         
         """
 
@@ -457,7 +456,7 @@ class CameraComponent:
     # Handle keyboard input for camera switching
     def handle_keypress(self, key):
         """
-        Handle keypress events for camera switching. 
+        This function handles keypress events for camera switching. 
         When the 'C' key is pressed, the camera topic switches to the next available camera topic if any.
         
         """
@@ -467,13 +466,11 @@ class CameraComponent:
     
     # Get status information for display
     def get_status_info(self) -> str:
-
         """
-        Outputs the display status info, whether ROS2 is available, if there are camera topics.
-        Also checks the camera topic status, i.e. LIVE if topic is active, or STALE if inactive.
+        This function outputs the display status info, whether ROS2 is available, if there are camera topics.
+        It also checks the camera topic status, i.e. LIVE if topic is active, or STALE if inactive.
 
         Returns:
-
             - str: Display Status Message depending on status check. 
 
         """
@@ -493,7 +490,6 @@ class CameraComponent:
     
     # Clean up camera component
     def cleanup(self):
-
         """
         Resource cleanup through unsubscribing from all subscribed camera topics
         

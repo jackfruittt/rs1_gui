@@ -1,7 +1,23 @@
 #!/usr/bin/env python3
 """
 RS1 Drone Swarm Control GUI - Main UI File (Refactored)
-This is the main file that integrates all components together.
+____________________________________________________________
+
+This is the main file provides a user interface for the RS1 drone swarm control system.
+It integrates components of pygame and ros2 together while managing the application's state.
+
+The GUI provides the user with real-time monitoring and control of drones in the swarm.
+These include key features such as:
+    - Live camera feeds from drones,
+    - Map visualisation with drone position and incident markers,
+    - Incident detection panel to view reported incidents,  
+    - Telemetry data display for individual drones,
+    - Controller integration for manual drone piloting
+
+Refer to project README for package installation, setup instructions, arcitecture overview, and usage guidelines.
+____________________________________________________________
+
+
 """
 
 import os
@@ -34,6 +50,7 @@ class RS1GUI:
     """Main GUI application class""" 
     
     def __init__(self):
+        """Initialise the GUI application"""
         pygame.init()
         self.screen = pygame.display.set_mode((1900, 860))
         pygame.display.set_caption("RS1 GUI")
@@ -80,9 +97,9 @@ class RS1GUI:
             feather_top=False, feather_right=True, feather_bottom=True
         )
         
-        # Initialize centralized ROS handler
+        # Initialise centralized ROS handler
         self.ros_handler = RosHandler('rs1_gui_main')
-        # Initialize camera component as None initially
+        # Initialise camera component as None initially
         self.camera_component = None
 
         # Initialise panels
@@ -120,13 +137,26 @@ class RS1GUI:
         self.left_fadeIn = True
 
     def apply_odometry_to_robot(self, robot: dict, odom: dict) -> None:
-            x, y, z = odom["position"]
-            yaw_deg = (math.degrees(odom["rpy"][2]) + 360.0) % 360.0
-            robot["gps"] = f"{x:.1f}, {y:.1f}"
-            robot["altitude"] = f"{z:.1f}m"
-            robot["yaw"] = round(yaw_deg, 1)
+        """
+        Apply odometry data to the given robot dictionary.
+        
+        Args:
+            - robot (dict): The robot data dictionary to update.
+            - odom (dict): The odometry data containing position and orientation.
+        """
+        x, y, z = odom["position"]
+        yaw_deg = (math.degrees(odom["rpy"][2]) + 360.0) % 360.0
+        robot["gps"] = f"{x:.1f}, {y:.1f}"
+        robot["altitude"] = f"{z:.1f}m"
+        robot["yaw"] = round(yaw_deg, 1)
 
     def _update_drones_from_odometry(self):
+        """
+        Update the drones list with the latest odometry data from ROS2.
+        This function fetches odometry information for each drone and applies it
+        to the corresponding robot dictionary in the drones list.
+
+        """
         for i, robot in enumerate(self.drones):
             topic = f"/rs1_drone_{i+1}/odom"
             info = self.ros_handler.get_latest_odometry(topic)
@@ -134,6 +164,13 @@ class RS1GUI:
                 self.apply_odometry_to_robot(robot, info)
 
     def _sync_incidents_from_ros(self):
+        """
+        Sync incidents from ROS2 topics into the local incidents list.
+        This function fetches the latest incident for each available incident topic
+        and updates the local incidents list accordingly, avoiding duplicates and
+        respecting locally cleared incidents.
+
+        """
         # Ask the handler which incident topics exist
         topics = getattr(self, "incident_topics", None) or \
                 (self.ros_handler.get_available_incident_topics() if self.ros_available else [])
@@ -171,7 +208,7 @@ class RS1GUI:
             self._incident_cleared.difference_update(dropped)
     
     def _load_fonts(self):
-        """Load all fonts"""
+        """This function loads all required fonts for the GUI"""
         try:
             fonts = {
                 'font': pygame.font.Font("media/fonts/TurretRoad-Bold.otf", 32),
@@ -198,7 +235,19 @@ class RS1GUI:
         return fonts
     
     def generate_drone(self):
-        """Generate a drone odom simuation purposes"""
+        """
+        This function generates a drone odom simuation purposes incase ROS2 isnt available after spawn prompt.
+
+        Returns:
+            - dict: A dictionary representing the drone with keys:
+                - "battery": str - Battery percentage
+                - "gps": str - GPS coordinates as "x, y"
+                - "altitude": str - Altitude in meters
+                - "state": str - Current state of the drone
+                - "setPose": str - Current set pose
+                - "nearPose": str - Nearest known pose  
+
+        """
         states = ["Scouting", "Idle", "Piloting", "Responding", "Offline"]
         knownPoses = ["Home", "Parking", "Shed", "Gate", "Table", "-"]
         state = random.choice(states)
@@ -222,7 +271,18 @@ class RS1GUI:
         return drone
     
     def generate_random_incident(self):
-        """Generate a random incident for simulation purposes"""
+        """
+        This function generate a random incident for simulation purposes incase ROS2 isnt available after spawn prompt.
+
+        Returns:
+            - dict: A dictionary representing the incident with keys:
+                - "title": str - The title of the incident
+                - "time": str - The time the incident was reported
+                - "severity": int - The severity level of the incident
+                - "drone": int - The ID of the drone that reported the incident
+                - "drone_coords": tuple - The GPS coordinates of the reporting drone
+        
+        """
         titles = ["Fire", "Stranded Person", "Debris", "Other"]
         title = random.choice(titles)
         severity = random.randint(1, 3)
@@ -240,7 +300,17 @@ class RS1GUI:
         return incident
     
     def draw_base_ui(self):
-        """Original draw_base_ui function with ROS2 camera integration"""
+        """
+        Original draw_base_ui function with ROS2 camera integration
+        
+        This function draws the main UI components on the screen.
+        It displays the map, drones list, incidents panel by default.
+        It also updates and displays the camera feed if available.
+        
+        It will initially sync drones, incidents, topic from ROS2 topics.
+        Then attempt to display the relevant panels based on user selection/interaction.
+
+        """
         self.screen.fill(DARK_GRAY)
 
         # Update and draw camera feed if available
@@ -310,7 +380,33 @@ class RS1GUI:
         self.screen.blit(controls_text, (1250, 790))
     
     def handle_events(self):
-        """Handle all input events"""
+        """
+        This function handles all user input events such as keyboard and mouse events.
+        
+        It processes events like window close, keyboard shortcuts, mouse clicks on various UI components.
+        Depending on the event, it updates the application state accordingly.
+
+        Keyboard Shortcuts:
+            - ESC: Exit the application
+            - 1-6: Select corresponding drone or switch camera view if Shift is held
+            - Shift + Number: Switch camera to that drone
+            - Number keys (1-6): Select drone in the UI
+            - C : Switch camera view (when camera component is available)
+
+        Mouse Clicks:
+        The mouse click handling is context-sensitive based on current panel state.
+            - Click on the buttons/icons in the map panel to select incidents
+            - Click on incident cards in the incidents panel to view details
+            - Click on drone card to open drone control panel
+        
+        Notes:
+        When the simulation is not ready, only the spawn panel processes keyboard events.
+        Controller connection/disconnection via ROS2 through the RosHandler interface is handled in the drone control panel.
+        
+        EDIT THIS DEPENDING ON CHANGES:
+        When a drone is selected, it can be controlled manually (PILOT) or set back to auto-pilot (SCOUT) via a service call.
+            
+        """
         for event in pygame.event.get():
 
             # Window close
@@ -410,7 +506,7 @@ class RS1GUI:
                                 
                                 
 
-                    # drone card clicks -> optional camera jump
+                    # Handle camera transition when drone card is clicked
                     for rect, idx in self.drones_panel.get_card_rects():
                         if rect.collidepoint((mx, my)):
                             print(f"drone card clicked: #{idx+1}")
@@ -418,7 +514,7 @@ class RS1GUI:
                             # Edited to publish current drone id to ROS handler
                             if self.ros_available:
                                 self.ros_handler.publish_current_drone_id(idx + 1)
-                            if self.camera_component:  # ✅ guard
+                            if self.camera_component:  # guard
                                 self.camera_component.switch_to_drone_camera(idx + 1, "front")
                             break
                 else:
@@ -449,6 +545,14 @@ class RS1GUI:
 
 
     def run(self):
+        """
+        Main application loop
+        This function runs the main loop of the GUI application.
+        It handles events, updates the UI, and manages the application state at each iteration.
+
+        It exits when the self.running flag is set to False, either by user action or programmatically.
+
+        """
         print("Starting RS1 Drone Control GUI...")
         while self.running:
             self.handle_events()
@@ -464,6 +568,8 @@ class RS1GUI:
         self.cleanup()
 
     def cleanup(self):
+        """Cleanup resources on exit"""
+
         print("Starting GUI cleanup...")
         try:
             self.ros_handler.cleanup()
@@ -481,19 +587,35 @@ class RS1GUI:
     # Looked at how other topics were being subscribed to and handled in
     #  ui.py, ros_handler.py and spawn_prompt.py
     def update_controller_buttons(self):
+        """ 
+        This function checks for button presses from the teensyjoy controller via ROS2 topics.
+        
+        It detects rising edges of button presses to trigger actions such as:
+            - Cycle camera views (previous/next)
+            - Switch to the next drone
+        
+        The function maintains the last known button states to implement debouncing.
+
+        Buttons Mapping (Left Hand Side of Controller, bottom button is not used - Button 6):
+            - Button 5: Cycle camera to previous view
+            - Button 7: Cycle camera to next view
+            - Button 8: Switch to the next drone in the list
+
+        """
+
         if not self.ros_available or not self.controller_connected:
             return
         # Technically only "one" button topic (string type topic)
-        butt_topics = self.ros_handler.get_available_button_topics()
+        button_topics = self.ros_handler.get_available_button_topics()
         new_list = []
 
         # Loop redundant i think cause only one button topic anyways
-        for topic in butt_topics:
-            butt = self.ros_handler.get_latest_button(topic)
+        for topic in button_topics:
+            button = self.ros_handler.get_latest_button(topic)
 
             # Check if there is data
-            if butt:
-                data = butt["data"]
+            if button:
+                data = button["data"]
                 button_states = [int(x.strip()) for x in data.split(',')]
 
                 # Compare with previous states for debounce
@@ -525,18 +647,6 @@ class RS1GUI:
                             
                             # +1 extra cause camera indexing 
                             self.camera_component.switch_to_drone_camera(self.selected_drone + 1, "front")
-         
-                        # Doesnt Work atm - need to keep track of what camera view is currently active
-                        # So it switches views based on drone selected via teensyjoy
-                        # elif i == 8:
-                        #     # Drones is index 1 
-                        #     if self.last_drone_id + 1 < len(self.drones)+1:
-                        #         self.last_drone_id += 1
-                        #     else:
-                        #         self.last_drone_id = 1
-                        #     self.camera_component.switch_to_drone_camera(self.last_drone_id, "front")
-
-                        # Can add other remote functionality here i.e. waypoint save, +/- vel, drone change notification
 
                 # Save states for next cycle
                 self.last_button_states[topic] = button_states
@@ -550,6 +660,11 @@ class RS1GUI:
 
 
     def _sync_drones_from_odom(self):
+        """
+        Sync the drones list with the latest odometry data from ROS2 topics.
+        This function fetches odometry information for each available odometry topic and updates the local drones list accordingly.
+        
+        """
         if not self.ros_available:
             return
 
@@ -591,7 +706,10 @@ class RS1GUI:
         self.drones = new_list
 
 def main():
-    """Main entry point"""
+    """
+    Main entry point for the RS1 GUI application
+    This function initialises and runs the RS1GUI application.
+    """
     try:
         app = RS1GUI()
         app.run()

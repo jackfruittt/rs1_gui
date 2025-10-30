@@ -7,7 +7,7 @@ def feather_image(surface, feather_size_x, feather_size_y,
                   feather_top=False, feather_right=True,
                   feather_bottom=True, feather_left=False):
     """
-    Feathers selected edges of a Pygame surface, if global `pretty` is True.
+    This function feathers selected edges of a Pygame surface, if global `pretty` is True.
 
     Args:
         - surface (pygame.Surface): The image surface to feather.
@@ -20,6 +20,7 @@ def feather_image(surface, feather_size_x, feather_size_y,
 
     Returns:
         - pygame.Surface: A new surface with the feathered effect (or original if pretty is False).
+        
     """
     if not pretty:
         return surface
@@ -65,7 +66,7 @@ def feather_image(surface, feather_size_x, feather_size_y,
 
 def mapRange(value, inMin, inMax, outMin, outMax):
     """
-    Map a value from one range to another
+    This function maps a value from one range to another
 
     Args:
         - value (float): The input value to map.
@@ -83,9 +84,10 @@ def mapRange(value, inMin, inMax, outMin, outMax):
 
 def draw_left_fade(screen):
     """
-    Draw left fade overlay
+    This function draws the left fade overlay
     Args:
         - screen (pygame.Surface): The main screen surface to draw the fade on.
+
     """
     l_fade_surface = pygame.Surface((670, 395), pygame.SRCALPHA)
     l_fade_surface.fill((225, 255, 255, 108))  # Transparent background

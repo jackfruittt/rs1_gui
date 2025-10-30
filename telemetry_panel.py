@@ -10,7 +10,7 @@ class TelemetryPanel:
         """
         Original draw_telemetry_panel function
         
-        Draws the telemetry panel for the selected robot onto the given Pygame screen surface.
+        This function draws the telemetry panel for the selected robot onto the given Pygame screen surface.
 
         Args:
             - robots (list): List of robot telemetry data dictionaries.

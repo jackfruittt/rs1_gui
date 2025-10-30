@@ -4,7 +4,21 @@ from pathlib import Path
 from camera_ros import CameraComponent
 
 class SpawnPromptPanel:
+    """
+    Spawn Prompt Class, this brings up the spawn window to enable the User to input their desired drone count.
+    When drone count entered, it runs the comp_drone_spawner.sh to start gazebo simulator and spawn drones in the environment.
+
+    """
     def __init__(self, app, fonts, rosAvailable):
+        """
+        Initialises the spawn prompt panel variables.
+        
+        Args:
+            - app: The main application instance.
+            - fonts: Dictionary of Pygame font objects.
+            - rosAvailable: Boolean indicating if ROS2 is available on the system.
+
+        """
         self.app = app
         self.fonts = fonts
         self.button_rects = []
@@ -21,7 +35,16 @@ class SpawnPromptPanel:
         self.requestCount = 1
 
     def draw_prompt(self, screen):
-        """Draw the full-screen spawn prompt interface"""
+        """
+        Draw the full-screen spawn prompt interface.
+        Here the user can input the number of drones to spawn (1-6) and submit the request.
+
+        Once the request is submitted, a loading animation is shown until the simulator is ready.
+        
+        Args:
+            - screen: The Pygame surface to draw on.
+
+        """
         self.button_rects = []
 
         panel = pygame.Surface((1900, 860))
@@ -82,7 +105,16 @@ class SpawnPromptPanel:
         screen.blit(panel, (0, 0))
 
     def handle_key(self, event):
-        """Restrict input to digits only"""
+        """
+        Restrict input to digits only
+        
+        This function handles key events for the spawn prompt. It allows only digit inputs (0-9) and handles backspace and enter keys.
+        On enter, if the input is valid, it starts the drone spawning process.
+
+        Args:
+            - event: The Pygame event to handle.
+
+        """
         if self.runningScript is not True:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_BACKSPACE:
@@ -104,7 +136,20 @@ class SpawnPromptPanel:
         return None
 
     def runScript(self, numDrones):
-        """Run the script to start the simulator and spawn drones"""
+        """
+        Run the script to start the simulator and spawn drones
+
+        This function executes the drone spawner script comp_drone_spawner.sh with the specified number of drones requested by the user.
+        It sets up the necessary environment variables for ROS2 and starts a thread to wait for the simulator to be ready.
+
+        Args:
+            - numDrones: The number of drones to spawn as a string.
+        
+        Notes:
+            - The function handles environment setup for Qt/Wayland compatibility.
+            - It ensures both GUI and spawner run on the same ROS domain.
+
+        """
         import os, subprocess, threading
 
         count = int(numDrones)
@@ -140,12 +185,24 @@ class SpawnPromptPanel:
         self.waitSimThread.start()
     
     def killSim(self):
-        """Kill the simulator processes"""
+        """
+        Kill the simulator processes
+
+        This function terminates all relevant simulator processes to ensure a clean shutdown.
+
+        """
         commands = ['pkill -f "ign gazebo"', 'pkill -f "parameter_bridge"', 'pkill -f "robot_state_publisher"', 'pkill -f "multi_drone_composition_controller"', 'pkill -f "controller_node"']
         for command in commands:
             subprocess.Popen(command, shell=True)
     
     def simulateEnvSetup(self):
+        """
+        Simulate environment setup without ROS2
+        
+        This function simulates the environment setup by generating fake drone and incident data.
+        It is used when ROS2 is not available, allowing the application to function in a simulated mode.
+
+        """
         time.sleep(5)
         for _ in range(self.requestCount):
             self.app.drones.append(self.app.generate_drone())
@@ -156,6 +213,15 @@ class SpawnPromptPanel:
 
 
     def waitForSim(self):
+        """
+        This function waits for the simulator to be ready by checking for the expected number of drones.
+        It periodically checks the available drone topics and initialises the camera component and subscriptions once all drones are detected.
+
+        If the expected number of drones is not detected within a timeout period, it falls back to generating fake data.
+
+        The timeout is increased by 10 to wait for the cameras to appear after starting ROS2, enabling the GUI to subscribe to them.
+
+        """
         print("Waiting for Sim...")
         start_time = time.time()
         max_wait = 60  # 60s timeout; adjust based on spawn time (Gazebo can take 30s+ for 10 drones)
@@ -257,6 +323,14 @@ class SpawnPromptPanel:
         print("Sim ready!")
 
     def get_button_rects(self):
+        """
+        Get the button rectangles for interaction handling.
+        This function returns the list of button rectangles for the spawn prompt.
+        
+        Returns:
+            - list: List of tuples containing button rectangles and their identifiers.
+
+        """
         return self.button_rects
     
 

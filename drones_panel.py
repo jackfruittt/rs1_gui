@@ -2,8 +2,8 @@ import pygame
 from constants import state_colors, WHITE, BLACK, LIGHT_GRAY
 
 class dronesPanel:
+    """ This class handles the Drones Panel UI and interactions. """
     def __init__(self, app, fonts):
-
         """
         Initializes the drones panel.
         
@@ -19,7 +19,7 @@ class dronesPanel:
     
     def render_drones_list(self, drones, screen):
         """
-        Render the list of drone cards onto the given Pygame screen surface based on the drones data from app.
+        This function renders the list of drone cards onto the given Pygame screen surface based on the drones data from app.
         
         Args:
             - drones (list): List of drones present in the system.
@@ -93,8 +93,10 @@ class dronesPanel:
     
     def get_card_rects(self):
         """
-        Get clickable card rectangles from the drone list
+        This function gets clickable card rectangles from the drone list
+
         Returns:
             - list: List of tuples containing card rectangles and their corresponding drone indices.
+            
         """
         return self.drone_card_rects

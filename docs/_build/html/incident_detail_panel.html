@@ -102,8 +102,8 @@
 <dt class="sig sig-object py" id="incident_detail_panel.IncidentDetailPanel">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">incident_detail_panel.</span></span><span class="sig-name descname"><span class="pre">IncidentDetailPanel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fonts</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/incident_detail_panel.html#IncidentDetailPanel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#incident_detail_panel.IncidentDetailPanel" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Detail view for a single incident. Intended to replace the incidents list panel
-when the user clicks on an incident card.</p>
+<p>This class represents the Incident Detail view for a single incident.
+Intended to replace the incidents list panel when the user clicks on an incident card.</p>
 <p>Style and sizing follow the same conventions as IncidentsPanel.</p>
 <dl class="simple">
 <dt>Exposes click handling for three controls:</dt><dd><ul class="simple">
@@ -116,9 +116,9 @@ when the user clicks on an incident card.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="incident_detail_panel.IncidentDetailPanel.draw_incident_detail">
 <span class="sig-name descname"><span class="pre">draw_incident_detail</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">incident</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">screen</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/incident_detail_panel.html#IncidentDetailPanel.draw_incident_detail"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#incident_detail_panel.IncidentDetailPanel.draw_incident_detail" title="Link to this definition"></a></dt>
-<dd><p>Render the incident detail panel.</p>
-<p>The User is notified in the main screen of the GUI of the detected incident details if any.</p>
-<p>The included details of the incident can be seen below</p>
+<dd><p>This function renders the incident detail panel.</p>
+<p>The User is notified in the main screen of the GUI of the detected incident details if any.
+The included details of the incident can be seen below</p>
 <p>NOTE: Update this param incident if the csv structure changes</p>
 <dl>
 <dt>Args:</dt><dd><ul class="simple">
@@ -133,8 +133,7 @@ when the user clicks on an incident card.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="incident_detail_panel.IncidentDetailPanel.handle_click">
 <span class="sig-name descname"><span class="pre">handle_click</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pos</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/incident_detail_panel.html#IncidentDetailPanel.handle_click"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#incident_detail_panel.IncidentDetailPanel.handle_click" title="Link to this definition"></a></dt>
-<dd><p>Translate a mouse position (screen coords) into a semantic action.
-Returns one of: ‘close’, ‘respond’, ‘clear’, or None if no control was hit.</p>
+<dd><p>This function handles click detection for the incident detail panel controls.</p>
 <dl class="simple">
 <dt>Args:</dt><dd><ul class="simple">
 <li><p>pos (tuple): (x, y) mouse position in screen coordinates.</p></li>
@@ -152,8 +151,7 @@ Returns one of: ‘close’, ‘respond’, ‘clear’, or None if no control w
 <dl class="py function">
 <dt class="sig sig-object py" id="incident_detail_panel.incidents_severity_index">
 <span class="sig-prename descclassname"><span class="pre">incident_detail_panel.</span></span><span class="sig-name descname"><span class="pre">incidents_severity_index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">incident</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/incident_detail_panel.html#incidents_severity_index"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#incident_detail_panel.incidents_severity_index" title="Link to this definition"></a></dt>
-<dd><p>Helper to convert incident[‘severity’] to index for severity_colors,
-clamping to valid range (0-based).</p>
+<dd><p>This is a helper function to convert incident[‘severity’] to index for severity_colors, clamping to valid range (0-based).</p>
 <dl class="simple">
 <dt>Args:</dt><dd><ul class="simple">
 <li><p>incident (dict): Incident data dictionary.</p></li>
