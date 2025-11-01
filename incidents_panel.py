@@ -14,6 +14,8 @@ class IncidentsPanel:
         self.incident_scroll_down_rect = None
         self.scrolling = False
         self.scroll_direction = 1
+
+        self.featheredBottom = None
     
     def draw_incidents_panel(self, incidents, screen):
         """
@@ -53,16 +55,17 @@ class IncidentsPanel:
 
         # Top bar
         pygame.draw.rect(incidents_panel, GRAY, (0, 0, PANEL_WIDTH, 77))
-        pygame.draw.rect(incidents_panel, DARK_GRAY, (0, 0, PANEL_WIDTH, 20))
+        pygame.draw.rect(incidents_panel, DARK_GREEN, (0, 0, PANEL_WIDTH, 20))
 
         incident_text = self.fonts['font'].render(f"Incidents ({len(incidents)})", True, WHITE)
         incidents_panel.blit(incident_text, (20, 30))
 
         # Bottom feathered fade
         bottom_rect = pygame.Surface((PANEL_WIDTH, 30), pygame.SRCALPHA)
-        bottom_rect.fill(DARK_GRAY)
-        bottom_feathered = feather_image(bottom_rect, 25, 25, feather_top=True, feather_right=False, feather_bottom=False, feather_left=False)
-        incidents_panel.blit(bottom_feathered, (0, PANEL_HEIGHT-30))
+        bottom_rect.fill(DARK_GREEN)
+        if self.featheredBottom is None:
+            self.featheredBottom = feather_image(bottom_rect, 25, 25, feather_top=True, feather_right=False, feather_bottom=False, feather_left=False)
+        incidents_panel.blit(self.featheredBottom, (0, PANEL_HEIGHT-30))
 
         # Scroll buttons
         scroll_up_rel = pygame.Rect(PANEL_WIDTH - 50, 80, 40, 100)
@@ -98,6 +101,21 @@ class IncidentsPanel:
         return self.incident_card_rects
     
     def selectIncidentButtons(self, ui, gmx, gmy):
+        """
+        Original selectIncidentButtons function - Handle click interactions for incident cards and scroll buttons.
+        Detects user clicks on incident cards within the incidents panel, updates the selected incident,
+        and also handles clicks on scroll buttons for navigating the panel.
+        Args:
+            - ui (object): Reference to the main UI or application controller.
+            - gmx (int | float): Global mouse X position (screen coordinates).
+            - gmy (int | float): Global mouse Y position (screen coordinates).
+        Side Effects:
+            - Updates ui.selected_incident when an incident card is clicked.
+            - Invokes scrolling behavior via ui.incidents_panel.handle_scroll_click().
+        Returns:
+            - None
+        """
+
         # incident cards
         for rect, idx in ui.incidents_panel.get_card_rects():
             if rect.collidepoint((gmx, gmy)):

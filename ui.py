@@ -166,7 +166,22 @@ class RS1GUI:
                 self.apply_odometry_to_robot(robot, info)
 
     def _sync_incidents_from_ros(self):
-        # Ask the handler which incident topics exist
+        """
+        Original _sync_incidents_from_ros function - Merge latest ROS incidents into the UI model.
+        Queries available incident topics, fetches the most recent incident per topic, and updates
+        the local incidents list while respecting locally cleared items and maintaining a key→index map.
+        Also trims the list to a max size to keep updates efficient.
+        Args:
+            - None
+        Returns:
+            - None
+        Side Effects:
+            - Reads topics from self.incident_topics (or discovers them via ros_handler if available).
+            - Updates/extends self.incidents with newest incident data.
+            - Maintains self._incident_seen {(drone,id) → index} and honors self._incident_cleared.
+            - Trims incident history to MAX_INC and rebuilds index bookkeeping after trimming.
+        """
+
         topics = getattr(self, "incident_topics", None) or \
                 (self.ros_handler.get_available_incident_topics() if self.ros_available else [])
 
@@ -337,22 +352,6 @@ class RS1GUI:
         elif self.selected_incident >= 0:
             self.incident_detail_panel.draw_incident_detail(self.incidents[self.selected_incident], self.screen)
 
-        """
-        # Camera status info (in bottom right)
-        if self.camera_component:
-            status_text = self.camera_component.get_status_info()
-
-        debug_text = self.fonts['small_font'].render(
-            f"{status_text} | RS1 {int(self.clock.get_fps())}", True, WHITE
-        )
-        debug_text = self.fonts['small_font'].render(
-            f"{status_text} | RS1 {int(self.clock.get_fps())}", 
-            True, WHITE
-        )
-
-        self.screen.blit(debug_text, (700, 825))
-        """
-
         frame_rate = self.fonts['small_font'].render(
             f"{int(self.clock.get_fps())}", True, WHITE
         )
@@ -466,6 +465,23 @@ class RS1GUI:
     # Looked at how other topics were being subscribed to and handled in
     #  ui.py, ros_handler.py and spawn_prompt.py
     def update_controller_buttons(self):
+        """
+        Update_controller_buttons function - Poll and process ROS2 button input states.
+        Retrieves the latest comma-separated button states from available button topics, detects
+        rising edges (0→1) for each button, and triggers associated UI actions (e.g., camera topic
+        switching). Debounces by comparing against previously seen states per topic.
+        Args:
+            - None
+        Returns:
+            - None
+        Side Effects:
+            - Reads available button topics via ros_handler.
+            - Updates self.last_button_states with the latest per-topic button arrays.
+            - Invokes self.camera_component.switch_to_previous_topic() when button index 5 rises.
+            - Invokes self.camera_component.switch_to_next_topic() when button index 7 rises.
+            - Builds a transient list of button state summaries (new_list) for potential use.
+        """
+
         if not self.ros_available:
             return
         # Technically only "one" button topic (string type topic)
@@ -519,6 +535,21 @@ class RS1GUI:
 
 
     def _sync_drones_from_odom(self):
+        """
+        Original _sync_drones_from_odom function - Refresh drone list from ROS2 odometry topics.
+        Discovers available odometry topics, reads latest poses, computes yaw from quaternion,
+        and rebuilds the UI's drone list while preserving per-namespace fields (e.g., waypoints,
+        battery). Seeds waypoints from defaults if none exist for a discovered drone.
+        Args:
+            - None
+        Returns:
+            - None
+        Side Effects:
+            - Reads topics and odometry messages via self.ros_handler.
+            - Updates self.drones with a freshly built list of drone dicts:
+              {'ns','gps','altitude','state','setPose','nearPose','yaw','battery','waypoints'}.
+        """
+
         if not self.ros_available:
             return
 
@@ -546,7 +577,7 @@ class RS1GUI:
                 1.0 - 2.0 * (q[1] * q[1] + q[2] * q[2])
             )
 
-            # ✅ preserve existing waypoints (or seed from defaults if none exist)
+            # preserve existing waypoints (or seed from defaults if none exist)
             prev = prev_by_ns.get(ns)
             waypoints = (prev.get('waypoints') if prev else [])
             if not waypoints:
@@ -568,7 +599,7 @@ class RS1GUI:
                 'nearPose': '-',
                 'yaw': (math.degrees(yaw) + 360.0) % 360.0,
                 'battery': (prev.get('battery') if prev else 100),
-                'waypoints': waypoints,  # ✅ keep/seed waypoints
+                'waypoints': waypoints,  # keep/seed waypoints
             })
 
         self.drones = new_list

@@ -39,13 +39,34 @@ class dronesPanel:
         self.min_y = 0
 
     def _content_height(self, n):
-        """Exact drawn height including top/bottom padding and gaps between cards."""
+        """
+        Original _content_height function - Calculate total content height of the scrollable panel.
+        Computes the overall vertical height required to display all cards, including padding
+        and margins between them.
+        Args:
+            - n (int): Number of cards or elements to be displayed.
+        Returns:
+            - (int): The total calculated content height in pixels.
+        """
+
         if n <= 0:
             return 0
         return (2 * self.inner_pad_x) + (n * self.card_height) + ((n - 1) * self.margin)
 
     def _clamp_scroll(self, n):
-        """Clamp so first card can fully reach the top pad and last card can fully reach the bottom pad."""
+        """
+        Original _clamp_scroll function - Constrain vertical scroll position within limits.
+        Calculates allowable scroll range based on total content height and panel height,
+        preventing overscroll when content is shorter than the panel.
+        Args:
+            - n (int): Number of items or elements used to determine total content height.
+        Side Effects:
+            - Updates self.min_y and self.max_y scroll boundaries.
+            - Adjusts self.scroll_y to stay within valid range.
+        Returns:
+            - None
+        """
+
         content_h = self._content_height(n)
         self.max_y = 0  # fully at top (first card’s top == top pad)
         # when content is shorter than panel, don't allow negative (no scrolling needed)
@@ -156,7 +177,19 @@ class dronesPanel:
         screen.blit(panel_surface, (self.PANEL_X, self.PANEL_Y))
 
     def handle_scroll_click(self, pos):
-        """Begin scrolling if user pressed inside an up/down area (mirrors incidents panel)."""
+        """
+        Original handle_scroll_click function - Detect and handle scroll button clicks.
+        Checks whether the user clicked on the scroll-up or scroll-down buttons and
+        sets scrolling state and direction accordingly.
+        Args:
+            - pos (tuple[int, int]): The (x, y) position of the mouse click in screen coordinates.
+        Returns:
+            - (bool): True if a scroll button was clicked and handled, False otherwise.
+        Side Effects:
+            - Updates self.scrolling (bool) to indicate active scrolling.
+            - Updates self.scroll_direction (int) to 1 for up or -1 for down.
+        """
+
         if self.scroll_up_abs and self.scroll_up_abs.collidepoint(pos):
             self.scrolling = True
             self.scroll_direction = 1
@@ -176,7 +209,22 @@ class dronesPanel:
         return self.drone_card_rects
 
     def buttonLogic(self, ui, mx, my):
-        """Click handling: first try scroll bars, else card selection."""
+        """
+        Original buttonLogic function - Handle click interactions for drone cards and scroll buttons.
+        Processes mouse click events within the drone selection panel. If a scroll button is clicked,
+        initiates scrolling; otherwise, detects drone card clicks and updates the active drone context.
+        Args:
+            - ui (object): Reference to the main UI or application controller.
+            - mx (int | float): Mouse X position in screen coordinates.
+            - my (int | float): Mouse Y position in screen coordinates.
+        Side Effects:
+            - May change ui.selected_drone and ui.drone_control_panel.panelState.
+            - Copies current waypoints to ui.map_panel.customWaypoints.
+            - Switches camera feed in ui.camera_component if available.
+        Returns:
+            - None
+        """
+
         if self.handle_scroll_click((mx, my)):
             return
 
@@ -186,6 +234,6 @@ class dronesPanel:
                 ui.selected_drone = idx
                 ui.drone_control_panel.panelState = -1
                 ui.map_panel.customWaypoints = ui.drones[ui.selected_drone]["waypoints"].copy()
-                if ui.camera_component:  # ✅ guard
+                if ui.camera_component:  # guard
                     ui.camera_component.switch_to_drone_camera(idx + 1, "front")
                 break

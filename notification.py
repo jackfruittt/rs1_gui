@@ -5,6 +5,24 @@ class NotificationUI:
     def __init__(self, fonts, pos=(760, 740), size=(400, 100),
                  image_path="media/images/drone_cp.png", image_size=(80, 80),
                  bar_color=BLUE):
+        """
+        Original __init__ function - Initialize NotificationUI with visuals, layout, and state.
+        Sets up fonts, position/size, loads and scales the preview image, defines colors and layout
+        metrics, and initializes dynamic text/state and small cached text surfaces.
+        Args:
+            - fonts (dict): Mapping of font names to pygame.Font objects used for notification text.
+            - pos (tuple[int, int], optional): Top-left screen position of the notification panel. Defaults to (760, 740).
+            - size (tuple[int, int], optional): Width and height of the notification panel. Defaults to (400, 100).
+            - image_path (str, optional): Path to the preview image displayed in the panel. Defaults to "media/images/drone_cp.png".
+            - image_size (tuple[int, int] | None, optional): Target (w, h) for the preview image; None keeps original size. Defaults to (80, 80).
+            - bar_color (tuple[int, int, int], optional): RGB color of the progress/alert bar. Defaults to BLUE.
+        Side Effects:
+            - Loads and optionally rescales the image from disk.
+            - Initializes timing parameters for display and fade, and creates text caches.
+        Returns:
+            - None
+        """
+
         self.fonts = fonts
         self.pos = pos
         self.size = size
@@ -40,6 +58,24 @@ class NotificationUI:
 
     # --- API -----------------------------------------------------------------
     def pushNotification(self, title, details, duration=2000, fade_duration=500, bar_color=None):
+        """
+        Original pushNotification function - Trigger a new on-screen notification.
+        Updates the title, details, color, and timing parameters for a notification,
+        then regenerates the cached text surfaces for display.
+        Args:
+            - title (str): Main title text of the notification.
+            - details (str): Secondary description or message body text.
+            - duration (int, optional): Total time (ms) the notification remains visible. Defaults to 2000.
+            - fade_duration (int, optional): Time (ms) for fade-out animation after visibility period. Defaults to 500.
+            - bar_color (tuple[int, int, int] | None, optional): RGB color of the notification’s bar; keeps previous color if None.
+        Side Effects:
+            - Updates self.title, self.details, self.duration, self.fade_duration, and optionally self.bar_color.
+            - Records timestamp self._t0 for tracking visibility timing.
+            - Renders new text surfaces for title and details into self._title_surf and self._details_surf.
+        Returns:
+            - None
+        """
+
         self.title = title
         self.details = details
         self.duration = int(duration)
@@ -54,6 +90,19 @@ class NotificationUI:
 
     # --- draw ----------------------------------------------------------------
     def drawNotifications(self, screen):
+        """
+        Original drawNotifications function - Render active notification panel with progress and fade.
+        If a notification is active, builds a temporary panel surface with image, title, details,
+        and a left-to-right progress bar, applies a global fade alpha after the duration, and blits
+        the result to the provided screen surface.
+        Args:
+            - screen (pygame.Surface): The target surface to draw the notification onto.
+        Returns:
+            - None
+        Side Effects:
+            - Draws the notification UI elements onto the given screen surface.
+        """
+
         if not self.is_active():
             return
 

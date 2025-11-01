@@ -149,6 +149,21 @@ class SpawnPromptPanel:
             subprocess.Popen(command, shell=True)
     
     def simulateEnvSetup(self):
+        """
+        SimulateEnvSetup function - Initialize simulated environment for testing.
+        Generates a number of simulated drones and incidents to populate the GUI when running
+        without live ROS2 data, mimicking a real deployment environment.
+        Args:
+            - None
+        Returns:
+            - None
+        Side Effects:
+            - Populates self.app.drones with generated drone objects.
+            - Assigns default waypoints to drones if available.
+            - Populates self.app.incidents with randomly generated incidents.
+            - Sets self.app.simReady to True to indicate simulation initialization is complete.
+        """
+
         time.sleep(0.01)
         for _ in range(self.requestCount):
             self.app.drones.append(self.app.generate_drone())
@@ -162,6 +177,27 @@ class SpawnPromptPanel:
 
 
     def waitForSim(self):
+        """
+        WaitForSim function - Block until ROS/Gazebo simulation is discoverable, then initialize UI.
+        Waits for drones and related ROS2 topics to appear (with staged sleeps and a max timeout). On success,
+        creates drone entries, discovers/validates camera topics, initializes CameraComponent, and subscribes
+        to odometry/incident/button topics. On timeout or error, falls back to generating simulated drones
+        and incidents (like simulateEnvSetup). Marks the UI as ready at the end.
+        Args:
+            - None
+        Returns:
+            - None
+        Side Effects:
+            - Sleeps for staged delays (10s + 15s) before polling for topics.
+            - Repeatedly calls ros_handler.discover_topics() while polling.
+            - Populates self.app.drones with discovered (or simulated) entries.
+            - Optionally deep-copies default waypoints into each drone.
+            - Initializes self.app.camera_component and subscribes to available topics.
+            - Updates self.app.odometry_topics, self.app.incident_topics, self.app.button_topics.
+            - Sets self.app.simReady = True when initialization completes or on fallback.
+            - Prints progress and diagnostic information to the console.
+        """
+
         print("Waiting for Sim...")
         
         # Give shell script time to actually spawn the drones
