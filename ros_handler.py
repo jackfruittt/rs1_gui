@@ -644,32 +644,41 @@ if ROS2_AVAILABLE:
 
 
         def call_connect_service(self, connect: bool) -> bool:
-            if not self.teensy_connect_client.wait_for_service(timeout_sec=1.0):
+            """Call the teensy connect service."""
+            # Check if service is available
+            if not self.teensy_connect_client.wait_for_service(timeout_sec=2.0):
                 self.get_logger().warn('Teensy connect service not available')
                 return False
             
+            # Create request
             request = SetBool.Request()
             request.data = connect
             
             try:
+                # Call service asynchronously
                 future = self.teensy_connect_client.call_async(request)
-                # We're in the ROS thread, so we can wait briefly
-                rclpy.spin_until_future_complete(self, future, timeout_sec=1.0)
+                
+                # Wait for result (increase timeout if needed)
+                rclpy.spin_until_future_complete(self, future, timeout_sec=5.0)
                 
                 if future.done():
-                    response = future.result()
-                    if response.success:
-                        self.get_logger().info(f'Teensy connect service: {response.message}')
-                        return True
-                    else:
-                        self.get_logger().warn(f'Teensy connect failed: {response.message}')
+                    try:
+                        response = future.result()
+                        if response.success:
+                            self.get_logger().info(f'Teensy {"connected" if connect else "disconnected"}: {response.message}')
+                            return True
+                        else:
+                            self.get_logger().warn(f'Teensy connect failed: {response.message}')
+                            return False
+                    except Exception as e:
+                        self.get_logger().error(f'Failed to get service response: {e}')
                         return False
                 else:
-                    self.get_logger().warn('Service call timed out')
+                    self.get_logger().warn('Service call timed out after 5 seconds')
                     return False
                     
             except Exception as e:
-                self.get_logger().error(f'Service call failed: {e}')
+                self.get_logger().error(f'Service call failed: {str(e)}')
                 return False
 
         
