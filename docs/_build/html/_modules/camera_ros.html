@@ -1,0 +1,639 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>camera_ros &mdash; rs1_gui 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            rs1_gui
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">rs1_gui</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">rs1_gui</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Module code</a></li>
+      <li class="breadcrumb-item active">camera_ros</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for camera_ros</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygame</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">cv2</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ros_handler</span><span class="w"> </span><span class="kn">import</span> <span class="n">RosHandler</span>
+
+<span class="c1"># Camera component that displays ROS2 camera feeds using the centralised RosHandler</span>
+<div class="viewcode-block" id="CameraComponent">
+<a class="viewcode-back" href="../camera_ros.html#camera_ros.CameraComponent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">CameraComponent</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Interfaces with the centralised RosHandler to display ROS2 camera feeds from multiple image topics published by the drones.</span>
+<span class="sd">    Supports instant switching between camera topics using preloading or subscribe-unsubscribe methods.</span>
+
+<span class="sd">    Camera feeds is then displayed in a defined rectangle on the Pygame screen GUI.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ros_handler</span><span class="p">:</span> <span class="n">RosHandler</span><span class="p">,</span> <span class="n">display_rect</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">640</span><span class="p">,</span> <span class="mi">360</span><span class="p">),</span> <span class="n">instant_switching</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">preload_all</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes the CameraComponent.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            - ros_handler (RosHandler): Centralised ROS2 handler for topic subscriptions.</span>
+<span class="sd">            - display_rect (tuple): (x, y, width, height) rectangle on screen to display camera feed.</span>
+<span class="sd">            - instant_switching (bool): If True, use preloading for instant switching between cameras.</span>
+<span class="sd">            - preload_all (bool): If True, preload all camera topics for zero-delay switching.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">display_rect</span> <span class="o">=</span> <span class="n">display_rect</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span> <span class="o">=</span> <span class="n">ros_handler</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instant_switching</span> <span class="o">=</span> <span class="n">instant_switching</span>  <span class="c1"># If True, use preload method; if False, use subscribe-unsubscribe</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">preload_all</span> <span class="o">=</span> <span class="n">preload_all</span>  <span class="c1"># If True, preload ALL cameras for zero-delay switching</span>
+        
+        <span class="c1"># Available camera topics (fixed at startup)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">available_topics</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_topic_index</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_topic</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">subscribed_topics</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>  <span class="c1"># Topics that are currently subscribed</span>
+        
+        <span class="c1"># Preload settings (only used in instant_switching mode)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">preload_count</span> <span class="o">=</span> <span class="mi">5</span>  <span class="c1"># Keep 5 cameras preloaded for fast switching (It is beyond what we need but the code is useful for even more advanced systems so i&#39;ve set it to 5)</span>
+        
+        <span class="c1"># Placeholder image</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">placeholder_surface</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_placeholder</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_frame</span> <span class="o">=</span> <span class="kc">None</span>
+        
+        <span class="c1"># Initialise camera topics</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_initialise_topics</span><span class="p">()</span>
+        
+        <span class="c1"># Setup subscriptions based on mode</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">instant_switching</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">preload_all</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_setup_all_cameras_preload</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_setup_preload_switching</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_setup_single_subscription</span><span class="p">()</span>
+        
+        <span class="c1"># Set initial display topic</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_topics</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_topic</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_topics</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_topic_index</span> <span class="o">=</span> <span class="mi">0</span>
+    
+    <span class="c1"># Place holder when there is no camera feed</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_placeholder</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a placeholder surface to display when no camera feed is available.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            - pygame.Surface: Placeholder surface with text indicating no camera feed. In this case, it displays either &quot;ROS2 Not Available&quot; or &quot;No Camera Feed - Waiting for topics...&quot;</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="n">surface</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">Surface</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">display_rect</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="mi">4</span><span class="p">])</span>
+        <span class="n">surface</span><span class="o">.</span><span class="n">fill</span><span class="p">((</span><span class="mi">40</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">40</span><span class="p">))</span>
+        
+        <span class="c1"># Add text</span>
+        <span class="n">font</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">Font</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">36</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">ros2_available</span><span class="p">:</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;ROS2 Not Available&quot;</span>
+            <span class="n">subtext</span> <span class="o">=</span> <span class="s2">&quot;GUI in simulation mode&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;No Camera Feed&quot;</span>
+            <span class="n">subtext</span> <span class="o">=</span> <span class="s2">&quot;Waiting for topics...&quot;</span>
+        
+        <span class="n">text_surface</span> <span class="o">=</span> <span class="n">font</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">200</span><span class="p">))</span>
+        <span class="n">text_rect</span> <span class="o">=</span> <span class="n">text_surface</span><span class="o">.</span><span class="n">get_rect</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="p">(</span><span class="n">surface</span><span class="o">.</span><span class="n">get_width</span><span class="p">()</span><span class="o">//</span><span class="mi">2</span><span class="p">,</span> <span class="n">surface</span><span class="o">.</span><span class="n">get_height</span><span class="p">()</span><span class="o">//</span><span class="mi">2</span> <span class="o">-</span> <span class="mi">20</span><span class="p">))</span>
+        <span class="n">surface</span><span class="o">.</span><span class="n">blit</span><span class="p">(</span><span class="n">text_surface</span><span class="p">,</span> <span class="n">text_rect</span><span class="p">)</span>
+        
+        <span class="c1"># Subtext</span>
+        <span class="n">small_font</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">Font</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">24</span><span class="p">)</span>
+        <span class="n">subtext_surface</span> <span class="o">=</span> <span class="n">small_font</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">subtext</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="p">(</span><span class="mi">150</span><span class="p">,</span> <span class="mi">150</span><span class="p">,</span> <span class="mi">150</span><span class="p">))</span>
+        <span class="n">subtext_rect</span> <span class="o">=</span> <span class="n">subtext_surface</span><span class="o">.</span><span class="n">get_rect</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="p">(</span><span class="n">surface</span><span class="o">.</span><span class="n">get_width</span><span class="p">()</span><span class="o">//</span><span class="mi">2</span><span class="p">,</span> <span class="n">surface</span><span class="o">.</span><span class="n">get_height</span><span class="p">()</span><span class="o">//</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">20</span><span class="p">))</span>
+        <span class="n">surface</span><span class="o">.</span><span class="n">blit</span><span class="p">(</span><span class="n">subtext_surface</span><span class="p">,</span> <span class="n">subtext_rect</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">surface</span>
+    
+    <span class="c1"># Initialise a list of camera topics </span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_initialise_topics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function initialises available camera topics from RosHandler.</span>
+<span class="sd">        Populates self.available_topics with camera topics, filtering for drone-specific topics.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Wait for ROS handler to discover topics</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">available_topics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">get_available_camera_topics</span><span class="p">()</span>
+        
+        <span class="c1"># Filter for drone-specific camera topics</span>
+        <span class="n">drone_topics</span> <span class="o">=</span> <span class="p">[</span><span class="n">topic</span> <span class="k">for</span> <span class="n">topic</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_topics</span> <span class="k">if</span> <span class="s1">&#39;rs1_drone&#39;</span> <span class="ow">in</span> <span class="n">topic</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">drone_topics</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">available_topics</span> <span class="o">=</span> <span class="n">drone_topics</span>
+        
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Camera component initialised with </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">available_topics</span><span class="p">)</span><span class="si">}</span><span class="s2"> topics: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">available_topics</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+    <span class="c1"># Subscribe to all for instant switching</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_setup_all_cameras_preload</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function subscribes to all camera topics available to enable instant switching from one camera view to another.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">topic</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_topics</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">subscribe_to_camera_topic</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">subscribed_topics</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span>
+        
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;All-cameras mode: subscribed to all </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">available_topics</span><span class="p">)</span><span class="si">}</span><span class="s2"> camera topics for instant switching&quot;</span><span class="p">)</span>
+    
+    <span class="c1"># Preload 5 (always be subscribed to 5 and unsubscribe the rest)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_setup_preload_switching</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function subscribes to &#39;n&#39; camera topics and unsubscribes the rest. </span>
+<span class="sd">        Doing so enables fast switching between cameras with minimal delay.</span>
+
+<span class="sd">        Where n is defined by self.preload_count. By default it is 5.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Subscribe to first few cameras for instant switching</span>
+        <span class="n">topics_to_preload</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_topics</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">preload_count</span><span class="p">]</span>
+        
+        <span class="k">for</span> <span class="n">topic</span> <span class="ow">in</span> <span class="n">topics_to_preload</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">subscribe_to_camera_topic</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">subscribed_topics</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span>
+        
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Preload mode: subscribed to </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">topics_to_preload</span><span class="p">)</span><span class="si">}</span><span class="s2"> camera topics for fast switching&quot;</span><span class="p">)</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">_setup_single_subscription</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function subscribes to the first camera topic available.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Only subscribe to the first camera initially</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_topics</span><span class="p">:</span>
+            <span class="n">first_topic</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_topics</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">subscribe_to_camera_topic</span><span class="p">(</span><span class="n">first_topic</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">subscribed_topics</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">first_topic</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Single subscription mode: subscribed to </span><span class="si">{</span><span class="n">first_topic</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="CameraComponent.switch_to_topic">
+<a class="viewcode-back" href="../camera_ros.html#camera_ros.CameraComponent.switch_to_topic">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">switch_to_topic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function switches to a different camera topic by index.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            - topic_index (int): Index of the topic in available_topics to switch to.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            - bool: True if switch was successful, False otherwise.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Switch to a different camera topic by index.  </span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_topics</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        
+        <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">topic_index</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">available_topics</span><span class="p">):</span>
+            <span class="n">new_topic</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_topics</span><span class="p">[</span><span class="n">topic_index</span><span class="p">]</span>
+            
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">instant_switching</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">preload_all</span><span class="p">:</span>
+                    <span class="c1"># All cameras mode - true instant switching</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_topic</span> <span class="o">=</span> <span class="n">new_topic</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_topic_index</span> <span class="o">=</span> <span class="n">topic_index</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Instantly switched to: </span><span class="si">{</span><span class="n">new_topic</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Preload mode - ensure topic is loaded, but avoid unnecessary operations</span>
+                    <span class="k">if</span> <span class="n">new_topic</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subscribed_topics</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_topic_preloaded</span><span class="p">(</span><span class="n">new_topic</span><span class="p">)</span>
+                    
+                    <span class="c1"># Switch immediately for no delay</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_topic</span> <span class="o">=</span> <span class="n">new_topic</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_topic_index</span> <span class="o">=</span> <span class="n">topic_index</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Fast switched to: </span><span class="si">{</span><span class="n">new_topic</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    
+                    <span class="c1"># Preload adjacent topics for next switch</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_preload_adjacent_topics</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Subscribe-unsubscribe mode - best for hardware limitations </span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_switch_subscription</span><span class="p">(</span><span class="n">new_topic</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">current_topic</span> <span class="o">=</span> <span class="n">new_topic</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">current_topic_index</span> <span class="o">=</span> <span class="n">topic_index</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Switched to: </span><span class="si">{</span><span class="n">new_topic</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            
+            <span class="k">return</span> <span class="kc">True</span>
+        
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">_ensure_topic_preloaded</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function ensures the specified topic is preloaded by subscribing to it, unsubscribing the furthest topic if at limit.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            - topic_name (str): Name of the topic to ensure is preloaded.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">topic_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subscribed_topics</span><span class="p">:</span>
+            <span class="c1"># Only unsubscribe if at the limit and need space</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">subscribed_topics</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">preload_count</span><span class="p">:</span>
+                <span class="c1"># Find the topic that&#39;s furthest from current position to unsubscribe</span>
+                <span class="n">current_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_topic_index</span>
+                <span class="n">furthest_topic</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="n">max_distance</span> <span class="o">=</span> <span class="mi">0</span>
+                
+                <span class="k">for</span> <span class="n">loaded_topic</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">subscribed_topics</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">loaded_topic</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_topic</span> <span class="ow">and</span> <span class="n">loaded_topic</span> <span class="o">!=</span> <span class="n">topic_name</span><span class="p">:</span>
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="n">loaded_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_topics</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">loaded_topic</span><span class="p">)</span>
+                            <span class="n">distance</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">loaded_idx</span> <span class="o">-</span> <span class="n">current_idx</span><span class="p">),</span> 
+                                         <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">available_topics</span><span class="p">)</span> <span class="o">-</span> <span class="nb">abs</span><span class="p">(</span><span class="n">loaded_idx</span> <span class="o">-</span> <span class="n">current_idx</span><span class="p">))</span>
+                            <span class="k">if</span> <span class="n">distance</span> <span class="o">&gt;</span> <span class="n">max_distance</span><span class="p">:</span>
+                                <span class="n">max_distance</span> <span class="o">=</span> <span class="n">distance</span>
+                                <span class="n">furthest_topic</span> <span class="o">=</span> <span class="n">loaded_topic</span>
+                        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                            <span class="c1"># Topic not in list, safe to remove</span>
+                            <span class="n">furthest_topic</span> <span class="o">=</span> <span class="n">loaded_topic</span>
+                            <span class="k">break</span>
+                
+                <span class="k">if</span> <span class="n">furthest_topic</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">unsubscribe_from_camera_topic</span><span class="p">(</span><span class="n">furthest_topic</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">subscribed_topics</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">furthest_topic</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unloaded furthest topic: </span><span class="si">{</span><span class="n">furthest_topic</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            
+            <span class="c1"># Subscribe to the new topic</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">subscribe_to_camera_topic</span><span class="p">(</span><span class="n">topic_name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">subscribed_topics</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">topic_name</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Preloaded: </span><span class="si">{</span><span class="n">topic_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="c1"># Pre-preload adjacent topics for smoother switching</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_preload_adjacent_topics</span><span class="p">()</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">_preload_adjacent_topics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function preloads camera topics that are adjacent (next and previous if available) to the current topic to enable smooth switching.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">subscribed_topics</span><span class="p">)</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">preload_count</span><span class="p">:</span>
+            <span class="c1"># Try to preload next and previous topics</span>
+            <span class="n">current_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_topic_index</span>
+            
+            <span class="c1"># Preload next topic</span>
+            <span class="n">next_idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">current_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">available_topics</span><span class="p">)</span>
+            <span class="n">next_topic</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_topics</span><span class="p">[</span><span class="n">next_idx</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">next_topic</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subscribed_topics</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">subscribed_topics</span><span class="p">)</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">preload_count</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">subscribe_to_camera_topic</span><span class="p">(</span><span class="n">next_topic</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">subscribed_topics</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">next_topic</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Pre-preloaded next: </span><span class="si">{</span><span class="n">next_topic</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            
+            <span class="c1"># Preload previous topic if we still have room</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">subscribed_topics</span><span class="p">)</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">preload_count</span><span class="p">:</span>
+                <span class="n">prev_idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">current_idx</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">available_topics</span><span class="p">)</span>
+                <span class="n">prev_topic</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_topics</span><span class="p">[</span><span class="n">prev_idx</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">prev_topic</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subscribed_topics</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">subscribe_to_camera_topic</span><span class="p">(</span><span class="n">prev_topic</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">subscribed_topics</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">prev_topic</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Pre-preloaded prev: </span><span class="si">{</span><span class="n">prev_topic</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">_switch_subscription</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_topic</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function allows for switching camera subscription from current camera topic to the new camera topic passed.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            - new_topic (str): Name of topic you want to swap to.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Unsubscribe from current topic</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_topic</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_topic</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subscribed_topics</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">unsubscribe_from_camera_topic</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_topic</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">subscribed_topics</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_topic</span><span class="p">)</span>
+        
+        <span class="c1"># Subscribe to new topic</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">subscribe_to_camera_topic</span><span class="p">(</span><span class="n">new_topic</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">subscribed_topics</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">new_topic</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="CameraComponent.switch_to_next_topic">
+<a class="viewcode-back" href="../camera_ros.html#camera_ros.CameraComponent.switch_to_next_topic">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">switch_to_next_topic</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function enables switching to the next camera topic in the available topics list.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            - bool: True if switch was successful, False otherwise.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_topics</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        
+        <span class="n">next_index</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_topic_index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">available_topics</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">switch_to_topic</span><span class="p">(</span><span class="n">next_index</span><span class="p">)</span></div>
+
+     
+<div class="viewcode-block" id="CameraComponent.switch_to_previous_topic">
+<a class="viewcode-back" href="../camera_ros.html#camera_ros.CameraComponent.switch_to_previous_topic">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">switch_to_previous_topic</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function enables switching to the previous camera topic in the available topics list.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            - bool: True if switch was successful, False otherwise.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_topics</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="n">previous_index</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_topic_index</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">available_topics</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">switch_to_topic</span><span class="p">(</span><span class="n">previous_index</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="CameraComponent.switch_to_drone_camera">
+<a class="viewcode-back" href="../camera_ros.html#camera_ros.CameraComponent.switch_to_drone_camera">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">switch_to_drone_camera</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">drone_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">camera_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;front&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function enables switching to a specific drone&#39;s camera.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            - drone_id (int): Drone number (1, 2, 3, etc.)</span>
+<span class="sd">            - camera_type (str): &quot;front&quot; or &quot;bottom&quot;</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            - bool: True if switch was successful, False otherwise.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">topic_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;/rs1_drone_</span><span class="si">{</span><span class="n">drone_id</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">camera_type</span><span class="si">}</span><span class="s2">/image&quot;</span>
+        
+        <span class="k">if</span> <span class="n">topic_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_topics</span><span class="p">:</span>
+            <span class="n">topic_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_topics</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">topic_name</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">switch_to_topic</span><span class="p">(</span><span class="n">topic_index</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Topic </span><span class="si">{</span><span class="n">topic_name</span><span class="si">}</span><span class="s2"> not available in </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">available_topics</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="CameraComponent.cycle_drone_camera">
+<a class="viewcode-back" href="../camera_ros.html#camera_ros.CameraComponent.cycle_drone_camera">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cycle_drone_camera</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">current_drone_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">num_drones</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">direction</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function enables cycling through drone front cameras without returning/updating drone selection.</span>
+<span class="sd">        </span>
+<span class="sd">        It is used with rs1_teensyjoy controller switch camera buttons.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            - current_drone_index (int): Current drone index (0-based, -1 if none selected)</span>
+<span class="sd">            - num_drones (int): Total number of drones</span>
+<span class="sd">            - direction (int): 1 for next, -1 for previous</span>
+<span class="sd">    </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">drone_id</span> <span class="o">=</span> <span class="n">current_drone_index</span>
+        
+        <span class="k">if</span> <span class="n">drone_id</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="n">drone_id</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">drone_id</span> <span class="o">=</span> <span class="n">drone_id</span> <span class="o">+</span> <span class="n">direction</span>
+            
+            <span class="c1"># Wrap around</span>
+            <span class="k">if</span> <span class="n">drone_id</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">drone_id</span> <span class="o">=</span> <span class="n">num_drones</span> <span class="o">-</span> <span class="mi">1</span>
+            <span class="k">elif</span> <span class="n">drone_id</span> <span class="o">&gt;=</span> <span class="n">num_drones</span><span class="p">:</span>
+                <span class="n">drone_id</span> <span class="o">=</span> <span class="mi">0</span>
+        
+        <span class="c1"># Switch to front camera (drone_id is 1-based for topic names, so add 1)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">switch_to_drone_camera</span><span class="p">(</span><span class="n">drone_id</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;front&quot;</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="CameraComponent.get_current_topic">
+<a class="viewcode-back" href="../camera_ros.html#camera_ros.CameraComponent.get_current_topic">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_current_topic</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function gets the name of the currently displayed camera topic if any is presently selected.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            - str or None: Name of the current camera topic, or None if no topic is selected.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_topic</span></div>
+
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">_cv2_to_pygame_surface</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cv_image</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function converts cv image (BGR numpy array) to Pygame surface.</span>
+<span class="sd">        The converted image is resized to then fit the display area.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            - cv_image: The image retrieved from the camera topic through the RosHandler.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            - pygame.surfarray.make_surface(rgb_image): The converted cv image into a pygame surface to be displayed </span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Convert BGR to RGB (OpenCV uses BGR)</span>
+        <span class="n">rgb_image</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">cvtColor</span><span class="p">(</span><span class="n">cv_image</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">COLOR_BGR2RGB</span><span class="p">)</span>
+        
+        <span class="c1"># Resize to fit display area</span>
+        <span class="n">display_width</span><span class="p">,</span> <span class="n">display_height</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">display_rect</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span>
+        <span class="n">rgb_image</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">rgb_image</span><span class="p">,</span> <span class="p">(</span><span class="n">display_width</span><span class="p">,</span> <span class="n">display_height</span><span class="p">))</span>
+        
+        <span class="c1"># Convert to Pygame surface</span>
+        <span class="n">rgb_image</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">rgb_image</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+        <span class="n">surface</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">surfarray</span><span class="o">.</span><span class="n">make_surface</span><span class="p">(</span><span class="n">rgb_image</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">surface</span>
+    
+<div class="viewcode-block" id="CameraComponent.update">
+<a class="viewcode-back" href="../camera_ros.html#camera_ros.CameraComponent.update">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function updates the camera feed from the RosHandler, using cv2, the camera image is stored which is then converted to</span>
+<span class="sd">        a pygame surface using _cv2_to_pygame_surface.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Update camera feed from RosHandler</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_topic</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="c1"># Get latest image from RosHandler</span>
+        <span class="n">cv_image</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">get_latest_camera_image</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_topic</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">cv_image</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">last_frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cv2_to_pygame_surface</span><span class="p">(</span><span class="n">cv_image</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="CameraComponent.draw">
+<a class="viewcode-back" href="../camera_ros.html#camera_ros.CameraComponent.draw">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">draw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">screen</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function draws the camera feed onto the given Pygame screen surface within the defined display rectangle</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Draw the camera feed on screen</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">display_rect</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_frame</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">is_topic_active</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_topic</span><span class="p">):</span>
+            <span class="n">screen</span><span class="o">.</span><span class="n">blit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">last_frame</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">))</span>
+            
+            <span class="c1"># Draw topic info</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_topic</span><span class="p">:</span>
+                <span class="n">font</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">Font</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">24</span><span class="p">)</span>
+                <span class="n">topic_text</span> <span class="o">=</span> <span class="n">font</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_topic</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">))</span>
+                <span class="c1"># Add background for better readability</span>
+                <span class="n">text_rect</span> <span class="o">=</span> <span class="n">topic_text</span><span class="o">.</span><span class="n">get_rect</span><span class="p">()</span>
+                <span class="n">text_rect</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">10</span>
+                <span class="n">text_rect</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">y</span> <span class="o">+</span> <span class="mi">10</span>
+                <span class="n">pygame</span><span class="o">.</span><span class="n">draw</span><span class="o">.</span><span class="n">rect</span><span class="p">(</span><span class="n">screen</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">text_rect</span><span class="o">.</span><span class="n">inflate</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+                <span class="n">screen</span><span class="o">.</span><span class="n">blit</span><span class="p">(</span><span class="n">topic_text</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="mi">15</span><span class="p">,</span> <span class="n">y</span> <span class="o">+</span> <span class="mi">12</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">screen</span><span class="o">.</span><span class="n">blit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">placeholder_surface</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">))</span>
+        
+        <span class="c1"># Draw border</span>
+        <span class="n">pygame</span><span class="o">.</span><span class="n">draw</span><span class="o">.</span><span class="n">rect</span><span class="p">(</span><span class="n">screen</span><span class="p">,</span> <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span></div>
+
+
+    <span class="c1"># Handle keyboard input for camera switching</span>
+<div class="viewcode-block" id="CameraComponent.handle_keypress">
+<a class="viewcode-back" href="../camera_ros.html#camera_ros.CameraComponent.handle_keypress">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">handle_keypress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function handles keypress events for camera switching. </span>
+<span class="sd">        When the &#39;C&#39; key is pressed, the camera topic switches to the next available camera topic if any.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="n">pygame</span><span class="o">.</span><span class="n">K_c</span><span class="p">:</span>  <span class="c1"># Press &#39;C&#39; to switch camera</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">switch_to_next_topic</span><span class="p">()</span></div>
+
+    
+    <span class="c1"># Get status information for display</span>
+<div class="viewcode-block" id="CameraComponent.get_status_info">
+<a class="viewcode-back" href="../camera_ros.html#camera_ros.CameraComponent.get_status_info">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_status_info</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function outputs the display status info, whether ROS2 is available, if there are camera topics.</span>
+<span class="sd">        It also checks the camera topic status, i.e. LIVE if topic is active, or STALE if inactive.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            - str: Display Status Message depending on status check. </span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">ros2_available</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;ROS2 Not Available&quot;</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_topics</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;No camera topics found&quot;</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_topic</span><span class="p">:</span>
+            <span class="n">is_active</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">is_topic_active</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_topic</span><span class="p">)</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="s2">&quot;LIVE&quot;</span> <span class="k">if</span> <span class="n">is_active</span> <span class="k">else</span> <span class="s2">&quot;STALE&quot;</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Camera: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">current_topic</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">current_topic_index</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">available_topics</span><span class="p">)</span><span class="si">}</span><span class="s2">) [</span><span class="si">{</span><span class="n">status</span><span class="si">}</span><span class="s2">]&quot;</span>
+        
+        <span class="k">return</span> <span class="s2">&quot;Searching for cameras...&quot;</span></div>
+
+    
+    <span class="c1"># Clean up camera component</span>
+<div class="viewcode-block" id="CameraComponent.cleanup">
+<a class="viewcode-back" href="../camera_ros.html#camera_ros.CameraComponent.cleanup">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Resource cleanup through unsubscribing from all subscribed camera topics</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Unsubscribe from all subscribed topics</span>
+        <span class="k">for</span> <span class="n">topic</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">subscribed_topics</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ros_handler</span><span class="o">.</span><span class="n">unsubscribe_from_camera_topic</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">subscribed_topics</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Camera component cleanup complete.&quot;</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Marcus Frischknecht, Matthew Chua, Jackson Russell, Ace Viray.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

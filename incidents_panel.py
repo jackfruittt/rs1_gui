@@ -20,6 +20,15 @@ class IncidentsPanel:
     def draw_incidents_panel(self, incidents, screen):
         """
         Original draw_incidents_panel function, with scrolling functionality.
+        This function displays a panel showing a list of detected incidents with severity indicators.
+        
+        Args:
+            - incidents (list): List of incident data dictionaries.
+            - screen (pygame.Surface): The surface to draw the incidents panel onto scrollable panel displaying a list of detected incidents with severity indicators.
+
+        """
+        """
+        Original draw_incidents_panel function, with scrolling functionality.
         Displays a panel showing a list of detected incidents with severity indicators.
         Args:
             - incidents (list): List of incident data dictionaries.
@@ -81,7 +90,15 @@ class IncidentsPanel:
         screen.blit(incidents_panel, (PANEL_X, PANEL_Y))
     
     def handle_scroll_click(self, pos):
-        """Handle scroll button clicks"""
+        """
+        This function handles scroll button clicks
+        
+        Args:
+            - pos (tuple): (x, y) position of mouse click.
+        Returns:
+            - bool: True if a scroll button was clicked, else False.
+
+        """
         if self.incident_scroll_up_rect and self.incident_scroll_up_rect.collidepoint(pos):
             self.scrolling = True
             self.scroll_direction = 1

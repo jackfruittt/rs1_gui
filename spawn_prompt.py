@@ -4,7 +4,21 @@ from pathlib import Path
 from camera_ros import CameraComponent
 
 class SpawnPromptPanel:
+    """
+    Spawn Prompt Class, this brings up the spawn window to enable the User to input their desired drone count.
+    When drone count entered, it runs the comp_drone_spawner.sh to start gazebo simulator and spawn drones in the environment.
+
+    """
     def __init__(self, app, fonts, rosAvailable):
+        """
+        Initialises the spawn prompt panel variables.
+        
+        Args:
+            - app: The main application instance.
+            - fonts: Dictionary of Pygame font objects.
+            - rosAvailable: Boolean indicating if ROS2 is available on the system.
+
+        """
         self.app = app
         self.fonts = fonts
         self.button_rects = []
@@ -21,7 +35,16 @@ class SpawnPromptPanel:
         self.requestCount = 1
 
     def draw_prompt(self, screen):
-        """Draw the full-screen spawn prompt interface"""
+        """
+        Draw the full-screen spawn prompt interface.
+        Here the user can input the number of drones to spawn (1-6) and submit the request.
+
+        Once the request is submitted, a loading animation is shown until the simulator is ready.
+        
+        Args:
+            - screen: The Pygame surface to draw on.
+
+        """
         self.button_rects = []
 
         panel = pygame.Surface((1900, 860))
@@ -92,7 +115,16 @@ class SpawnPromptPanel:
             self.simulateThread.start()
 
     def handle_key(self, event):
-        """Restrict input to digits only"""
+        """
+        Restrict input to digits only
+        
+        This function handles key events for the spawn prompt. It allows only digit inputs (0-9) and handles backspace and enter keys.
+        On enter, if the input is valid, it starts the drone spawning process.
+
+        Args:
+            - event: The Pygame event to handle.
+
+        """
         if self.runningScript is not True:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_BACKSPACE:
@@ -107,7 +139,20 @@ class SpawnPromptPanel:
         return None
 
     def runScript(self, numDrones):
-        """Run the script to start the simulator and spawn drones"""
+        """
+        Run the script to start the simulator and spawn drones
+
+        This function executes the drone spawner script comp_drone_spawner.sh with the specified number of drones requested by the user.
+        It sets up the necessary environment variables for ROS2 and starts a thread to wait for the simulator to be ready.
+
+        Args:
+            - numDrones: The number of drones to spawn as a string.
+        
+        Notes:
+            - The function handles environment setup for Qt/Wayland compatibility.
+            - It ensures both GUI and spawner run on the same ROS domain.
+
+        """
         import os, subprocess, threading
 
         count = int(numDrones)
@@ -143,7 +188,12 @@ class SpawnPromptPanel:
         self.waitSimThread.start()
     
     def killSim(self):
-        """Kill the simulator processes"""
+        """
+        Kill the simulator processes
+
+        This function terminates all relevant simulator processes to ensure a clean shutdown.
+
+        """
         commands = ['pkill -f "ign gazebo"', 'pkill -f "parameter_bridge"', 'pkill -f "robot_state_publisher"', 'pkill -f "multi_drone_composition_controller"', 'pkill -f "controller_node"']
         for command in commands:
             subprocess.Popen(command, shell=True)

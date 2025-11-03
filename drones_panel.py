@@ -3,6 +3,7 @@ from constants import state_colors, WHITE, BLACK, LIGHT_GRAY, DARK_GREEN
 from utils import feather_image
 
 class dronesPanel:
+    """ This class handles the Drones Panel UI and interactions. """
     def __init__(self, app, fonts):
         """
         Initializes the drones panel.

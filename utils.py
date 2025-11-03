@@ -14,9 +14,16 @@ def feather_image(surface, feather_size_x, feather_size_y,
                   feather_top=False, feather_right=True,
                   feather_bottom=True, feather_left=False):
     """
-    Feathers selected edges of a Pygame surface, if global `pretty` is True.
+    This function feathers selected edges of a Pygame surface, if global `pretty` is True.
 
     Args:
+        - surface (pygame.Surface): The image surface to feather.
+        - feather_size_x (int): The width of the feathering effect (used for left/right).
+        - feather_size_y (int): The height of the feathering effect (used for top/bottom).
+        - feather_top (bool): Feather the top edge.
+        - feather_right (bool): Feather the right edge.
+        - feather_bottom (bool): Feather the bottom edge.
+        - feather_left (bool): Feather the left edge.
         - surface (pygame.Surface): The image surface to feather.
         - feather_size_x (int): The width of the feathering effect (used for left/right).
         - feather_size_y (int): The height of the feathering effect (used for top/bottom).

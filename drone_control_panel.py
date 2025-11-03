@@ -6,9 +6,11 @@ from utils import spawn_cmd_safe
 
 
 class DroneControlPanel:
+    """ This class handles the Drone Control Panel UI and interactions. """
     def __init__(self, app, fonts):
         """
         Initialises the drone control panel.
+        
         Args:
             - app: The main application instance.
             - fonts: Dictionary of Pygame font objects.

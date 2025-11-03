@@ -422,6 +422,9 @@ class MapPanel:
         screen.blit(map_panel, (SCREEN_X, SCREEN_Y))
 
     def get_icon_buttons(self):
+        """
+        This function returns the list of icon buttons for incidents on the map.
+        """
         return self.icon_buttons
 
     def processClickInMap(self, ui, gmx, gmy):

@@ -5,15 +5,17 @@ from utils import feather_image
 
 
 class IncidentDetailPanel:
-    """
-    Detail view for a single incident. Intended to replace the incidents list panel
-    when the user clicks on an incident card.
+    """    
+    This class represents the Incident Detail view for a single incident.
+    Intended to replace the incidents list panel when the user clicks on an incident card.
 
     Style and sizing follow the same conventions as IncidentsPanel.
+
     Exposes click handling for three controls:
       - Close (top-right 'X')
       - Respond (primary action button)
       - Clear (secondary action button)
+
     """
 
     def __init__(self, fonts):
@@ -32,6 +34,8 @@ class IncidentDetailPanel:
         Args:
             - param incident: dict with keys:
             id, title, time, severity, Platform, drone_coords, global_coords
+            - param screen: pygame Surface (main screen)
+
             - param screen: pygame Surface (main screen)
 
         """

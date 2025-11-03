@@ -410,6 +410,20 @@ class RosHandler:
         
         return time.time() - info.get('timestamp', 0) < 2.0
     
+    def _handle_controller_message(self, topic_name: str, msg):
+        try:
+            with self.data_lock:
+                self.controller_data[topic_name] = {
+                    "axes": msg.axes,
+                    "buttons": msg.buttons,
+                    "timestamp": time.time()
+                }
+            if topic_name in self.topic_callbacks:
+                self.topic_callbacks[topic_name](topic_name, msg.data)
+        except Exception as e:
+            print(f"Error processing controller message from {topic_name}: {e}")
+        
+    
     # Button Callback function
     def _handle_button_message(self, topic_name: str, msg):
         try:
@@ -643,6 +657,7 @@ if ROS2_AVAILABLE:
             self.odometry_subscriptions = {}    # topic_name -> subscription object
             self.incident_subscriptions = {}    # topic_name -> incident object
             self.button_subscriptions = {}      # For buttons
+            self.controller_subscription = {}   # For controller
 
             self.controller_subscription = {}   # For controller
 
@@ -678,32 +693,41 @@ if ROS2_AVAILABLE:
 
 
         def call_connect_service(self, connect: bool) -> bool:
-            if not self.teensy_connect_client.wait_for_service(timeout_sec=1.0):
+            """Call the teensy connect service."""
+            # Check if service is available
+            if not self.teensy_connect_client.wait_for_service(timeout_sec=2.0):
                 self.get_logger().warn('Teensy connect service not available')
                 return False
             
+            # Create request
             request = SetBool.Request()
             request.data = connect
             
             try:
+                # Call service asynchronously
                 future = self.teensy_connect_client.call_async(request)
-                # We're in the ROS thread, so we can wait briefly
-                rclpy.spin_until_future_complete(self, future, timeout_sec=1.0)
+                
+                # Wait for result (increase timeout if needed)
+                rclpy.spin_until_future_complete(self, future, timeout_sec=5.0)
                 
                 if future.done():
-                    response = future.result()
-                    if response.success:
-                        self.get_logger().info(f'Teensy connect service: {response.message}')
-                        return True
-                    else:
-                        self.get_logger().warn(f'Teensy connect failed: {response.message}')
+                    try:
+                        response = future.result()
+                        if response.success:
+                            self.get_logger().info(f'Teensy {"connected" if connect else "disconnected"}: {response.message}')
+                            return True
+                        else:
+                            self.get_logger().warn(f'Teensy connect failed: {response.message}')
+                            return False
+                    except Exception as e:
+                        self.get_logger().error(f'Failed to get service response: {e}')
                         return False
                 else:
-                    self.get_logger().warn('Service call timed out')
+                    self.get_logger().warn('Service call timed out after 5 seconds')
                     return False
                     
             except Exception as e:
-                self.get_logger().error(f'Service call failed: {e}')
+                self.get_logger().error(f'Service call failed: {str(e)}')
                 return False
 
         
@@ -750,6 +774,34 @@ if ROS2_AVAILABLE:
                 del self.incident_subscription[topic_name]
                 self.get_logger().info(f'Unsubscribed from incident topic: {topic_name}')
 
+        def call_connect_service(self, connect: bool) -> bool:
+            if not self.teensy_connect_client.wait_for_service(timeout_sec=1.0):
+                self.get_logger().warn('Teensy connect service not available')
+                return False
+            
+            request = SetBool.Request()
+            request.data = connect
+            
+            try:
+                future = self.teensy_connect_client.call_async(request)
+                # We're in the ROS thread, so we can wait briefly
+                rclpy.spin_until_future_complete(self, future, timeout_sec=1.0)
+                
+                if future.done():
+                    response = future.result()
+                    if response.success:
+                        self.get_logger().info(f'Teensy connect service: {response.message}')
+                        return True
+                    else:
+                        self.get_logger().warn(f'Teensy connect failed: {response.message}')
+                        return False
+                else:
+                    self.get_logger().warn('Service call timed out')
+                    return False
+                    
+            except Exception as e:
+                self.get_logger().error(f'Service call failed: {e}')
+                return False
         
         # Finally found where the functions are lmfao
         def subscribe_to_button(self, topic_name: str):
