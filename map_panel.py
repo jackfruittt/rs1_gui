@@ -1,6 +1,6 @@
 
 import pygame
-from constants import state_colors, severity_colors, world_size, RED
+from constants import state_colors, severity_colors, world_size, RED, PINK, BLACK
 from utils import mapRange
 
 
@@ -418,8 +418,40 @@ class MapPanel:
             icon_rot = pygame.transform.rotate(tinted, robots[i]["yaw"])
             map_panel.blit(icon_rot, (imgX, imgY))
 
-        # Blit the composed map panel to the main screen
+            # --- small index label next to the icon (1-based) ---
+            idx_str = str(i + 1)
+
+            # try your existing small font first; fallback to a tiny system font
+            small_font = (
+                (self.fonts.get('inter_smaller') if hasattr(self, 'fonts') else None)
+                or (self.fonts.get('inter_small') if hasattr(self, 'fonts') else None)
+                or pygame.font.SysFont(None, 16)
+            )
+
+            label_surf = small_font.render(idx_str, True, PINK)
+            pad = 2
+
+            # place to the right of the icon, vertically centered
+            label_x = int(imgX + icon_rot.get_width() + 4)
+            label_y = int(imgY + (icon_rot.get_height() - label_surf.get_height()) // 2)
+
+            # black background box behind the text
+            bg_rect = pygame.Rect(
+                label_x - pad,
+                label_y - pad,
+                label_surf.get_width() + pad * 2,
+                label_surf.get_height() + pad * 2
+            )
+            pygame.draw.rect(map_panel, BLACK, bg_rect)
+
+            map_panel.blit(label_surf, (label_x, label_y))
+
+            # Blit the composed map panel to the main screen
         screen.blit(map_panel, (SCREEN_X, SCREEN_Y))
+
+
+            # blit the PINK number
+            
 
     def get_icon_buttons(self):
         """
