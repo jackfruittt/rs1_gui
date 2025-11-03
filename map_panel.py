@@ -1,11 +1,27 @@
 
 import pygame
-from constants import state_colors, severity_colors, world_size, RED
+from constants import state_colors, severity_colors, world_size, RED, PINK, BLACK
 from utils import mapRange
 
 
 class MapPanel:
     def __init__(self, app, map_top_view, drone_icon):
+        """
+        __init__ function - Initialize MapPanel rendering state and assets.
+        Sets up references, loads and scales incident/drone icons, and initializes
+        waypoint animation/caching structures and the reusable map panel surface.
+        Args:
+            - app (object): Reference to the main application/UI controller.
+            - map_top_view (pygame.Surface): The base top-down map image/surface.
+            - drone_icon (pygame.Surface): The base drone icon used for rendering drones.
+        Side Effects:
+            - Loads image assets from disk and creates scaled/tinted caches.
+            - Initializes waypoint animation state and cached waypoint surfaces.
+            - Allocates a reusable transparent surface for map panel compositing.
+        Returns:
+            - None
+        """
+
         self.app = app
         self.map_top_view = map_top_view
         self.drone_icon = drone_icon
@@ -47,7 +63,20 @@ class MapPanel:
     # CACHING HELPERS
     # --------------------------------------------------------------------------------------
     def _build_wp_entry(self, waypoints):
-        """Build a cropped waypoint surface and return {'surf': Surface, 'pos': (x,y)}."""
+        """
+        _build_wp_entry function - Build a cropped waypoint layer surface.
+        Converts a list of world-coordinate waypoints into map-image coordinates,
+        draws the waypoint path (circles + connecting lines), and returns a tightly
+        cropped surface plus its top-left placement position.
+        Args:
+            - waypoints (list[tuple[float, float, float]]): Iterable of (wx, wy, wz)
+              waypoints in world space; wz is ignored for drawing.
+        Returns:
+            - (dict | None): {"surf": pygame.Surface, "pos": (int, int)} where
+              "surf" is the cropped waypoint layer and "pos" is its top-left map
+              placement coordinate; returns None if no waypoints.
+        """
+
         if not waypoints:
             return None
 
@@ -148,6 +177,19 @@ class MapPanel:
     # ICON TINTING CACHES
     # --------------------------------------------------------------------------------------
     def _get_incident_icon(self, kind, severity_idx):
+        """
+        _get_incident_icon function - Retrieve or generate a tinted incident icon.
+        Returns a cached or newly created incident icon surface tinted according to the
+        incident's severity level.
+        Args:
+            - kind (str): Type of incident (e.g., "Fire", "Person", "Debris", "Warn").
+            - severity_idx (int): Index used to select the corresponding color from severity_colors.
+        Returns:
+            - (pygame.Surface): The tinted incident icon surface associated with the given kind and severity.
+        Side Effects:
+            - Adds the generated icon to self._incident_icon_cache for reuse.
+        """
+
         key = (kind, severity_idx)
         if key in self._incident_icon_cache:
             return self._incident_icon_cache[key]
@@ -168,6 +210,17 @@ class MapPanel:
         return colored
 
     def _get_tinted_drone_icon(self, state):
+        """
+        _get_tinted_drone_icon function - Retrieve or generate a state-tinted drone icon.
+        Produces and caches a tinted version of the base drone icon depending on the drone's state color.
+        Args:
+            - state (str): The current state of the drone (e.g., "Active", "Idle", "Offline").
+        Returns:
+            - (pygame.Surface): The tinted drone icon surface corresponding to the given state.
+        Side Effects:
+            - Adds the generated tinted icon to self._drone_icon_tinted for future reuse.
+        """
+
         if state in self._drone_icon_tinted:
             return self._drone_icon_tinted[state]
         colored = self.drone_icon.copy()
@@ -182,6 +235,19 @@ class MapPanel:
     # draw_waypoints - used within 'send' control panel; cache builder uses a faster, cropped version for fading previews
     # --------------------------------------------------------------------------------------
     def draw_waypoints(self, waypoints, opacity=255):
+        """
+        Original draw_waypoints function - Render a set of waypoints and connecting paths on the map.
+        Draws circular markers and connecting red lines representing a sequence of waypoints on a 
+        transparent surface that matches the map size. Optionally supports transparency through opacity.
+        Args:
+            - waypoints (list[tuple[float, float, float]]): List of (x, y, z) coordinates for each waypoint in world space.
+            - opacity (int, optional): Alpha transparency value (0–255) for the rendered waypoint layer. Defaults to 255.
+        Returns:
+            - None
+        Side Effects:
+            - Creates a local waypoint surface (wp_surface) for compositing onto the main map panel.
+        """
+
         CUSTOM_WAYPOINT_RADIUS = 8
         CUSTOM_PATH_THICKNESS = 4
         wp_surface = pygame.Surface((self.mapImgSize[0], self.mapImgSize[1]), pygame.SRCALPHA)
@@ -226,7 +292,7 @@ class MapPanel:
     # MAIN DRAW
     # --------------------------------------------------------------------------------------
     def draw_map(self, robots, incidents, screen, selected_incident):
-        """Draw map panel, waypoints, incidents, and robots."""
+        """Draw map panel, waypoints, incidents, and Drones."""
         PANEL_WIDTH, PANEL_HEIGHT = self.mapImgSize
         SCREEN_X = 380
         SCREEN_Y = 20
@@ -352,8 +418,40 @@ class MapPanel:
             icon_rot = pygame.transform.rotate(tinted, robots[i]["yaw"])
             map_panel.blit(icon_rot, (imgX, imgY))
 
-        # Blit the composed map panel to the main screen
+            # --- small index label next to the icon (1-based) ---
+            idx_str = str(i + 1)
+
+            # try your existing small font first; fallback to a tiny system font
+            small_font = (
+                (self.fonts.get('inter_smaller') if hasattr(self, 'fonts') else None)
+                or (self.fonts.get('inter_small') if hasattr(self, 'fonts') else None)
+                or pygame.font.SysFont(None, 16)
+            )
+
+            label_surf = small_font.render(idx_str, True, PINK)
+            pad = 2
+
+            # place to the right of the icon, vertically centered
+            label_x = int(imgX + icon_rot.get_width() + 4)
+            label_y = int(imgY + (icon_rot.get_height() - label_surf.get_height()) // 2)
+
+            # black background box behind the text
+            bg_rect = pygame.Rect(
+                label_x - pad,
+                label_y - pad,
+                label_surf.get_width() + pad * 2,
+                label_surf.get_height() + pad * 2
+            )
+            pygame.draw.rect(map_panel, BLACK, bg_rect)
+
+            map_panel.blit(label_surf, (label_x, label_y))
+
+            # Blit the composed map panel to the main screen
         screen.blit(map_panel, (SCREEN_X, SCREEN_Y))
+
+
+            # blit the PINK number
+            
 
     def get_icon_buttons(self):
         """
@@ -362,6 +460,22 @@ class MapPanel:
         return self.icon_buttons
 
     def processClickInMap(self, ui, gmx, gmy):
+        """
+        Original processClickInMap function - Handle map click interactions for incidents and custom waypoints.
+        If no drone is selected, detects clicks on incident icons and updates the selected incident.
+        If a drone is selected and the drone control panel is in waypoint mode (panelState == 2),
+        converts the click to world coordinates and appends a custom waypoint.
+        Args:
+            - ui (object): Reference to the main UI/application controller.
+            - gmx (int | float): Global mouse X position (screen coordinates).
+            - gmy (int | float): Global mouse Y position (screen coordinates).
+        Side Effects:
+            - May update ui.selected_incident when an incident icon is clicked.
+            - May append a waypoint to self.highlighted_waypoints in world coordinates.
+        Returns:
+            - None
+        """
+
         # map incident icons
         if gmx > 380 and gmx < 1180 and gmy > 20 and gmy < 820:
             if ui.selected_drone < 0:

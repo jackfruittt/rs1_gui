@@ -22,6 +22,14 @@ class DroneControlPanel:
         self.panelState = -1 # -1 normal; 0 scout; 1 pilot; 2 send
 
     def create_back_button(self, surface):
+        """
+        Original create_back_button function - Draws the 'BACK' button on a panel.
+        Creates and renders a rectangular button labeled 'BACK' at the bottom-left of the panel,
+        adds it to the button_rects list for click detection, and displays its label text.
+        Args:
+            - surface (pygame.Surface): The surface on which to draw the 'BACK' button.
+        """
+
         back_rect = pygame.Rect(20, PANEL_HEIGHT-40-20, BTN_WIDTH*2+20, 40)
         pygame.draw.rect(surface, (140, 30, 40), back_rect)
         pygame.draw.rect(surface, WHITE, back_rect, 2)
@@ -33,7 +41,12 @@ class DroneControlPanel:
         
 
     def drone_ui(self, screen):
-        """Scrollable Drone control panel with 2-col button grid and right-side info slab."""
+        """
+        Original drone_ui function - Draw Drone panel and handle click detection.
+        Drone control panel in the GUI. Handles drawing the panel and buttons onto the screen.
+        Args:
+            - screen (pygame.Surface): The surface to draw the drone control panel onto.
+        """
         self.button_rects = []  # Reset for click detection
 
         self.dronePic = pygame.image.load("media/images/drone_cp.png").convert_alpha()
@@ -178,6 +191,15 @@ class DroneControlPanel:
         screen.blit(drone_panel, (PANEL_X, PANEL_Y))
     
     def gen_wp_msg(self, selectedDrone):
+        """
+        Original gen_wp_msg function - Generate a ROS2 command string for waypoint assignment.
+        Builds and returns a formatted ROS2 CLI command that publishes a mission assignment message
+        containing all waypoints for the selected drone.
+        Args:
+            - selectedDrone (int): Index of the currently selected drone whose waypoints will be used.
+        Returns:
+            - publish_command (str): A ROS2 command string for publishing the drone's waypoint route.
+        """
         waypoints = ""
 
         for i, wp in enumerate(self.app.drones[selectedDrone]["waypoints"]):
@@ -193,6 +215,23 @@ class DroneControlPanel:
 
 
     def buttonLogic(self, gmx, gmy):
+        """
+        Original buttonLogic function - Handle drone panel button clicks.
+        Converts global mouse coordinates to panel-local space, checks hits against
+        stored button rectangles, and executes the corresponding action (UI state
+        changes, notifications, waypoint ops, and ROS interactions).
+        Args:
+            - gmx (int | float): Global mouse X position (screen coordinates).
+            - gmy (int | float): Global mouse Y position (screen coordinates).
+        Side Effects:
+            - Updates self.panelState and self.app.controller_connected.
+            - Modifies self.app.selected_drone and highlighted/active waypoints.
+            - Sends notifications via notification_ui.
+            - Invokes ROS actions (publish drone ID, (dis)connect joystick, start mission).
+        Returns:
+            - None
+        """
+
         mx = gmx - PANEL_X
         my = gmy - PANEL_Y
         for rect, label in self.button_rects:
