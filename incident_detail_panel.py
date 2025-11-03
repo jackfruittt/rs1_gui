@@ -3,16 +3,19 @@ import pygame
 from constants import *
 from utils import feather_image
 
+
 class IncidentDetailPanel:
-    """
-    Detail view for a single incident. Intended to replace the incidents list panel
-    when the user clicks on an incident card.
+    """    
+    This class represents the Incident Detail view for a single incident.
+    Intended to replace the incidents list panel when the user clicks on an incident card.
 
     Style and sizing follow the same conventions as IncidentsPanel.
+
     Exposes click handling for three controls:
       - Close (top-right 'X')
       - Respond (primary action button)
       - Clear (secondary action button)
+
     """
 
     def __init__(self, fonts):
@@ -25,9 +28,16 @@ class IncidentDetailPanel:
     def draw_incident_detail(self, incident, screen):
         """
         Render the incident detail panel.
-        :param incident: dict with keys:
+        The User is notified in the main screen of the GUI of the detected incident details if any.
+        The included details of the incident can be seen below
+        NOTE: Update this param incident if the csv structure changes
+        Args:
+            - param incident: dict with keys:
             id, title, time, severity, Platform, drone_coords, global_coords
-        :param screen: pygame Surface (main screen)
+            - param screen: pygame Surface (main screen)
+
+            - param screen: pygame Surface (main screen)
+
         """
 
         # Root panel surface (transparent)
@@ -36,7 +46,7 @@ class IncidentDetailPanel:
 
         # ===== Top bars (match list panel) =====
         pygame.draw.rect(panel, GRAY, (0, 0, PANEL_WIDTH, 77))
-        pygame.draw.rect(panel, DARK_GRAY, (0, 0, PANEL_WIDTH, 20))
+        pygame.draw.rect(panel, DARK_GREEN, (0, 0, PANEL_WIDTH, 20))
 
         # Title
         title_text = self.fonts['font'].render("Incident Detail", True, WHITE)
@@ -115,14 +125,6 @@ class IncidentDetailPanel:
             panel.blit(txt, (r.x + (r.w - txt.get_width()) // 2,
                              r.y + (r.h - txt.get_height()) // 2))
 
-        # Feathered bottom strip (same visual motif as list panel)
-        bottom_rect = pygame.Surface((PANEL_WIDTH, 30), pygame.SRCALPHA)
-        bottom_rect.fill(DARK_GRAY)
-        bottom_feathered = feather_image(bottom_rect, 25, 25,
-                                         feather_top=True, feather_right=False,
-                                         feather_bottom=False, feather_left=False)
-        panel.blit(bottom_feathered, (0, PANEL_HEIGHT - 30))
-
         # Store absolute rects for click handling
         self._respond_rect_abs = pygame.Rect(PANEL_X + respond_rel.x, PANEL_Y + respond_rel.y,
                                              respond_rel.w, respond_rel.h)
@@ -132,24 +134,45 @@ class IncidentDetailPanel:
         # Final blit
         screen.blit(panel, (PANEL_X, PANEL_Y))
 
-    def handle_click(self, pos):
+    def handle_click(self, ui, pos):
         """
         Translate a mouse position (screen coords) into a semantic action.
-        Returns one of: 'close', 'respond', 'clear', or None if no control was hit.
+        Args:
+            - pos (tuple): (x, y) mouse position in screen coordinates.
+        Returns:
+            - str or None: Action string if a control was clicked, else None. str output depends on which control was clicked.
+
         """
         if self._close_rect_abs and self._close_rect_abs.collidepoint(pos):
-            return 'close'
+            ui.selected_incident = -1
+            return
         if self._respond_rect_abs and self._respond_rect_abs.collidepoint(pos):
-            return 'respond'
+            print('Respond to incident')
+            return
         if self._clear_rect_abs and self._clear_rect_abs.collidepoint(pos):
-            return 'clear'
-        return None
+            inc = ui.incidents[ui.selected_incident]
+            key = (inc["drone"], inc["id"])
+            ui._incident_cleared.add(key)       # remember it's cleared locally
+            del ui.incidents[ui.selected_incident]
+            # rebuild index map after deletion
+            ui._incident_seen.clear()
+            for i, it in enumerate(ui.incidents):
+                ui._incident_seen[(it["drone"], it["id"])] = i
+            ui.selected_incident = -1
+            print('clear incident')
+            ui.notification_ui.pushNotification("Cleared!", "Incident cleared!")
+            return
 
 
 def incidents_severity_index(incident):
     """
     Helper to convert incident['severity'] to index for severity_colors,
     clamping to valid range (0-based).
+    Args:
+        - incident (dict): Incident data dictionary.
+
+    Returns:
+        - int: Severity index (0-based).
     """
     sev = incident.get('severity', 1)
     try:

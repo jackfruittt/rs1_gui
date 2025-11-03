@@ -5,6 +5,12 @@ import numpy as np
 
 class VideoPlayer:
     def __init__(self, video_path):
+        """
+        Initializes the VideoPlayer with the given video file path.
+        Args:
+            - video_path (str): Path to the video file to be played.
+            
+        """
         self.video_path = video_path
         self.cap = cv2.VideoCapture(video_path)
         self.last_good_frame_surface = None
@@ -16,7 +22,14 @@ class VideoPlayer:
         self.height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     
     def video_loop(self, screen):
-        """Original video_loop function"""
+        """
+        Original video_loop function
+        Plays video frames onto the given Pygame screen surface.
+
+        Args:
+            - screen (pygame.Surface): The surface to draw video frames onto.
+            
+        """
         ret, frame = self.cap.read()
 
         if not ret:
@@ -33,6 +46,8 @@ class VideoPlayer:
             screen.blit(self.last_good_frame_surface, (20, 20))
     
     def cleanup(self):
-        """Release video resources"""
+        """
+        Release video resources, resource cleanup.
+        """
         if self.cap:
             self.cap.release()

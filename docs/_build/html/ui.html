@@ -1,0 +1,313 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ui module &mdash; rs1_gui 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="utils module" href="utils.html" />
+    <link rel="prev" title="telemetry_panel module" href="telemetry_panel.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            rs1_gui
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">rs1_gui</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="camera_ros.html">camera_ros module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="constants.html">constants module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="drone_control_panel.html">drone_control_panel module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="drones_panel.html">drones_panel module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="incident_detail_panel.html">incident_detail_panel module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="incidents_panel.html">incidents_panel module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="map_panel.html">map_panel module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="popup.html">popup module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ros_handler.html">ros_handler module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="spawn_prompt.html">spawn_prompt module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="telemetry_panel.html">telemetry_panel module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">ui module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#rs1-drone-swarm-control-gui-main-ui-file-refactored">RS1 Drone Swarm Control GUI - Main UI File (Refactored)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#refer-to-project-readme-for-package-installation-setup-instructions-arcitecture-overview-and-usage-guidelines">Refer to project README for package installation, setup instructions, arcitecture overview, and usage guidelines.</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ui.RS1GUI"><code class="docutils literal notranslate"><span class="pre">RS1GUI</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#ui.RS1GUI.apply_odometry_to_robot"><code class="docutils literal notranslate"><span class="pre">RS1GUI.apply_odometry_to_robot()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ui.RS1GUI.cleanup"><code class="docutils literal notranslate"><span class="pre">RS1GUI.cleanup()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ui.RS1GUI.draw_base_ui"><code class="docutils literal notranslate"><span class="pre">RS1GUI.draw_base_ui()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ui.RS1GUI.generate_drone"><code class="docutils literal notranslate"><span class="pre">RS1GUI.generate_drone()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ui.RS1GUI.generate_random_incident"><code class="docutils literal notranslate"><span class="pre">RS1GUI.generate_random_incident()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ui.RS1GUI.handle_events"><code class="docutils literal notranslate"><span class="pre">RS1GUI.handle_events()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ui.RS1GUI.run"><code class="docutils literal notranslate"><span class="pre">RS1GUI.run()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ui.RS1GUI.update_controller_buttons"><code class="docutils literal notranslate"><span class="pre">RS1GUI.update_controller_buttons()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#ui.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html">utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="video_player.html">video_player module</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">rs1_gui</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">rs1_gui</a></li>
+      <li class="breadcrumb-item active">ui module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/ui.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-ui">
+<span id="ui-module"></span><h1>ui module<a class="headerlink" href="#module-ui" title="Link to this heading"></a></h1>
+<section id="rs1-drone-swarm-control-gui-main-ui-file-refactored">
+<h2>RS1 Drone Swarm Control GUI - Main UI File (Refactored)<a class="headerlink" href="#rs1-drone-swarm-control-gui-main-ui-file-refactored" title="Link to this heading"></a></h2>
+<p>This is the main file provides a user interface for the RS1 drone swarm control system.
+It integrates components of pygame and ros2 together while managing the application’s state.</p>
+<p>The GUI provides the user with real-time monitoring and control of drones in the swarm.
+These include key features such as:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Live camera feeds from drones,</p></li>
+<li><p>Map visualisation with drone position and incident markers,</p></li>
+<li><p>Incident detection panel to view reported incidents,</p></li>
+<li><p>Telemetry data display for individual drones,</p></li>
+<li><p>Controller integration for manual drone piloting</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="refer-to-project-readme-for-package-installation-setup-instructions-arcitecture-overview-and-usage-guidelines">
+<h2>Refer to project README for package installation, setup instructions, arcitecture overview, and usage guidelines.<a class="headerlink" href="#refer-to-project-readme-for-package-installation-setup-instructions-arcitecture-overview-and-usage-guidelines" title="Link to this heading"></a></h2>
+</section>
+<dl class="py class">
+<dt class="sig sig-object py" id="ui.RS1GUI">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ui.</span></span><span class="sig-name descname"><span class="pre">RS1GUI</span></span><a class="reference internal" href="_modules/ui.html#RS1GUI"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ui.RS1GUI" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Main GUI application class</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="ui.RS1GUI.apply_odometry_to_robot">
+<span class="sig-name descname"><span class="pre">apply_odometry_to_robot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">robot</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">odom</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ui.html#RS1GUI.apply_odometry_to_robot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ui.RS1GUI.apply_odometry_to_robot" title="Link to this definition"></a></dt>
+<dd><p>Apply odometry data to the given robot dictionary.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><ul class="simple">
+<li><p>robot (dict): The robot data dictionary to update.</p></li>
+<li><p>odom (dict): The odometry data containing position and orientation.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ui.RS1GUI.cleanup">
+<span class="sig-name descname"><span class="pre">cleanup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ui.html#RS1GUI.cleanup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ui.RS1GUI.cleanup" title="Link to this definition"></a></dt>
+<dd><p>Cleanup resources on exit</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ui.RS1GUI.draw_base_ui">
+<span class="sig-name descname"><span class="pre">draw_base_ui</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ui.html#RS1GUI.draw_base_ui"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ui.RS1GUI.draw_base_ui" title="Link to this definition"></a></dt>
+<dd><p>Original draw_base_ui function with ROS2 camera integration</p>
+<p>This function draws the main UI components on the screen.
+It displays the map, drones list, incidents panel by default.
+It also updates and displays the camera feed if available.</p>
+<p>It will initially sync drones, incidents, topic from ROS2 topics.
+Then attempt to display the relevant panels based on user selection/interaction.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ui.RS1GUI.generate_drone">
+<span class="sig-name descname"><span class="pre">generate_drone</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ui.html#RS1GUI.generate_drone"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ui.RS1GUI.generate_drone" title="Link to this definition"></a></dt>
+<dd><p>This function generates a drone odom simuation purposes incase ROS2 isnt available after spawn prompt.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><ul class="simple">
+<li><dl class="simple">
+<dt>dict: A dictionary representing the drone with keys:</dt><dd><ul>
+<li><p>“battery”: str - Battery percentage</p></li>
+<li><p>“gps”: str - GPS coordinates as “x, y”</p></li>
+<li><p>“altitude”: str - Altitude in meters</p></li>
+<li><p>“state”: str - Current state of the drone</p></li>
+<li><p>“setPose”: str - Current set pose</p></li>
+<li><p>“nearPose”: str - Nearest known pose</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ui.RS1GUI.generate_random_incident">
+<span class="sig-name descname"><span class="pre">generate_random_incident</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ui.html#RS1GUI.generate_random_incident"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ui.RS1GUI.generate_random_incident" title="Link to this definition"></a></dt>
+<dd><p>This function generate a random incident for simulation purposes incase ROS2 isnt available after spawn prompt.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><ul class="simple">
+<li><dl class="simple">
+<dt>dict: A dictionary representing the incident with keys:</dt><dd><ul>
+<li><p>“title”: str - The title of the incident</p></li>
+<li><p>“time”: str - The time the incident was reported</p></li>
+<li><p>“severity”: int - The severity level of the incident</p></li>
+<li><p>“drone”: int - The ID of the drone that reported the incident</p></li>
+<li><p>“drone_coords”: tuple - The GPS coordinates of the reporting drone</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ui.RS1GUI.handle_events">
+<span class="sig-name descname"><span class="pre">handle_events</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ui.html#RS1GUI.handle_events"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ui.RS1GUI.handle_events" title="Link to this definition"></a></dt>
+<dd><p>This function handles all user input events such as keyboard and mouse events.</p>
+<p>It processes events like window close, keyboard shortcuts, mouse clicks on various UI components.
+Depending on the event, it updates the application state accordingly.</p>
+<dl class="simple">
+<dt>Keyboard Shortcuts:</dt><dd><ul class="simple">
+<li><p>ESC: Exit the application</p></li>
+<li><p>1-6: Select corresponding drone or switch camera view if Shift is held</p></li>
+<li><p>Shift + Number: Switch camera to that drone</p></li>
+<li><p>Number keys (1-6): Select drone in the UI</p></li>
+<li><p>C : Switch camera view (when camera component is available)</p></li>
+</ul>
+</dd>
+</dl>
+<p>Mouse Clicks:
+The mouse click handling is context-sensitive based on current panel state.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Click on the buttons/icons in the map panel to select incidents</p></li>
+<li><p>Click on incident cards in the incidents panel to view details</p></li>
+<li><p>Click on drone card to open drone control panel</p></li>
+</ul>
+</div></blockquote>
+<p>Notes:
+When the simulation is not ready, only the spawn panel processes keyboard events.
+Controller connection/disconnection via ROS2 through the RosHandler interface is handled in the drone control panel.</p>
+<p>EDIT THIS DEPENDING ON CHANGES:
+When a drone is selected, it can be controlled manually (PILOT) or set back to auto-pilot (SCOUT) via a service call.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ui.RS1GUI.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ui.html#RS1GUI.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ui.RS1GUI.run" title="Link to this definition"></a></dt>
+<dd><p>Main application loop
+This function runs the main loop of the GUI application.
+It handles events, updates the UI, and manages the application state at each iteration.</p>
+<p>It exits when the self.running flag is set to False, either by user action or programmatically.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ui.RS1GUI.update_controller_buttons">
+<span class="sig-name descname"><span class="pre">update_controller_buttons</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ui.html#RS1GUI.update_controller_buttons"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ui.RS1GUI.update_controller_buttons" title="Link to this definition"></a></dt>
+<dd><p>This function checks for button presses from the teensyjoy controller via ROS2 topics.</p>
+<dl class="simple">
+<dt>It detects rising edges of button presses to trigger actions such as:</dt><dd><ul class="simple">
+<li><p>Cycle camera views (previous/next)</p></li>
+<li><p>Switch to the next drone</p></li>
+</ul>
+</dd>
+</dl>
+<p>The function maintains the last known button states to implement debouncing.</p>
+<dl class="simple">
+<dt>Buttons Mapping (Left Hand Side of Controller, bottom button is not used - Button 6):</dt><dd><ul class="simple">
+<li><p>Button 5: Cycle camera to previous view</p></li>
+<li><p>Button 7: Cycle camera to next view</p></li>
+<li><p>Button 8: Switch to the next drone in the list</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ui.main">
+<span class="sig-prename descclassname"><span class="pre">ui.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ui.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ui.main" title="Link to this definition"></a></dt>
+<dd><p>Main entry point for the RS1 GUI application
+This function initialises and runs the RS1GUI application.</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="telemetry_panel.html" class="btn btn-neutral float-left" title="telemetry_panel module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="utils.html" class="btn btn-neutral float-right" title="utils module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Marcus Frischknecht, Matthew Chua, Jackson Russell, Ace Viray.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

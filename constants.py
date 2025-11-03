@@ -1,5 +1,9 @@
 """
 Constants extracted from original ui.py
+
+Defines colors, dimensions, and settings used across the GUI application.
+
+
 """
 
 import pygame
@@ -17,6 +21,8 @@ BLUE = (100, 170, 255)
 RED = (255, 100, 100)
 YELLOW = (255, 200, 100)
 GREEN = (100, 255, 100)
+PINK = (255, 36, 123)
+DARK_GREEN = (65, 72, 27)
 
 # State colors mapping
 state_colors = {
@@ -40,7 +46,7 @@ ANIM_DURATION = 200  # milliseconds
 scroll_speed = 5
 
 # World and map settings
-world_size = (70,70)
+world_size = (100,100)
 
 # Panel dimensions 
 PANEL_WIDTH = 660

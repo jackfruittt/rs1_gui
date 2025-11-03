@@ -1,0 +1,204 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>utils &mdash; rs1_gui 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            rs1_gui
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">rs1_gui</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">rs1_gui</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Module code</a></li>
+      <li class="breadcrumb-item active">utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for utils</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygame</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">pretty</span>
+
+
+<div class="viewcode-block" id="feather_image">
+<a class="viewcode-back" href="../utils.html#utils.feather_image">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">feather_image</span><span class="p">(</span><span class="n">surface</span><span class="p">,</span> <span class="n">feather_size_x</span><span class="p">,</span> <span class="n">feather_size_y</span><span class="p">,</span>
+                  <span class="n">feather_top</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">feather_right</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                  <span class="n">feather_bottom</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">feather_left</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function feathers selected edges of a Pygame surface, if global `pretty` is True.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        - surface (pygame.Surface): The image surface to feather.</span>
+<span class="sd">        - feather_size_x (int): The width of the feathering effect (used for left/right).</span>
+<span class="sd">        - feather_size_y (int): The height of the feathering effect (used for top/bottom).</span>
+<span class="sd">        - feather_top (bool): Feather the top edge.</span>
+<span class="sd">        - feather_right (bool): Feather the right edge.</span>
+<span class="sd">        - feather_bottom (bool): Feather the bottom edge.</span>
+<span class="sd">        - feather_left (bool): Feather the left edge.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        - pygame.Surface: A new surface with the feathered effect (or original if pretty is False).</span>
+<span class="sd">        </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">pretty</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">surface</span>
+
+    <span class="n">feathered_surface</span> <span class="o">=</span> <span class="n">surface</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">convert_alpha</span><span class="p">()</span>
+    <span class="n">width</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="n">feathered_surface</span><span class="o">.</span><span class="n">get_size</span><span class="p">()</span>
+
+    <span class="n">alpha_mask</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">Surface</span><span class="p">((</span><span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">),</span> <span class="n">pygame</span><span class="o">.</span><span class="n">SRCALPHA</span><span class="p">)</span>
+    <span class="n">alpha_mask</span><span class="o">.</span><span class="n">fill</span><span class="p">((</span><span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">))</span>
+
+    <span class="n">alpha_pixels_view</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">surfarray</span><span class="o">.</span><span class="n">pixels_alpha</span><span class="p">(</span><span class="n">alpha_mask</span><span class="p">)</span>
+
+    <span class="n">h_gradient</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">feather_size_x</span><span class="p">)</span> <span class="k">if</span> <span class="n">feather_right</span> <span class="ow">or</span> <span class="n">feather_left</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="n">v_gradient</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">feather_size_y</span><span class="p">)</span> <span class="k">if</span> <span class="n">feather_top</span> <span class="ow">or</span> <span class="n">feather_bottom</span> <span class="k">else</span> <span class="kc">None</span>
+
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">width</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">height</span><span class="p">):</span>
+            <span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha_pixels_view</span><span class="p">[</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">feather_right</span> <span class="ow">and</span> <span class="n">x</span> <span class="o">&gt;=</span> <span class="n">width</span> <span class="o">-</span> <span class="n">feather_size_x</span><span class="p">:</span>
+                <span class="n">grad_index</span> <span class="o">=</span> <span class="n">x</span> <span class="o">-</span> <span class="p">(</span><span class="n">width</span> <span class="o">-</span> <span class="n">feather_size_x</span><span class="p">)</span>
+                <span class="n">alpha</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="n">h_gradient</span><span class="p">[</span><span class="n">grad_index</span><span class="p">])</span>
+
+            <span class="k">if</span> <span class="n">feather_left</span> <span class="ow">and</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="n">feather_size_x</span><span class="p">:</span>
+                <span class="n">grad_index</span> <span class="o">=</span> <span class="n">feather_size_x</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">x</span>
+                <span class="n">alpha</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="n">h_gradient</span><span class="p">[</span><span class="n">grad_index</span><span class="p">])</span>
+
+            <span class="k">if</span> <span class="n">feather_bottom</span> <span class="ow">and</span> <span class="n">y</span> <span class="o">&gt;=</span> <span class="n">height</span> <span class="o">-</span> <span class="n">feather_size_y</span><span class="p">:</span>
+                <span class="n">grad_index</span> <span class="o">=</span> <span class="n">y</span> <span class="o">-</span> <span class="p">(</span><span class="n">height</span> <span class="o">-</span> <span class="n">feather_size_y</span><span class="p">)</span>
+                <span class="n">alpha</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="n">v_gradient</span><span class="p">[</span><span class="n">grad_index</span><span class="p">])</span>
+
+            <span class="k">if</span> <span class="n">feather_top</span> <span class="ow">and</span> <span class="n">y</span> <span class="o">&lt;</span> <span class="n">feather_size_y</span><span class="p">:</span>
+                <span class="n">grad_index</span> <span class="o">=</span> <span class="n">feather_size_y</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">y</span>
+                <span class="n">alpha</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="n">v_gradient</span><span class="p">[</span><span class="n">grad_index</span><span class="p">])</span>
+
+            <span class="n">alpha_pixels_view</span><span class="p">[</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">alpha</span><span class="p">)</span>
+
+    <span class="k">del</span> <span class="n">alpha_pixels_view</span>
+    <span class="n">feathered_surface</span><span class="o">.</span><span class="n">blit</span><span class="p">(</span><span class="n">alpha_mask</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">special_flags</span><span class="o">=</span><span class="n">pygame</span><span class="o">.</span><span class="n">BLEND_RGBA_MULT</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">feathered_surface</span></div>
+
+
+
+<div class="viewcode-block" id="mapRange">
+<a class="viewcode-back" href="../utils.html#utils.mapRange">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">mapRange</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">inMin</span><span class="p">,</span> <span class="n">inMax</span><span class="p">,</span> <span class="n">outMin</span><span class="p">,</span> <span class="n">outMax</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function maps a value from one range to another</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        - value (float): The input value to map.</span>
+<span class="sd">        - inMin (float): The minimum of the input range.</span>
+<span class="sd">        - inMax (float): The maximum of the input range.</span>
+<span class="sd">        - outMin (float): The minimum of the output range.</span>
+<span class="sd">        - outMax (float): The maximum of the output range.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        - float: The mapped value in the output range.</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">outMin</span> <span class="o">+</span> <span class="p">(((</span><span class="n">value</span> <span class="o">-</span> <span class="n">inMin</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">inMax</span> <span class="o">-</span> <span class="n">inMin</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="n">outMax</span> <span class="o">-</span> <span class="n">outMin</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="draw_left_fade">
+<a class="viewcode-back" href="../utils.html#utils.draw_left_fade">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">draw_left_fade</span><span class="p">(</span><span class="n">screen</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function draws the left fade overlay</span>
+<span class="sd">    Args:</span>
+<span class="sd">        - screen (pygame.Surface): The main screen surface to draw the fade on.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">l_fade_surface</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">Surface</span><span class="p">((</span><span class="mi">670</span><span class="p">,</span> <span class="mi">395</span><span class="p">),</span> <span class="n">pygame</span><span class="o">.</span><span class="n">SRCALPHA</span><span class="p">)</span>
+    <span class="n">l_fade_surface</span><span class="o">.</span><span class="n">fill</span><span class="p">((</span><span class="mi">225</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">108</span><span class="p">))</span>  <span class="c1"># Transparent background</span>
+    <span class="n">screen</span><span class="o">.</span><span class="n">blit</span><span class="p">(</span><span class="n">l_fade_surface</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Marcus Frischknecht, Matthew Chua, Jackson Russell, Ace Viray.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
