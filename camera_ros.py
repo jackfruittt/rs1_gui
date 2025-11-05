@@ -324,6 +324,45 @@ class CameraComponent:
         previous_index = (self.current_topic_index - 1) % len(self.available_topics)
         return self.switch_to_topic(previous_index)
     
+    def switch_to_next_front_topic(self) -> bool:
+        """Switch to next '/front/image' topic only (wraps)."""
+        if not getattr(self, "available_topics", None):
+            return False
+        # indices of front topics in the master list (preserves discovery order)
+        front_idxs = [i for i, t in enumerate(self.available_topics) if "/front/image" in t]
+        if not front_idxs:
+            return False
+        # find current front index
+        try:
+            cur_master_idx = self.current_topic_index
+            if cur_master_idx in front_idxs:
+                cur_pos = front_idxs.index(cur_master_idx)
+            else:
+                # if current topic isn't a front camera, start at first front
+                cur_pos = 0
+        except Exception:
+            cur_pos = 0
+        next_pos = (cur_pos + 1) % len(front_idxs)
+        return self.switch_to_topic(front_idxs[next_pos])
+
+    def switch_to_previous_front_topic(self) -> bool:
+        """Switch to previous '/front/image' topic only (wraps)."""
+        if not getattr(self, "available_topics", None):
+            return False
+        front_idxs = [i for i, t in enumerate(self.available_topics) if "/front/image" in t]
+        if not front_idxs:
+            return False
+        try:
+            cur_master_idx = self.current_topic_index
+            if cur_master_idx in front_idxs:
+                cur_pos = front_idxs.index(cur_master_idx)
+            else:
+                cur_pos = 0
+        except Exception:
+            cur_pos = 0
+        prev_pos = (cur_pos - 1) % len(front_idxs)
+        return self.switch_to_topic(front_idxs[prev_pos])
+    
     def switch_to_drone_camera(self, drone_id: int, camera_type: str = "front") -> bool:
         """
         This function enables switching to a specific drone's camera.

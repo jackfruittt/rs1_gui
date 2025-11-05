@@ -194,7 +194,7 @@ class SpawnPromptPanel:
         This function terminates all relevant simulator processes to ensure a clean shutdown.
 
         """
-        commands = ['pkill -f "ign gazebo"', 'pkill -f "parameter_bridge"', 'pkill -f "robot_state_publisher"', 'pkill -f "multi_drone_composition_controller"', 'pkill -f "controller_node"']
+        commands = ['pkill -f "ign gazebo"', 'pkill -f "parameter_bridge"', 'pkill -f "robot_state_publisher"', 'pkill -f "multi_drone_composition_controller"', 'pkill -f "controller_node"', 'pkill -f "joy_node"']
         for command in commands:
             subprocess.Popen(command, shell=True)
     

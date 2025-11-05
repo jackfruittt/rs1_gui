@@ -599,26 +599,14 @@ class RS1GUI:
                 # Detect rising edges by comparing previous and current button states 
                 for i, (prev, curr) in enumerate(zip(prev_states, button_states)):
                     if prev == 0 and curr == 1:
-                        # Check if button id corresponds 
+                        # Switch only to front camera views
                         if i == 5:
-                            self.camera_component.cycle_drone_camera(self.selected_drone, len(self.drones), -1)
+                            self.camera_component.switch_to_previous_front_topic()
 
                         elif i == 7:
-                            self.camera_component.cycle_drone_camera(self.selected_drone, len(self.drones), 1)
+                            self.camera_component.switch_to_next_front_topic()
 
-                        #elif i == 6: # Waypoint button
-                            # Print out Waypoint Data in GUI??
-
-                        # Doesnt Work atm - need to keep track of what camera view is currently active
-                        # So it switches views based on drone selected via teensyjoy
-                        # elif i == 8:
-                        #     # Drones is index 1 
-                        #     if self.last_drone_id + 1 < len(self.drones)+1:
-                        #         self.last_drone_id += 1
-                        #     else:
-                        #         self.last_drone_id = 1
-                        #     self.camera_component.switch_to_drone_camera(self.last_drone_id, "front")
-
+                        # Switch to the front camera of the next drone
                         elif i == 8:
                             if self.selected_drone == -1:
                                 self.selected_drone = 0
@@ -635,13 +623,6 @@ class RS1GUI:
 
                 # Save states for next cycle
                 self.last_button_states[topic] = button_states
-
-                # Not sure what this does but will need clarification
-                new_list.append({
-                    'topic': topic,
-                    'button_states': button_states,
-                    'pressed_buttons': [i for i, state in enumerate(button_states) if state == 1]
-                })
 
 
     def _sync_drones_from_odom(self):
