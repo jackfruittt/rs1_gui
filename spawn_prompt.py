@@ -47,8 +47,8 @@ class SpawnPromptPanel:
         """
         self.button_rects = []
 
-        panel = pygame.Surface((1900, 860))
-        panel.fill(BLACK)
+        panel = pygame.Surface((1900, 960))
+        panel.fill(DARK_GREEN)
         panel.blit(self.bg, (0,0))
 
         center_x = 1900 // 2

@@ -48,6 +48,7 @@ from map_panel import MapPanel
 from incident_detail_panel import IncidentDetailPanel
 from spawn_prompt import SpawnPromptPanel
 from notification import NotificationUI
+from fleet_control_panel import FleetActionsPanel
 
 @dataclass
 class KnownPoses:
@@ -79,7 +80,7 @@ class RS1GUI:
     def __init__(self):
         """Initialise the GUI application"""
         pygame.init()
-        self.screen = pygame.display.set_mode((1900, 860))
+        self.screen = pygame.display.set_mode((1900, 960))
         pygame.display.set_caption("RS1 GUI")
         self.clock = pygame.time.Clock()
 
@@ -149,6 +150,7 @@ class RS1GUI:
         self.incident_detail_panel = IncidentDetailPanel(self.fonts)
         self.drone_control_panel = DroneControlPanel(self, self.fonts)
         self.notification_ui = NotificationUI(self.fonts)
+        self.fleet_control_panel = FleetActionsPanel(self, self.fonts)
 
         # Initialise camera component with instant switching (no delay when changing cameras)
         self.camera_component = CameraComponent(
@@ -418,7 +420,14 @@ class RS1GUI:
         )
         self.screen.blit(controls_text, (1250, 790))
 
+        self.fleet_control_panel.render(self.screen)
+
         self.notification_ui.drawNotifications(self.screen)
+
+        # allDrones_bg = pygame.Rect(20, 780, 300, 150)
+        # pygame.draw.rect(self.screen, BLACK, allDrones_bg)
+
+
     
     def handle_events(self):
         """
@@ -495,6 +504,8 @@ class RS1GUI:
                     continue
 
                 self.map_panel.processClickInMap(self, mx, my)
+
+                self.fleet_control_panel.buttonLogic(mx, my)
 
                 if self.selected_incident < 0:
                     self.drones_panel.buttonLogic(self, mx, my)

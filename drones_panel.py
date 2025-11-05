@@ -151,7 +151,7 @@ class dronesPanel:
 
         # scrolling bars (panel-relative)
         scroll_up_rel = pygame.Rect(self.PANEL_W - 35, 50, 40, 150)
-        scroll_down_rel = pygame.Rect(self.PANEL_W - 35, self.PANEL_H - 350, 40, 150)
+        scroll_down_rel = pygame.Rect(self.PANEL_W - 35, self.PANEL_H - 200, 40, 150)
         pygame.draw.rect(panel_surface, LIGHT_GRAY, scroll_up_rel)   # Up area
         pygame.draw.rect(panel_surface, LIGHT_GRAY, scroll_down_rel) # Down area
 
