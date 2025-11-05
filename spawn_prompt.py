@@ -37,7 +37,7 @@ class SpawnPromptPanel:
     def draw_prompt(self, screen):
         """
         Draw the full-screen spawn prompt interface.
-        Here the user can input the number of drones to spawn (1-6) and submit the request.
+        Here the user can input the number of drones to spawn (1-10) and submit the request.
 
         Once the request is submitted, a loading animation is shown until the simulator is ready.
         
@@ -63,7 +63,7 @@ class SpawnPromptPanel:
         panel.blit(title, title_rect)
 
         # --- Prompt text (centered horizontally)
-        question = self.fonts['inter_small'].render("How many drones would you like to spawn? (1-10)", True, WHITE)
+        question = self.fonts['inter_small'].render("How many drones would you like to spawn? (1-6)", True, WHITE)
         question_rect = question.get_rect(center=(center_x, title_rect.bottom + 40))
         
 
@@ -134,7 +134,7 @@ class SpawnPromptPanel:
                         self.startSim()
                     return
                 elif event.unicode.isdigit():
-                    if int(self.user_input + event.unicode) < 11:
+                    if int(self.user_input + event.unicode) <= 10 and int(self.user_input + event.unicode) >= 1:
                         self.user_input += event.unicode
         return None
 
