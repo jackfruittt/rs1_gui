@@ -16,7 +16,7 @@ class dronesPanel:
 
         # geometry (kept consistent with your original)
         self.PANEL_X, self.PANEL_Y = 10, 10
-        self.PANEL_W, self.PANEL_H = 350, 900
+        self.PANEL_W, self.PANEL_H = 350, 750
         self.card_height = 90
         self.card_width = 300
         self.margin = 15
@@ -150,8 +150,8 @@ class dronesPanel:
                 panel_surface.blit(arrow_text, (arrow_x, arrow_y))
 
         # scrolling bars (panel-relative)
-        scroll_up_rel = pygame.Rect(self.PANEL_W - 35, 50, 40, 300)
-        scroll_down_rel = pygame.Rect(self.PANEL_W - 35, self.PANEL_H - 350, 40, 300)
+        scroll_up_rel = pygame.Rect(self.PANEL_W - 35, 50, 40, 150)
+        scroll_down_rel = pygame.Rect(self.PANEL_W - 35, self.PANEL_H - 200, 40, 150)
         pygame.draw.rect(panel_surface, LIGHT_GRAY, scroll_up_rel)   # Up area
         pygame.draw.rect(panel_surface, LIGHT_GRAY, scroll_down_rel) # Down area
 
@@ -173,7 +173,7 @@ class dronesPanel:
         if self.scroll_y < self.max_y:
             panel_surface.blit(self.topFeather, (self.PANEL_X, 0))
         else:
-            panel_surface.blit(self.bottomFeather, (self.PANEL_X, self.PANEL_H - 95))
+            panel_surface.blit(self.bottomFeather, (self.PANEL_X, self.PANEL_H - 50))
         # final blit
         screen.blit(panel_surface, (self.PANEL_X, self.PANEL_Y))
 

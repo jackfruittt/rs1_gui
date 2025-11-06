@@ -153,7 +153,7 @@ class DroneControlPanel:
                 col1_x = left_margin + BTN_WIDTH + BTN_SPACING_X
                 row_gap = BTN_SPACING_Y
 
-                labels = ["HOVER", "LAND", "PILOT", "SEND", "CLOSE"]  # 6 buttons
+                labels = ["TAKEOFF", "LAND", "PILOT", "SEND", "CLOSE"]  # 6 buttons
 
                 # Generate rects row-major: two columns
                 buttons = []
@@ -238,12 +238,15 @@ class DroneControlPanel:
             if rect.collidepoint((mx, my)):
                 print(f"Drone button clicked: {label}")
                 match label:
-                    case "HOVER":
-                        self.app.notification_ui.pushNotification("Hovering!", f"Drone set to Hover!")
+                    case "TAKEOFF":
+                        self.app.notification_ui.pushNotification("Taking OFF!", f"Drone set to Take off!")
+                        # spawn_cmd_safe - Send command for droneX
                     case "LAND":
                         self.app.notification_ui.pushNotification("Landing!", f"Drone set to Land!")
+                        # spawn_cmd_safe - Send command for droneX
                     case "SCOUT":
                         self.panelState = 0
+                        # spawn_cmd_safe - Send command for droneX
                     case "PILOT":
                         self.panelState = 1
                         if self.app.ros_available:
