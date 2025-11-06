@@ -240,10 +240,16 @@ class DroneControlPanel:
                 match label:
                     case "TAKEOFF":
                         self.app.notification_ui.pushNotification("Taking OFF!", f"Drone set to Take off!")
-                        # spawn_cmd_safe - Send command for droneX
+                        # Get the namespace of the selected drone
+                        drone_ns = self.app.drones[self.app.selected_drone].get('ns', '')
+                        if drone_ns:
+                            spawn_cmd_safe(f"ros2 service call /{drone_ns}/takeoff_drone std_srvs/srv/Trigger")
                     case "LAND":
                         self.app.notification_ui.pushNotification("Landing!", f"Drone set to Land!")
-                        # spawn_cmd_safe - Send command for droneX
+                        # Get the namespace of the selected drone
+                        drone_ns = self.app.drones[self.app.selected_drone].get('ns', '')
+                        if drone_ns:
+                            spawn_cmd_safe(f"ros2 service call /{drone_ns}/land_drone std_srvs/srv/Trigger")
                     case "SCOUT":
                         self.panelState = 0
                         # spawn_cmd_safe - Send command for droneX

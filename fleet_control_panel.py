@@ -66,7 +66,17 @@ class FleetActionsPanel:
             if rect.collidepoint((mx, my)):
                 print(f"Fleet button clicked: {label}")
                 if label == "TAKEOFF All":
-                    spawn_cmd_safe("ros2 service call /rs1_drone_$/takeoff_drone std_srvs/srv/Trigger")
+                    # Loop through all drones and call takeoff service for each
+                    drones = getattr(self.app, 'drones', [])
+                    for drone in drones:
+                        ns = drone.get('ns', '')
+                        if ns:
+                            spawn_cmd_safe(f"ros2 service call /{ns}/takeoff_drone std_srvs/srv/Trigger")
                 elif label == "LAND All":
-                    spawn_cmd_safe("ros2 service call /rs1_drone_$/land_drone std_srvs/srv/Trigger")
+                    # Loop through all drones and call land service for each
+                    drones = getattr(self.app, 'drones', [])
+                    for drone in drones:
+                        ns = drone.get('ns', '')
+                        if ns:
+                            spawn_cmd_safe(f"ros2 service call /{ns}/land_drone std_srvs/srv/Trigger")
                 break
