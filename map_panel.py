@@ -88,8 +88,10 @@ class MapPanel:
         half_wy = world_size[1] / 2.0
 
         for wx, wy, _ in waypoints:
-            x = mapRange(wx, -half_wx, half_wx, 0, self.mapImgSize[0])
-            y = mapRange(wy, -half_wy, half_wy, 0, self.mapImgSize[1])
+            # x = mapRange(wx, -half_wx, half_wx, 0, self.mapImgSize[0])
+            # y = mapRange(wy, -half_wy, half_wy, 0, self.mapImgSize[1])
+            x = mapRange(-wy, -half_wy, half_wy, 0, self.mapImgSize[1])
+            y = mapRange(-wx, -half_wx, half_wx, 0, self.mapImgSize[0])
             xi, yi = int(x), int(y)
             pts.append((xi, yi))
             if xi < minx: minx = xi
@@ -254,17 +256,19 @@ class MapPanel:
 
         for i in range(len(waypoints)):
             wx, wy, wz = waypoints[i]
-            imgX = mapRange(wx, -(world_size[0]/2), (world_size[0]/2), 0, self.mapImgSize[0])
-            imgY = mapRange(wy, -(world_size[1]/2), (world_size[1]/2), 0, self.mapImgSize[1])
+            # Pygame axis and Gazebo axis is flipped for x and y
+            imgX = mapRange(-wy, -(world_size[0]/2), (world_size[0]/2), 0, self.mapImgSize[1])
+            imgY = mapRange(-wx, -(world_size[1]/2), (world_size[1]/2), 0, self.mapImgSize[0])
 
             # draw node
             pygame.draw.circle(wp_surface, RED, (int(imgX), int(imgY)), CUSTOM_WAYPOINT_RADIUS)
 
             # connect to previous node
             if i > 0:
+                # Pygame axis and Gazebo axis is flipped for x and y
                 prev_wx, prev_wy, prev_wz = waypoints[i-1]
-                prev_imgX = mapRange(prev_wx, -(world_size[0]/2), (world_size[0]/2), 0, self.mapImgSize[0])
-                prev_imgY = mapRange(prev_wy, -(world_size[1]/2), (world_size[1]/2), 0, self.mapImgSize[1])
+                prev_imgX = mapRange(-prev_wy, -(world_size[0]/2), (world_size[0]/2), 0, self.mapImgSize[0])
+                prev_imgY = mapRange(-prev_wx, -(world_size[1]/2), (world_size[1]/2), 0, self.mapImgSize[1])
 
                 pygame.draw.line(wp_surface, RED,
                                 (int(prev_imgX), int(prev_imgY)),
@@ -276,10 +280,11 @@ class MapPanel:
             first_wx, first_wy, first_wz = waypoints[0]
             last_wx, last_wy, last_wz = waypoints[-1]
 
-            first_imgX = mapRange(first_wx, -(world_size[0]/2), (world_size[0]/2), 0, self.mapImgSize[0])
-            first_imgY = mapRange(first_wy, -(world_size[1]/2), (world_size[1]/2), 0, self.mapImgSize[1])
-            last_imgX = mapRange(last_wx, -(world_size[0]/2), (world_size[0]/2), 0, self.mapImgSize[0])
-            last_imgY = mapRange(last_wy, -(world_size[1]/2), (world_size[1]/2), 0, self.mapImgSize[1])
+            # Pygame axis and Gazebo axis is flipped for x and y
+            first_imgX = mapRange(-first_wy, -(world_size[0]/2), (world_size[0]/2), 0, self.mapImgSize[0])
+            first_imgY = mapRange(-first_wx, -(world_size[1]/2), (world_size[1]/2), 0, self.mapImgSize[1])
+            last_imgX = mapRange(-last_wy, -(world_size[0]/2), (world_size[0]/2), 0, self.mapImgSize[0])
+            last_imgY = mapRange(-last_wx, -(world_size[1]/2), (world_size[1]/2), 0, self.mapImgSize[1])
 
             pygame.draw.line(wp_surface, RED,
                             (int(last_imgX), int(last_imgY)),
@@ -382,8 +387,9 @@ class MapPanel:
             gps_y = float(gps_coords[1])
             title = incidents[i]["title"]
 
-            imgX = mapRange(gps_x, -(world_size[0]/2), (world_size[0]/2), 0, self.mapImgSize[0])
-            imgY = mapRange(gps_y, -(world_size[1]/2), (world_size[1]/2), 0, self.mapImgSize[1])
+            # Pygame axis and Gazebo axis is flipped for x and y
+            imgX = mapRange(-gps_y, -(world_size[0]/2), (world_size[0]/2), 0, self.mapImgSize[0])
+            imgY = mapRange(-gps_x, -(world_size[1]/2), (world_size[1]/2), 0, self.mapImgSize[1])
 
             kind = "Warn"
             if 'Fire' in title:
@@ -410,7 +416,7 @@ class MapPanel:
             gps_x = float(gps_coords[1])
             gps_y = float(gps_coords[0])
 
-            # Temporary Fix to align Drone Images on GUI Map to match Gazebo Positions
+            # Pygame axis and Gazebo axis is flipped for x and y, offset values to align icon center to the helipad spawn
             imgX = mapRange(-gps_x, -(world_size[0]/2), (world_size[0]/2), 0, self.mapImgSize[1]) - 26
             imgY = mapRange(-gps_y, -(world_size[1]/2), (world_size[1]/2), 0, self.mapImgSize[1]) - 37
 
@@ -486,9 +492,12 @@ class MapPanel:
                         break
             else:
                 if ui.drone_control_panel.panelState == 2:
-                    lx = gmx - 380
-                    ly = gmy - 20
-                    lx = mapRange(lx, 0, self.mapImgSize[0], -(world_size[0]/2), (world_size[0]/2))
-                    ly = mapRange(ly, 0, self.mapImgSize[1], -(world_size[1]/2), (world_size[1]/2))
+                    local_x = gmx - 380
+                    local_y = gmy - 20
+
+                    # Adjusted for pygame/gazebo axis flip
+                    lx = -mapRange(local_y, 0, self.mapImgSize[0], -(world_size[0]/2), (world_size[0]/2))
+                    ly = -mapRange(local_x, 0, self.mapImgSize[1], -(world_size[1]/2), (world_size[1]/2))
+
                     self.highlighted_waypoints.append([lx, ly, -999])
                     print(f'custom waypoint added at {lx}, {ly}')
