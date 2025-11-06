@@ -108,13 +108,26 @@ class IncidentDetailPanel:
         # Store absolute rect for click detection
         self._close_rect_abs = pygame.Rect(PANEL_X + close_rel.x, PANEL_Y + close_rel.y,
                                            close_rel.w, close_rel.h)
-
+        
         # ===== Content card =====
         content_margin = 20
         card_top = 90
         card_height = PANEL_HEIGHT - card_top - 90
+
+        # Draw placeholder background temporarily
         pygame.draw.rect(panel, LIGHT_GRAY, (content_margin, card_top,
                                              PANEL_WIDTH - 2 * content_margin, card_height))
+        
+        # ===== Image setup for scenario display in incident panel =====
+        # Keep proportions and spacing similar to list panel; slightly larger for detail
+        img_w, img_h = 220, 160
+        img_x = content_margin + 10
+        img_y = card_top + 10
+
+        # Try to get and display scenario image
+        scenario_surface = None
+        if camera_component is not None:
+            scenario_surface = self._get_scenario_image_surface(incident, camera_component, img_w, img_h)
 
         # Severity accent line (bottom of the content card)
         sev_color = severity_colors[max(0, min(incidents_severity_index(incident), len(severity_colors)-1))]
@@ -122,22 +135,14 @@ class IncidentDetailPanel:
                                             PANEL_WIDTH - 2 * content_margin, 6))
 
         # ===== Image placeholder =====
-        # Keep proportions and spacing similar to list panel; slightly larger for detail
-        img_w, img_h = 220, 160
-        img_x = content_margin + 10
-        img_y = card_top + 10
-        
-        # Draw placeholder background
+        # Draw placeholder background temporarily
         pygame.draw.rect(panel, DARK_GRAY, (img_x, img_y, img_w, img_h))
         
-        # Try to get and display scenario image
-        scenario_surface = None
-        if camera_component is not None:
-            scenario_surface = self._get_scenario_image_surface(incident, camera_component, img_w, img_h)
-        
+        # ===== Rescale and blit scenario in more detailed panel ======
         if scenario_surface:
-            # Display the actual scenario image
-            panel.blit(scenario_surface, (img_x, img_y))
+            # Display the actual scenario image after scaling it 
+            scaled_scenario_surface = pygame.transform.scale(scenario_surface, (img_w, img_h))
+            panel.blit(scaled_scenario_surface, (img_x, img_y))
         else:
             # Display placeholder text if no image available
             font = self.fonts['small_font']
