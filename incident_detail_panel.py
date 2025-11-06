@@ -27,16 +27,15 @@ class IncidentDetailPanel:
 
     def draw_incident_detail(self, incident, screen):
         """
-        This function renders the incident detail panel.
-
+        Render the incident detail panel.
         The User is notified in the main screen of the GUI of the detected incident details if any.
         The included details of the incident can be seen below
-
         NOTE: Update this param incident if the csv structure changes
-
         Args:
             - param incident: dict with keys:
             id, title, time, severity, Platform, drone_coords, global_coords
+            - param screen: pygame Surface (main screen)
+
             - param screen: pygame Surface (main screen)
 
         """
@@ -137,8 +136,7 @@ class IncidentDetailPanel:
 
     def handle_click(self, ui, pos):
         """
-        This function handles click detection for the incident detail panel controls.
-
+        Translate a mouse position (screen coords) into a semantic action.
         Args:
             - pos (tuple): (x, y) mouse position in screen coordinates.
         Returns:
@@ -168,14 +166,13 @@ class IncidentDetailPanel:
 
 def incidents_severity_index(incident):
     """
-    This is a helper function to convert incident['severity'] to index for severity_colors, clamping to valid range (0-based).
-
+    Helper to convert incident['severity'] to index for severity_colors,
+    clamping to valid range (0-based).
     Args:
         - incident (dict): Incident data dictionary.
 
     Returns:
         - int: Severity index (0-based).
-    
     """
     sev = incident.get('severity', 1)
     try:

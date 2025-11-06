@@ -37,7 +37,7 @@ class SpawnPromptPanel:
     def draw_prompt(self, screen):
         """
         Draw the full-screen spawn prompt interface.
-        Here the user can input the number of drones to spawn (1-6) and submit the request.
+        Here the user can input the number of drones to spawn (1-10) and submit the request.
 
         Once the request is submitted, a loading animation is shown until the simulator is ready.
         
@@ -47,8 +47,8 @@ class SpawnPromptPanel:
         """
         self.button_rects = []
 
-        panel = pygame.Surface((1900, 860))
-        panel.fill(BLACK)
+        panel = pygame.Surface((1900, 960))
+        panel.fill(DARK_GREEN)
         panel.blit(self.bg, (0,0))
 
         center_x = 1900 // 2
@@ -63,7 +63,7 @@ class SpawnPromptPanel:
         panel.blit(title, title_rect)
 
         # --- Prompt text (centered horizontally)
-        question = self.fonts['inter_small'].render("How many drones would you like to spawn? (1-10)", True, WHITE)
+        question = self.fonts['inter_small'].render("How many drones would you like to spawn? (1-6)", True, WHITE)
         question_rect = question.get_rect(center=(center_x, title_rect.bottom + 40))
         
 
@@ -134,7 +134,7 @@ class SpawnPromptPanel:
                         self.startSim()
                     return
                 elif event.unicode.isdigit():
-                    if int(self.user_input + event.unicode) < 11:
+                    if int(self.user_input + event.unicode) <= 10 and int(self.user_input + event.unicode) >= 1:
                         self.user_input += event.unicode
         return None
 
@@ -199,6 +199,21 @@ class SpawnPromptPanel:
             subprocess.Popen(command, shell=True)
     
     def simulateEnvSetup(self):
+        """
+        SimulateEnvSetup function - Initialize simulated environment for testing.
+        Generates a number of simulated drones and incidents to populate the GUI when running
+        without live ROS2 data, mimicking a real deployment environment.
+        Args:
+            - None
+        Returns:
+            - None
+        Side Effects:
+            - Populates self.app.drones with generated drone objects.
+            - Assigns default waypoints to drones if available.
+            - Populates self.app.incidents with randomly generated incidents.
+            - Sets self.app.simReady to True to indicate simulation initialization is complete.
+        """
+
         time.sleep(0.01)
         for _ in range(self.requestCount):
             self.app.drones.append(self.app.generate_drone())
@@ -213,14 +228,26 @@ class SpawnPromptPanel:
 
     def waitForSim(self):
         """
-        This function waits for the simulator to be ready by checking for the expected number of drones.
-        It periodically checks the available drone topics and initialises the camera component and subscriptions once all drones are detected.
-
-        If the expected number of drones is not detected within a timeout period, it falls back to generating fake data.
-
-        The timeout is increased by 10 to wait for the cameras to appear after starting ROS2, enabling the GUI to subscribe to them.
-
+        WaitForSim function - Block until ROS/Gazebo simulation is discoverable, then initialize UI.
+        Waits for drones and related ROS2 topics to appear (with staged sleeps and a max timeout). On success,
+        creates drone entries, discovers/validates camera topics, initializes CameraComponent, and subscribes
+        to odometry/incident/button topics. On timeout or error, falls back to generating simulated drones
+        and incidents (like simulateEnvSetup). Marks the UI as ready at the end.
+        Args:
+            - None
+        Returns:
+            - None
+        Side Effects:
+            - Sleeps for staged delays (10s + 15s) before polling for topics.
+            - Repeatedly calls ros_handler.discover_topics() while polling.
+            - Populates self.app.drones with discovered (or simulated) entries.
+            - Optionally deep-copies default waypoints into each drone.
+            - Initializes self.app.camera_component and subscribes to available topics.
+            - Updates self.app.odometry_topics, self.app.incident_topics, self.app.button_topics.
+            - Sets self.app.simReady = True when initialization completes or on fallback.
+            - Prints progress and diagnostic information to the console.
         """
+
         print("Waiting for Sim...")
         
         # Give shell script time to actually spawn the drones

@@ -14,9 +14,17 @@ class CameraComponent:
     Camera feeds is then displayed in a defined rectangle on the Pygame screen GUI.
 
     """
-
-    
     def __init__(self, ros_handler: RosHandler, display_rect=(20, 20, 640, 360), instant_switching=True, preload_all=False):
+        """
+        Initializes the CameraComponent.
+        
+        Args:
+            - ros_handler (RosHandler): Centralised ROS2 handler for topic subscriptions.
+            - display_rect (tuple): (x, y, width, height) rectangle on screen to display camera feed.
+            - instant_switching (bool): If True, use preloading for instant switching between cameras.
+            - preload_all (bool): If True, preload all camera topics for zero-delay switching.
+
+        """
         """
         Initializes the CameraComponent.
         
@@ -374,6 +382,12 @@ class CameraComponent:
         Returns:
             - bool: True if switch was successful, False otherwise.
 
+            - drone_id (int): Drone number (1, 2, 3, etc.)
+            - camera_type (str): "front" or "bottom"
+
+        Returns:
+            - bool: True if switch was successful, False otherwise.
+
         """
         topic_name = f"/rs1_drone_{drone_id}/{camera_type}/image"
         
@@ -388,10 +402,13 @@ class CameraComponent:
     def cycle_drone_camera(self, current_drone_index: int, num_drones: int, direction: int):
         """
         Cycle through drone front cameras without returning/updating drone selection.
+        
+        Used with rs1_teensyjoy controller switch camera buttons.
+
         Args:
-            current_drone_index: Current drone index (0-based, -1 if none selected)
-            num_drones: Total number of drones
-            direction: 1 for next, -1 for previous
+            - current_drone_index (int): Current drone index (0-based, -1 if none selected)
+            - num_drones (int): Total number of drones
+            - direction (int): 1 for next, -1 for previous
         """
         drone_id = current_drone_index
         

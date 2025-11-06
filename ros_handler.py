@@ -197,6 +197,18 @@ class RosHandler:
     
 
     def subscribe_to_incident_topic(self, topic_name: str) -> bool:
+        """
+        Original subscribe_to_incident_topic function - Subscribe to a ROS2 incident topic.
+        Attempts to connect the node to a specified ROS2 topic for receiving incident messages.
+        Returns True if the subscription is successful; otherwise logs an error and returns False.
+        Args:
+            - topic_name (str): The full name of the ROS2 topic to subscribe to (e.g., "/rs1/incidents").
+        Returns:
+            - (bool): True if subscription succeeded, False if ROS2 is unavailable or an error occurred.
+        Side Effects:
+            - Prints subscription status or error messages to the console.
+        """
+
         if not self.node or not self.ros2_available:
             return False
         try:
@@ -210,6 +222,18 @@ class RosHandler:
 
     # Controller related functions
     def call_teensy_connect(self, connect: bool):
+        """
+        Call_teensy_connect function - Trigger ROS2 service to connect or disconnect Teensy joystick.
+        Sends a service call request via the ROS2 node to either establish or terminate a connection
+        with the Teensy-based joystick controller.
+        Args:
+            - connect (bool): True to connect, False to disconnect.
+        Returns:
+            - (bool): True if the service call succeeded, False if ROS2 is unavailable or the call failed.
+        Side Effects:
+            - Prints an error message if ROS2 is not available.
+        """
+
         # True - connect, False - disconnect
         if not self.node or not self.ros2_available:
             print("ROS2 not available, cannot call service")
@@ -217,6 +241,19 @@ class RosHandler:
         return self.node.call_connect_service(connect)
 
     def publish_current_drone_id(self, drone_id: int):
+        """
+        Publish_current_drone_id function - Publish the currently selected drone ID to ROS2.
+        Updates the shared GUI drone ID state and publishes it via the ROS2 node to inform other
+        components which drone is currently active or being controlled.
+        Args:
+            - drone_id (int): The numeric ID of the selected drone to publish.
+        Returns:
+            - (bool): True if successfully published, False if ROS2 is unavailable or an error occurred.
+        Side Effects:
+            - Updates self.current_gui_drone_id within a thread-safe lock.
+            - Prints the publish result or error message to the console.
+        """
+
         if not self.node or not self.ros2_available:
             return False
             
@@ -239,6 +276,18 @@ class RosHandler:
     # Button related functions based off the camera and odometry ones
     # Some may be redundant
     def subscribe_to_button_topic(self, topic_name: str) -> bool:
+        """
+        Subscribe_to_button_topic function - Subscribe to a ROS2 topic for button input events.
+        Attempts to connect the node to a specified ROS2 topic that publishes controller or GUI button states.
+        Returns True if the subscription succeeds; otherwise logs the exception and returns False.
+        Args:
+            - topic_name (str): The full name of the ROS2 topic to subscribe to (e.g., "/rs1/button_events").
+        Returns:
+            - (bool): True if subscription succeeded, False if ROS2 is unavailable or an error occurred.
+        Side Effects:
+            - Prints subscription status or error details to the console.
+        """
+
         if not self.node or not self.ros2_available:
             return False
         try:

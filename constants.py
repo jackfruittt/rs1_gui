@@ -12,6 +12,7 @@ import pygame
 pretty = True  # True = feathered edges, False = solid edges
 
 # Colors
+BLACK = (0,0,0)
 WHITE = (255, 255, 255)
 LIGHT_GRAY = (200, 200, 200)
 GRAY = (50, 50, 50)
