@@ -25,7 +25,51 @@ class IncidentDetailPanel:
         self._respond_rect_abs = None
         self._clear_rect_abs = None
 
-    def draw_incident_detail(self, incident, screen):
+        self.scenario_image_cache = {}
+    
+    def _get_scenario_image_surface(self, incident, camera_component, img_w, img_h):
+        """
+        Get the scenario image surface for the given incident.
+        Uses caching to avoid redundant conversions (5 second freshness).
+        Reuses camera_component's conversion method to avoid code duplication.
+        
+        Args:
+            incident: Incident dictionary with 'drone' key
+            camera_component: CameraComponent instance (has ros_handler and conversion method)
+            img_w, img_h: Target width and height for the image
+            
+        Returns:
+            pygame.Surface or None: Image surface if available, None otherwise
+        """
+        if not camera_component or not camera_component.ros_handler.ros2_available:
+            return None
+            
+        # Construct topic name from drone ID
+        drone_id = incident.get('drone', 1)
+        topic_name = f"/rs1_drone_{drone_id}/scenario_img"
+        
+        # Check cache first
+        import time
+        cache_key = (topic_name, img_w, img_h)
+        if cache_key in self.scenario_image_cache:
+            cached_data = self.scenario_image_cache[cache_key]
+            # Check if cache is still fresh (5 seconds)
+            if time.time() - cached_data['timestamp'] < 5.0:
+                return cached_data['surface']
+        
+        # Try to get image from ROS
+        cv_image = camera_component.ros_handler.get_latest_scenario_image(topic_name)
+
+        surface = camera_component._cv2_to_pygame_surface(cv_image)
+
+        # Cache the result
+        self.scenario_image_cache[cache_key] = {
+            'surface': surface,
+            'timestamp': time.time()
+        }
+        return surface
+    
+    def draw_incident_detail(self, incident, screen, camera_component=None):
         """
         Render the incident detail panel.
         The User is notified in the main screen of the GUI of the detected incident details if any.
@@ -82,7 +126,28 @@ class IncidentDetailPanel:
         img_w, img_h = 220, 160
         img_x = content_margin + 10
         img_y = card_top + 10
+        
+        # Draw placeholder background
         pygame.draw.rect(panel, DARK_GRAY, (img_x, img_y, img_w, img_h))
+        
+        # Try to get and display scenario image
+        scenario_surface = None
+        if camera_component is not None:
+            scenario_surface = self._get_scenario_image_surface(incident, camera_component, img_w, img_h)
+        
+        if scenario_surface:
+            # Display the actual scenario image
+            panel.blit(scenario_surface, (img_x, img_y))
+        else:
+            # Display placeholder text if no image available
+            font = self.fonts['small_font']
+            no_img_text = font.render("No Image", True, LIGHT_GRAY)
+            text_rect = no_img_text.get_rect(center=(img_x + img_w//2, img_y + img_h//2))
+            panel.blit(no_img_text, text_rect)
+        
+        # Draw border around image area
+        pygame.draw.rect(panel, (80, 80, 80), (img_x, img_y, img_w, img_h), 2)
+
 
         # ===== Textual details =====
         # Left column: image; right column: metadata

@@ -405,7 +405,7 @@ class RS1GUI:
         elif self.selected_drone >= 0:
             self.drone_control_panel.drone_ui(self.screen)
         elif self.selected_incident >= 0:
-            self.incident_detail_panel.draw_incident_detail(self.incidents[self.selected_incident], self.screen)
+            self.incident_detail_panel.draw_incident_detail(self.incidents[self.selected_incident], self.screen, self.camera_component)
 
         frame_rate = self.fonts['small_font'].render(
             f"{int(self.clock.get_fps())}", True, WHITE

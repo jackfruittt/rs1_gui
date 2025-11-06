@@ -43,6 +43,7 @@ class RosHandler:
         
         # Thread-safe data storage
         self.data_lock = threading.Lock()
+        self.scenario_img_data = {}  # Store latest scenario images by topic
         self.camera_data = {}       # Store latest camera images by topic
         self.telemetry_data = {}    # Store telemetry data
         self.odometry_data = {}     # Store odometry data
@@ -64,6 +65,7 @@ class RosHandler:
 
         # Incident-specific components
         self.available_incident_topics = []
+        self.available_scenario_topics = []
 
         # Array of drone ids (modular, doesn't need to be 1,2,3 could be 2,5,12)
         self.discovered_drone_ids = []
@@ -151,13 +153,16 @@ class RosHandler:
         
         try:
             topic_list = self.node.get_topic_names_and_types()
-            camera_topics, odometry_topics, available_controller_topic, button_topics, incident_topics = [], [], [], [], []
+            camera_topics, odometry_topics, available_controller_topic, button_topics, incident_topics, scenario_topics = [], [], [], [], [], []
             
             drone_ids = set()
 
             for topic_name, topic_types in topic_list:
                 if 'sensor_msgs/msg/Image' in topic_types:
-                    camera_topics.append(topic_name)
+                    if topic_name.endswith('/image'):
+                        camera_topics.append(topic_name)
+                    elif topic_name.endswith('/scenario_img'):
+                        scenario_topics.append(topic_name)
                 if 'nav_msgs/msg/Odometry' in topic_types:
                     odometry_topics.append(topic_name)
                 if '/rs1_teensyjoy/button_control' in topic_name: # Here I directly mapped the topic name as there are other String Type Topics
@@ -184,9 +189,16 @@ class RosHandler:
                 self.available_incident_topics = target_incident_topics
                 self.discovered_drone_ids = sorted(drone_ids)
                 self.available_button_topics = button_topics
+                self.available_scenario_topics = scenario_topics
+            
+            # Subscribe to all discovered scenario image topics
+            for topic in self.available_scenario_topics:
+                    self.subscribe_to_scenario_image_topic(topic)
+                    print(f"Auto-subscribed to {len(self.available_scenario_topics)} scenario image topics")
 
             print(f"Discovered drone ids: {sorted(drone_ids)}")
             print(f"Discovered {len(camera_topics)} camera topics: {camera_topics}")
+            print(f"Discovered {len(scenario_topics)} scenario topic: {scenario_topics}")
             print(f"Discovered {len(odometry_topics)} odometry topics: {odometry_topics}")
             print(f"Discovered {len(incident_topics)} incident topics: {incident_topics}")
             print(f"Discovered {len(button_topics)} button topics: {button_topics}")
@@ -371,6 +383,10 @@ class RosHandler:
         with self.data_lock:
             return self.available_camera_topics.copy()
     
+    def get_available_scenario_topics(self) -> list:
+        with self.data_lock:
+            return self.available_scenario_topics.copy()
+    
     def register_topic_callback(self, topic_name: str, callback: Callable):
         self.topic_callbacks[topic_name] = callback
     
@@ -464,6 +480,110 @@ class RosHandler:
         except Exception as e:
             print(f"Failed to unsubscribe from {topic_name}: {e}")
             return False
+        
+    def subscribe_to_scenario_image_topic(self, topic_name: str) -> bool:
+        """
+        Subscribe to a scenario image topic (e.g., /rs1_drone_1/scenario_img).
+        
+        Args:
+            topic_name: Full topic name like "/rs1_drone_1/scenario_img"
+        
+        Returns:
+            bool: True if subscription succeeded, False otherwise
+        """
+        if not self.node or not self.ros2_available:
+            return False
+        
+        try:
+            self.node.subscribe_to_scenario_image(topic_name)
+            print(f"Subscribed to scenario image topic: {topic_name}")
+            return True
+        except Exception as e:
+            print(f"Failed to subscribe to scenario image {topic_name}: {e}")
+            return False
+
+    def unsubscribe_from_scenario_image_topic(self, topic_name: str) -> bool:
+        """
+        Unsubscribe from a scenario image topic.
+        
+        Args:
+            topic_name: Full topic name to unsubscribe from
+        
+        Returns:
+            bool: True if unsubscription succeeded, False otherwise
+        """
+        if not self.node:
+            return False
+        
+        try:
+            self.node.unsubscribe_from_scenario_image(topic_name)
+            with self.data_lock:
+                if topic_name in self.scenario_img_data:
+                    del self.scenario_img_data[topic_name]
+            print(f"Unsubscribed from scenario image topic: {topic_name}")
+            return True
+        except Exception as e:
+            print(f"Failed to unsubscribe from scenario image {topic_name}: {e}")
+            return False
+
+    def get_latest_scenario_image(self, topic_name: str):
+        """
+        Get the latest scenario image from a topic.
+        
+        Args:
+            topic_name: Full topic name like "/rs1_drone_1/scenario_img"
+        
+        Returns:
+            numpy.ndarray or None: OpenCV image (BGR format) if available, None otherwise
+        """
+        with self.data_lock:
+            scenario_info = self.scenario_img_data.get(topic_name, {})
+            image = scenario_info.get('image', None)
+            # Return a copy to avoid threading issues
+            return image.copy() if image is not None else None
+
+    def is_scenario_image_active(self, topic_name: str) -> bool:
+        """
+        Check if a scenario image topic has recent data (within last 5 seconds).
+        
+        Args:
+            topic_name: Full topic name to check
+        
+        Returns:
+            bool: True if topic has fresh data, False otherwise
+        """
+        with self.data_lock:
+            scenario_info = self.scenario_img_data.get(topic_name, {})
+            if not scenario_info:
+                return False
+            timestamp = scenario_info.get('timestamp', 0)
+            return time.time() - timestamp < 5.0
+
+    def _handle_scenario_image_message(self, topic_name: str, msg):
+        """
+        Internal callback to handle incoming scenario image messages.
+        Converts ROS Image message to OpenCV format and stores it.
+        
+        Args:
+            topic_name: Topic the message came from
+            msg: sensor_msgs/Image message
+        """
+        try:
+            if self.bridge:
+                cv_image = self.bridge.imgmsg_to_cv2(msg, 'bgr8')
+                
+                with self.data_lock:
+                    self.scenario_img_data[topic_name] = {
+                        'image': cv_image,
+                        'timestamp': time.time(),
+                        'header': msg.header
+                    }
+                
+                if topic_name in self.topic_callbacks:
+                    self.topic_callbacks[topic_name](topic_name, cv_image)
+                    
+        except Exception as e:
+            print(f"Error processing scenario image from {topic_name}: {e}")
 
     def get_latest_odometry(self, topic_name: str): # The parameters might be wrong
         with self.data_lock:
@@ -767,12 +887,12 @@ if ROS2_AVAILABLE:
                 10
             )
   
-
         def unsubscribe_from_incident(self, topic_name: str):
             if topic_name in self.incident_subscription:
                 self.destroy_subscription(self.incident_subscription[topic_name])
                 del self.incident_subscription[topic_name]
                 self.get_logger().info(f'Unsubscribed from incident topic: {topic_name}')
+
 
         def call_connect_service(self, connect: bool) -> bool:
             if not self.teensy_connect_client.wait_for_service(timeout_sec=1.0):
@@ -823,6 +943,41 @@ if ROS2_AVAILABLE:
                 self.destroy_subscription(self.button_subscriptions[topic_name])
                 del self.button_subscriptions[topic_name]
                 self.get_logger().info(f'Unsubscribed from button topic: {topic_name}')
+
+        def subscribe_to_scenario_image(self, topic_name: str):
+            """
+            Subscribe to a scenario image topic in the ROS node.
+            
+            Args:
+                topic_name: Full topic name like "/rs1_drone_1/scenario_img"
+            """
+            # Unsubscribe if already subscribed
+            if topic_name in self.camera_subscriptions:
+                self.unsubscribe_from_scenario_image(topic_name)
+            
+            subscription = self.create_subscription(
+                Image,
+                topic_name,
+                lambda msg, topic=topic_name: self.handler._handle_scenario_image_message(topic, msg),
+                10
+            )
+            
+            # Store in camera_subscriptions since they use the same Image type
+            self.camera_subscriptions[topic_name] = subscription
+            self.get_logger().info(f'Subscribed to scenario image topic: {topic_name}')
+
+        def unsubscribe_from_scenario_image(self, topic_name: str):
+            """
+            Unsubscribe from a scenario image topic.
+            
+            Args:
+                topic_name: Full topic name to unsubscribe from
+            """
+            if topic_name in self.camera_subscriptions:
+                self.destroy_subscription(self.camera_subscriptions[topic_name])
+                del self.camera_subscriptions[topic_name]
+                self.get_logger().info(f'Unsubscribed from scenario image topic: {topic_name}')
+
 
 else:
     class RosNode:
