@@ -345,8 +345,8 @@ class MapPanel:
             gps_y = float(gps_coords[0])
 
             # Temporary Fix to align Drone Images on GUI Map to match Gazebo Positions
-            imgX = mapRange(-gps_x, -(world_size[0]/2), (world_size[0]/2), 0, self.mapImgSize[1]) - 28
-            imgY = mapRange(-gps_y, -(world_size[1]/2), (world_size[1]/2), 0, self.mapImgSize[1]) - 55
+            imgX = mapRange(-gps_x, -(world_size[0]/2), (world_size[0]/2), 0, self.mapImgSize[1]) - 26
+            imgY = mapRange(-gps_y, -(world_size[1]/2), (world_size[1]/2), 0, self.mapImgSize[1]) - 37
 
             tinted = self._get_tinted_drone_icon(state)
             icon_rot = pygame.transform.rotate(tinted, robots[i]["yaw"])
