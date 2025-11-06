@@ -30,7 +30,7 @@ except ImportError:
 
 class RosHandler:
     """
-    Centralized ROS2 handler that manages all ROS topics in a single thread.
+    Centralised ROS2 handler that manages all ROS topics in a single thread.
     This allows the pygame GUI to remain responsive while handling ROS communications.
     """
     
@@ -65,6 +65,7 @@ class RosHandler:
 
         # Incident-specific components
         self.available_incident_topics = []
+        self.available_resolved_incident_topics = []
         self.available_scenario_topics = []
 
         # Array of drone ids (modular, doesn't need to be 1,2,3 could be 2,5,12)
@@ -153,7 +154,7 @@ class RosHandler:
         
         try:
             topic_list = self.node.get_topic_names_and_types()
-            camera_topics, odometry_topics, available_controller_topic, button_topics, incident_topics, scenario_topics = [], [], [], [], [], []
+            camera_topics, odometry_topics, available_controller_topic, button_topics, incident_topics, resolved_incident_topics, scenario_topics = [], [], [], [], [], [], []
             
             drone_ids = set()
 
@@ -169,6 +170,8 @@ class RosHandler:
                     button_topics.append(topic_name)
                 if topic_name.endswith('/incident') and 'std_msgs/msg/String' in topic_types:
                     incident_topics.append(topic_name)
+                if topic_name.endswith('/resolved_incident') and 'std_msgs/msg/String' in topic_types:
+                    resolved_incident_topics.append(topic_name)
 
                 # Collect drone ids from any segment like rs1_drone_<id>
                 parts = [p for p in topic_name.split('/') if p]
@@ -181,12 +184,16 @@ class RosHandler:
                 # Build proactive incident topics from discovered drone ids
                 proactive_incidents = [f"/rs1_drone_{i}/incident" for i in sorted(drone_ids)]
                 target_incident_topics = sorted(set(incident_topics) | set(proactive_incidents))
+                
+                proactive_resolved_incidents = [f"/rs1_drone_{i}/resolved_incident" for i in sorted(drone_ids)]
+                target_resolved_incident_topics = sorted(set(resolved_incident_topics) | set(proactive_resolved_incidents))
 
             # Update available camera topics
             with self.data_lock:
                 self.available_camera_topics = camera_topics
                 self.available_odometry_topics = odometry_topics
                 self.available_incident_topics = target_incident_topics
+                self.available_resolved_incident_topics = target_resolved_incident_topics
                 self.discovered_drone_ids = sorted(drone_ids)
                 self.available_button_topics = button_topics
                 self.available_scenario_topics = scenario_topics
@@ -201,8 +208,10 @@ class RosHandler:
             print(f"Discovered {len(scenario_topics)} scenario topic: {scenario_topics}")
             print(f"Discovered {len(odometry_topics)} odometry topics: {odometry_topics}")
             print(f"Discovered {len(incident_topics)} incident topics: {incident_topics}")
+            print(f"Discovered {len(resolved_incident_topics)} resolved incident topics: {resolved_incident_topics}")
             print(f"Discovered {len(button_topics)} button topics: {button_topics}")
             print(f"Proactive incident subscriptions (all): {target_incident_topics}")
+            print(f"Proactive resolved incident subscriptions (all): {target_resolved_incident_topics}")
             
         except Exception as e:
             print(f"Error discovering topics: {e}")
@@ -226,6 +235,29 @@ class RosHandler:
         try:
             self.node.subscribe_to_incident(topic_name)
             print(f"Subscribed to incident topic: {topic_name}")
+            return True
+        except Exception as e:
+            print(f"Failed to subscribe to {topic_name}: {e}")
+            return False
+
+    def subscribe_to_resolved_incident_topic(self, topic_name: str) -> bool:
+        """
+        Subscribe to a ROS2 resolved incident topic.
+        Attempts to connect the node to a specified ROS2 topic for receiving resolved incident messages.
+        Returns True if the subscription is successful; otherwise logs an error and returns False.
+        Args:
+            - topic_name (str): The full name of the ROS2 topic to subscribe to (e.g., "/rs1_drone_1/resolved_incident").
+        Returns:
+            - (bool): True if subscription succeeded, False if ROS2 is unavailable or an error occurred.
+        Side Effects:
+            - Prints subscription status or error messages to the console.
+        """
+
+        if not self.node or not self.ros2_available:
+            return False
+        try:
+            self.node.subscribe_to_resolved_incident(topic_name)
+            print(f"Subscribed to resolved incident topic: {topic_name}")
             return True
         except Exception as e:
             print(f"Failed to subscribe to {topic_name}: {e}")
@@ -338,6 +370,15 @@ class RosHandler:
     def get_latest_incident(self, topic_name: str): #AI
         with self.data_lock:
             seq = getattr(self, "incident_data", {}).get(topic_name) 
+            return dict(seq[-1]) if seq else None
+
+    def get_available_resolved_incident_topics(self) -> list:
+        with self.data_lock:
+            return self.available_resolved_incident_topics.copy()
+        
+    def get_latest_resolved_incident(self, topic_name: str):
+        with self.data_lock:
+            seq = getattr(self, "resolved_incident_data", {}).get(topic_name) 
             return dict(seq[-1]) if seq else None
 
     
@@ -737,6 +778,89 @@ class RosHandler:
         except Exception as e:
             print(f"Error processing INCIDENT message from {topic_name}: {e}")
 
+    def _handle_resolved_incident_message(self, topic_name: str, msg):
+        """
+        Parse a single std_msgs/String resolved incident message and append it to the per-topic store.
+
+        Expected CSV (one line, no header):
+        drone_id, incident_id, title, severity, iso_time, x, y, z, status
+        """
+        try:
+            # Lazy-init store
+            if not hasattr(self, "resolved_incident_data"):
+                self.resolved_incident_data = {}  # topic_name -> [resolved incident dict, ...]
+
+            # std_msgs/String keeps payload in .data
+            payload = msg.data
+
+            # CSV -> dict
+            f = StringIO(payload)
+            fieldnames = ["drone_id","incident_id","title","severity","iso_time","x","y","z","status"]
+            reader = csv.DictReader(f, delimiter=",", fieldnames=fieldnames, skipinitialspace=True)
+            row = next(reader, None)
+            if row is None:
+                print(f"RESOLVED INCIDENT PARSE FAIL: empty payload on topic {topic_name}")
+                return
+
+            # Required fields
+            try:
+                drone_id = int((row.get("drone_id") or "").strip())
+            except Exception:
+                print(f"RESOLVED INCIDENT PARSE FAIL: bad drone_id. Row={row}")
+                return
+
+            incident_id = (row.get("incident_id") or "").strip() or f"{drone_id}-resolved-{int(time.time()*1000)}"
+            title = (row.get("title") or "").strip() or "Unknown"
+
+            # Severity -> int in [1..3]
+            try:
+                severity = int((row.get("severity") or "1").strip())
+            except Exception:
+                severity = 1
+            severity = max(1, min(3, severity))
+
+            iso_time = (row.get("iso_time") or "").strip()
+
+            # Coords -> floats
+            def _to_float(v):
+                try:
+                    return float((v or "").strip())
+                except Exception:
+                    return None
+
+            x = _to_float(row.get("x"))
+            y = _to_float(row.get("y"))
+            z = _to_float(row.get("z"))
+            if x is None or y is None or z is None:
+                print(f"RESOLVED INCIDENT PARSE FAIL: bad coords. Row={row}")
+                return
+
+            status = (row.get("status") or "RESOLVED").strip()
+
+            resolved_incident = {
+                "id": incident_id,
+                "title": title,
+                "time": iso_time,
+                "severity": severity,
+                "drone": drone_id,
+                "drone_coords": (x, y),
+                "altitude": z,
+                "status": status,
+                "last_update": time.time(),
+            }
+
+            # Append latest per topic
+            with self.data_lock:
+                self.resolved_incident_data.setdefault(topic_name, []).append(resolved_incident)
+
+            # Optional: notify any custom callback registered for this topic
+            cb = self.topic_callbacks.get(topic_name)
+            if cb:
+                cb(topic_name, resolved_incident)
+
+        except Exception as e:
+            print(f"Error processing RESOLVED INCIDENT message from {topic_name}: {e}")
+
 
     def get_drone_id_topics_amount(self) -> int:
         topic_list = self.node.get_topic_names_and_types()
@@ -776,6 +900,7 @@ if ROS2_AVAILABLE:
             self.camera_subscriptions = {}      # topic_name -> subscription object
             self.odometry_subscriptions = {}    # topic_name -> subscription object
             self.incident_subscriptions = {}    # topic_name -> incident object
+            self.resolved_incident_subscriptions = {}  # topic_name -> resolved incident object
             self.button_subscriptions = {}      # For buttons
             self.controller_subscription = {}   # For controller
 
@@ -886,6 +1011,20 @@ if ROS2_AVAILABLE:
                 lambda msg, topic=topic_name: self.handler._handle_incident_message(topic, msg),
                 10
             )
+        
+        def subscribe_to_resolved_incident(self, topic_name: str):
+            if topic_name in self.resolved_incident_subscriptions:
+                self.destroy_subscription(self.resolved_incident_subscriptions[topic_name])
+                del self.resolved_incident_subscriptions[topic_name]
+                self.get_logger().info(f'Unsubscribed from resolved incident topic: {topic_name}')
+            subscription = self.create_subscription(
+                String,
+                topic_name,
+                lambda msg, topic=topic_name: self.handler._handle_resolved_incident_message(topic, msg),
+                10
+            )
+            self.resolved_incident_subscriptions[topic_name] = subscription
+            self.get_logger().info(f'Subscribed to resolved incident topic: {topic_name}')
   
         def unsubscribe_from_incident(self, topic_name: str):
             if topic_name in self.incident_subscription:

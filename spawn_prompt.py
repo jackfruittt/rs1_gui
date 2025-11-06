@@ -349,6 +349,11 @@ class SpawnPromptPanel:
                     for t in self.app.incident_topics:
                         self.app.ros_handler.subscribe_to_incident_topic(t)
 
+                    self.app.resolved_incident_topics = self.app.ros_handler.get_available_resolved_incident_topics()
+                    print(f"UI sees {len(self.app.resolved_incident_topics)} resolved incident topics: {self.app.resolved_incident_topics}")
+                    for t in self.app.resolved_incident_topics:
+                        self.app.ros_handler.subscribe_to_resolved_incident_topic(t)
+
                     self.app.button_topics = self.app.ros_handler.get_available_button_topics()
                     print(f"UI sees {len(self.app.button_topics)} button topics: {self.app.button_topics}")
                     for t in self.app.button_topics:

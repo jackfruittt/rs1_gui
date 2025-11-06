@@ -89,6 +89,7 @@ class RS1GUI:
         self.camera_component = None
         self._incident_seen = {}          # key: (drone, id) -> index in self.incidents
         self._incident_cleared = set()    # optional: keys you've cleared in UI
+        self._resolved_incident_seen = set()  # key: (drone, id) for resolved incidents we've shown
 
         self.known_poses = load_known_poses()
 
@@ -249,6 +250,35 @@ class RS1GUI:
             # also clean cleared set
             self._incident_cleared.difference_update(dropped)
     
+    def _sync_resolved_incidents_from_ros(self):
+        """
+        Sync resolved incidents from ROS and display notifications.
+        Unlike regular incidents, resolved incidents are only shown as notifications,
+        not stored in the incidents list.
+        """
+        if not self.ros_available:
+            return
+
+        topics = self.ros_handler.get_available_resolved_incident_topics() if self.ros_available else []
+
+        for t in topics:
+            resolved_inc = self.ros_handler.get_latest_resolved_incident(t)
+            if not resolved_inc:
+                continue
+            
+            key = (resolved_inc["drone"], resolved_inc["id"])
+            
+            # Only show notification once per resolved incident
+            if key not in self._resolved_incident_seen:
+                self._resolved_incident_seen.add(key)
+                drone_id = resolved_inc["drone"]
+                title = resolved_inc["title"]
+                self.notification_ui.pushNotification(
+                    "Incident Resolved!", 
+                    f"Drone {drone_id}: {title}", 
+                    bar_color=(50, 200, 50)  # Green color for resolved
+                )
+    
     def _load_fonts(self):
         """This function loads all required fonts for the GUI"""
         try:
@@ -371,7 +401,8 @@ class RS1GUI:
 
         if self.ros_available and self.simReady:
             self._sync_drones_from_odom()
-            self._sync_incidents_from_ros() 
+            self._sync_incidents_from_ros()
+            self._sync_resolved_incidents_from_ros()
 
 
         if self.ros_available and self.simReady:

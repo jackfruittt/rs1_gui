@@ -11,10 +11,9 @@ class IncidentDetailPanel:
 
     Style and sizing follow the same conventions as IncidentsPanel.
 
-    Exposes click handling for three controls:
+    Exposes click handling for two controls:
       - Close (top-right 'X')
-      - Respond (primary action button)
-      - Clear (secondary action button)
+      - Clear (action button)
 
     """
 
@@ -22,7 +21,6 @@ class IncidentDetailPanel:
         self.fonts = fonts
         # Absolute rects (screen space) for click detection
         self._close_rect_abs = None
-        self._respond_rect_abs = None
         self._clear_rect_abs = None
 
         self.scenario_image_cache = {}
@@ -179,25 +177,20 @@ class IncidentDetailPanel:
         drone_coords = incident.get('drone_coords', ('—', '—'))
         line(f"Drone coords: {drone_coords}")
         
-        # ===== Action buttons (bottom area) =====
+        # ===== Action button (bottom area) =====
         btn_w, btn_h = 140, 46
-        space = 16
         btn_y = PANEL_HEIGHT - btn_h - 20
 
-        # Primary: Respond (right-aligned group)
-        respond_rel = pygame.Rect(PANEL_WIDTH - content_margin - btn_w, btn_y, btn_w, btn_h)
-        clear_rel = pygame.Rect(respond_rel.x - btn_w - space, btn_y, btn_w, btn_h)
+        # Clear button (right-aligned)
+        clear_rel = pygame.Rect(PANEL_WIDTH - content_margin - btn_w, btn_y, btn_w, btn_h)
 
-        # Buttons visual
-        for r, label in ((clear_rel, "Clear"), (respond_rel, "Respond")):
-            pygame.draw.rect(panel, LIGHT_GRAY, r)
-            txt = self.fonts['small_font'].render(label, True, BLACK)
-            panel.blit(txt, (r.x + (r.w - txt.get_width()) // 2,
-                             r.y + (r.h - txt.get_height()) // 2))
+        # Button visual
+        pygame.draw.rect(panel, LIGHT_GRAY, clear_rel)
+        txt = self.fonts['small_font'].render("Clear", True, BLACK)
+        panel.blit(txt, (clear_rel.x + (clear_rel.w - txt.get_width()) // 2,
+                         clear_rel.y + (clear_rel.h - txt.get_height()) // 2))
 
-        # Store absolute rects for click handling
-        self._respond_rect_abs = pygame.Rect(PANEL_X + respond_rel.x, PANEL_Y + respond_rel.y,
-                                             respond_rel.w, respond_rel.h)
+        # Store absolute rect for click handling
         self._clear_rect_abs = pygame.Rect(PANEL_X + clear_rel.x, PANEL_Y + clear_rel.y,
                                            clear_rel.w, clear_rel.h)
 
@@ -216,21 +209,9 @@ class IncidentDetailPanel:
         if self._close_rect_abs and self._close_rect_abs.collidepoint(pos):
             ui.selected_incident = -1
             return
-        if self._respond_rect_abs and self._respond_rect_abs.collidepoint(pos):
-            print('Respond to incident')
-            return
         if self._clear_rect_abs and self._clear_rect_abs.collidepoint(pos):
-            inc = ui.incidents[ui.selected_incident]
-            key = (inc["drone"], inc["id"])
-            ui._incident_cleared.add(key)       # remember it's cleared locally
-            del ui.incidents[ui.selected_incident]
-            # rebuild index map after deletion
-            ui._incident_seen.clear()
-            for i, it in enumerate(ui.incidents):
-                ui._incident_seen[(it["drone"], it["id"])] = i
+            # just clear selection after deletion
             ui.selected_incident = -1
-            print('clear incident')
-            ui.notification_ui.pushNotification("Cleared!", "Incident cleared!")
             return
 
 
