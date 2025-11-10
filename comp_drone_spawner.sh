@@ -86,6 +86,12 @@ echo "[spawner] QT_PLUGIN_PATH='${QT_PLUGIN_PATH:-<unset>}'"
 echo "[spawner] QT_QPA_PLATFORM='${QT_QPA_PLATFORM:-<unset>}'"
 echo "[spawner] RS1_IGN_HEADLESS='${RS1_IGN_HEADLESS:-<unset>}'"
 
+# Launch the remote controller node to run in the background - Controller needs to be connected when launched otherwise
+# when connected after, it causes an issue with cmd_vel values causing drone to spiral out of control
+ros2 launch rs1_teensyjoy rs1_teensyjoy.launch.py \
+  drone_count:=$NUM_DRONES \
+  "$@" &
+
 # # Launch the composition spawner with all arguments
 # ros2 launch rs1_robot rs1_swarm_composed.py num_drones:=$NUM_DRONES "$@"
 ros2 launch rs1_robot rs1_swarm_composed.py \

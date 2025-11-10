@@ -7,7 +7,14 @@ class TelemetryPanel:
         self.fonts = fonts
     
     def draw_telemetry_panel(self, robots, selected_robot, screen):
-        """Original draw_telemetry_panel function"""
+        """
+        Original draw_telemetry_panel function
+        Draws the telemetry panel for the selected robot onto the given Pygame screen surface.
+        Args:
+            - robots (list): List of robot telemetry data dictionaries.
+            - selected_robot (int): Index of the currently selected robot.
+            - screen (pygame.Surface): The surface to draw the telemetry panel onto.
+        """
         # --- Create telemetry panel surface ---
         telemetry_panel = pygame.Surface((1280, 80))
         telemetry_panel.fill(GRAY)

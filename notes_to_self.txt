@@ -1,6 +1,0 @@
-* optimise map by drawing all incident icons first and generateing buttons. Save as surface.
-then do drones and check if any changes to avoid re-rendering everything
-
-drones yaw. Int in drone but needs to be string. Update Map
-
-Generating random drones, piloting is a initial state. this will need to be removed and user manually engages pilot.
