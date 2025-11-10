@@ -93,8 +93,22 @@ The camera system supports multiple switching modes for different performance re
 
 ## Usage
 
-### Prerequisites
-
+### Cloning and Prerequisites
+1. Make software directory and clone
+   ```bash
+   mkdir Software
+   cd Software
+   git clone https://github.com/jackfruittt/rs1_gui.git
+   ```
+2. Link to rs1_ws/src (Optional but convenient given its part of the project)
+   ```bash
+   mkdir -p rs1_ws/src # Skip if done
+   cd rs1_ws/src
+   ln -s ~/Software/rs1_gui
+   cd ..
+   colcon build
+   ```
+   
 1. Ensure Python 3.10 is installed.
 
 2. **Install dependencies:**
