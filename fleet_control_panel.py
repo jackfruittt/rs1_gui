@@ -1,4 +1,5 @@
 import pygame
+
 from constants import BLACK, WHITE
 from utils import spawn_cmd_safe
 
@@ -72,11 +73,13 @@ class FleetActionsPanel:
                         ns = drone.get('ns', '')
                         if ns:
                             spawn_cmd_safe(f"ros2 service call /{ns}/takeoff_drone std_srvs/srv/Trigger")
+                            pygame.time.wait(2000)
                 elif label == "LAND All":
-                    # Loop through all drones and call land service for each
-                    drones = getattr(self.app, 'drones', [])
-                    for drone in drones:
-                        ns = drone.get('ns', '')
-                        if ns:
-                            spawn_cmd_safe(f"ros2 service call /{ns}/land_drone std_srvs/srv/Trigger")
+                     # Loop through all drones and call land service for each
+                     drones = getattr(self.app, 'drones', [])
+                     for drone in drones:
+                         ns = drone.get('ns', '')
+                         if ns:
+                             spawn_cmd_safe(f"ros2 service call /{ns}/land_drone std_srvs/srv/Trigger")
+                             pygame.time.wait(2000)
                 break

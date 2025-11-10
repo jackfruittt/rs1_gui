@@ -52,10 +52,7 @@ sleep 2
 #     echo "Make sure your workspace is built and sourced"
 # fi
 
-if [ -f "$HOME/RS1/rs1_ws/install/setup.bash" ]; then
-  . "$HOME/RS1/rs1_ws/install/setup.bash"
-  echo "Sourced ROS2 workspace from ~/RS1/rs1_ws"
-elif [ -f "$HOME/rs1_ws/install/setup.bash" ]; then
+if [ -f "$HOME/rs1_ws/install/setup.bash" ]; then
   . "$HOME/rs1_ws/install/setup.bash"
   echo "Sourced ROS2 workspace from ~/rs1_ws"
 elif [ -f "rs1_ws/install/setup.bash" ]; then
